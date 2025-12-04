@@ -1,9 +1,9 @@
 from meta_poster import InstagramPoster, ThreadsPoster, FacebookPoster
 
 # All use the same .env
-# ig = InstagramPoster()
+ig = InstagramPoster()
 # threads = ThreadsPoster()
-fb = FacebookPoster()
+# fb = FacebookPoster()
 
 # Instagram Reel
 # ig.post(
@@ -21,4 +21,4 @@ fb = FacebookPoster()
 # )
 
 # Facebook
-fb.post_text("We're hiring!", link="https://careers.example.com", hashtags=["NowHiring"])
+# fb.post_text("We're hiring!", link="https://careers.example.com", hashtags=["NowHiring"])
