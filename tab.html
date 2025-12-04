@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Streaming UI - Light Mode</title>
+    <style>
+        :root {
+            /* --- Light Mode Colors --- */
+            --bg-body: #eef2f5; 
+            --bg-app: #ffffff;
+            --text-main: #1d1d1f; /* Almost black for harsh contrast */
+            --text-muted: #86868b;
+            --accent: #0071e3; /* Apple-style blue, or keep red if preferred */
+            --pill-color: #f5f5f7; /* Very light gray pill */
+            --card-bg: #f2f2f7;
+            --shadow-soft: 0 10px 40px rgba(0,0,0,0.08); /* Much lighter shadow */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+        body {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* Light, airy gradient background */
+            background: radial-gradient(circle at 50% 50%, #ffffff 0%, #eef1f5 100%);
+            overflow: hidden;
+            color: var(--text-main);
+        }
+
+        /* --- Main App Container --- */
+        .app-container {
+            width: 90%;
+            max-width: 1200px;
+            height: 85vh;
+            background-color: var(--bg-app);
+            box-shadow: var(--shadow-soft);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0,0,0,0.05); /* Subtle border for definition */
+        }
+
+        /* --- Navigation Bar --- */
+        .nav-header {
+            padding: 25px 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+            background: rgba(255,255,255,0.9); /* Slight backdrop */
+        }
+
+        .nav-list {
+            position: relative;
+            display: flex;
+            list-style: none;
+            gap: 5px;
+            padding: 5px;
+            background: #fff; /* Ensure nav sits on white */
+        }
+
+        .nav-item {
+            position: relative;
+            cursor: pointer;
+            padding: 10px 24px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            transition: color 0.3s ease;
+            z-index: 2;
+            user-select: none;
+        }
+
+        .nav-item.active {
+            color: #000;
+            font-weight: 600;
+        }
+
+        /* The Moving Pill - Now darker to stand out slightly on white, or very light gray */
+        .nav-pill {
+            position: absolute;
+            top: 5px;
+            left: 0;
+            height: 40px; /* Matched to new padding */
+            background: var(--pill-color);
+            border-radius: 20px;
+            z-index: 1;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            opacity: 0;
+        }
+
+        /* --- Content Slider Wrapper --- */
+        .viewport {
+            flex: 1;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .content-track {
+            display: flex;
+            width: 500%;
+            height: 100%;
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .tab-content {
+            width: 20%;
+            height: 100%;
+            padding: 10px 60px 40px 60px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            overflow-y: auto;
+        }
+
+        /* --- Hero Card Design --- */
+        /* Even in light mode, movie cards often stay dark for contrast, 
+           but I've adjusted the shadow to be softer */
+        .hero-card {
+            flex: 0 0 auto;
+            width: 100%;
+            height: 420px;
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
+            background: #000; /* Fallback */
+            display: flex;
+            align-items: center;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15); /* Lifted look */
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            background-image: url('https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?q=80&w=2070&auto=format&fit=crop'); 
+            background-size: cover;
+            background-position: center 20%;
+            opacity: 0.9;
+        }
+        
+        .hero-overlay {
+            position: absolute;
+            inset: 0;
+            /* Gradient adapted slightly for cleaner text readability */
+            background: linear-gradient(90deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 50%, transparent 100%);
+        }
+
+        .hero-details {
+            position: relative;
+            z-index: 2;
+            max-width: 550px;
+            padding-left: 50px;
+            color: white; /* Text inside media card stays white */
+        }
+
+        .meta-tags {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hero-title {
+            font-size: 3.2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            letter-spacing: -0.02em;
+            line-height: 1.1;
+        }
+
+        .hero-desc {
+            font-size: 1rem;
+            color: rgba(255,255,255,0.8);
+            line-height: 1.6;
+            margin-bottom: 30px;
+            max-width: 90%;
+        }
+
+        .btn-watch {
+            background: #fff;
+            border: none;
+            color: #000;
+            padding: 14px 32px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-watch:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        /* --- Top Picks Section --- */
+        .section-title {
+            color: var(--text-main); /* Dark title */
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .thumbnails-row {
+            display: flex;
+            gap: 25px;
+        }
+
+        .thumb {
+            width: 200px;
+            height: 120px;
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .thumb:hover {
+            transform: translateY(-5px);
+        }
+        
+        /* Dark gradient at bottom of thumb so white text pops */
+        .thumb::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 50%;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+        }
+
+        .thumb span {
+            position: absolute;
+            bottom: 12px;
+            left: 15px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 500;
+            z-index: 2;
+        }
+
+        /* --- Placeholders --- */
+        .placeholder-screen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            font-size: 2rem;
+            font-weight: 600;
+            background: var(--card-bg); /* Light gray bg */
+            border-radius: 24px;
+            border: 2px dashed rgba(0,0,0,0.05);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <nav class="nav-header">
+            <ul class="nav-list">
+                <div class="nav-pill"></div>
+                <li class="nav-item" data-index="0">Search</li>
+                <li class="nav-item active" data-index="1">Home</li>
+                <li class="nav-item" data-index="2">Movies</li>
+                <li class="nav-item" data-index="3">Shows</li>
+                <li class="nav-item" data-index="4">Live</li>
+            </ul>
+        </nav>
+
+        <div class="viewport">
+            <div class="content-track">
+                
+                <div class="tab-content">
+                    <div class="placeholder-screen">Search</div>
+                </div>
+
+                <div class="tab-content">
+                    <div class="hero-card">
+                        <div class="hero-bg"></div>
+                        <div class="hero-overlay"></div>
+                        <div class="hero-details">
+                            <div class="meta-tags">Action / Thriller • 2021</div>
+                            <h1 class="hero-title">Shadow Hunter</h1>
+                            <p class="hero-desc">A relentless detective unravels a web of secrets as he hunts a mysterious assassin lurking in the shadows.</p>
+                            <button class="btn-watch">Watch Now</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="section-title">Top Picks for You</h3>
+                        <div class="thumbnails-row">
+                            <div class="thumb" style="background-image: url('https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400');"><span>Dark City</span></div>
+                            <div class="thumb" style="background-image: url('https://images.unsplash.com/photo-1616530940355-351fabd9524b?w=400');"><span>Apes Rise</span></div>
+                            <div class="thumb" style="background-image: url('https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400');"><span>Space Opera</span></div>
+                            <div class="thumb" style="background-image: url('https://images.unsplash.com/photo-1517604931442-71053e683597?w=400');"><span>Night Tokyo</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-content">
+                    <div class="placeholder-screen">Movies</div>
+                </div>
+
+                <div class="tab-content">
+                    <div class="placeholder-screen">TV Shows</div>
+                </div>
+
+                <div class="tab-content">
+                    <div class="placeholder-screen">Live TV</div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const navItems = document.querySelectorAll('.nav-item');
+        const pill = document.querySelector('.nav-pill');
+        const contentTrack = document.querySelector('.content-track');
+        let activeIndex = 1;
+
+        function updatePill(element) {
+            const rect = element.getBoundingClientRect();
+            const parentRect = element.parentElement.getBoundingClientRect();
+            const left = rect.left - parentRect.left;
+            const width = rect.width;
+
+            pill.style.width = `${width}px`;
+            pill.style.transform = `translateX(${left}px)`;
+            pill.style.opacity = '1';
+        }
+
+        function slideContent(index) {
+            const percentage = index * -20; 
+            contentTrack.style.transform = `translateX(${percentage}%)`;
+        }
+
+        window.addEventListener('load', () => {
+            const initialActive = document.querySelector('.nav-item.active');
+            updatePill(initialActive);
+            slideContent(activeIndex);
+        });
+
+        navItems.forEach((item) => {
+            item.addEventListener('click', (e) => {
+                navItems.forEach(nav => nav.classList.remove('active'));
+                e.target.classList.add('active');
+                updatePill(e.target);
+                const index = parseInt(e.target.dataset.index);
+                slideContent(index);
+            });
+        });
+
+        window.addEventListener('resize', () => {
+            const active = document.querySelector('.nav-item.active');
+            updatePill(active);
+        });
+    </script>
+</body>
+</html>

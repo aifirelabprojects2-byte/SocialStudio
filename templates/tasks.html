@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drafts</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen py-8">
+  <div class="max-w-4xl mx-auto px-4">
+    <h1 class="text-3xl font-bold mb-6">Your Drafts</h1>
+    <a href="/" class="mb-6 inline-block bg-blue-600 text-white px-4 py-2 rounded">New Generation</a>
+    
+    <div class="grid gap-4">
+      {% for task in tasks %}
+      <div class="bg-white p-6 rounded-lg shadow">
+        <h3 class="font-semibold">{{ task.title }}</h3>
+        <p class="text-sm text-gray-500">{{ task.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+        <button onclick="openModal('{{ task.task_id }}')" class="mt-2 bg-indigo-600 text-white px-3 py-1 rounded text-sm">View</button>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Modal Overlay -->
+    <div id="modalOverlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50" onclick="closeModal()">
+      <div class="bg-white p-6 rounded-lg max-w-2xl mx-auto mt-20 max-h-screen overflow-y-auto" onclick="event.stopPropagation()">
+        <div id="modalContent">
+          <!-- Dynamic content here -->
+        </div>
+        <div class="mt-4 flex justify-end space-x-2">
+          <button onclick="closeModal()" class="bg-gray-500 text-white px-4 py-2 rounded">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function openModal(taskId) {
+      const res = await fetch(`/tasks/${taskId}`);
+      const data = await res.json();
+      
+      document.getElementById('modalContent').innerHTML = `
+        <h2 class="text-xl font-bold mb-4">Edit Draft</h2>
+        <textarea id="caption" class="w-full p-2 border rounded mb-4">${data.content.caption}</textarea>
+        <input id="hashtags" class="w-full p-2 border rounded mb-4" value='${JSON.stringify(data.content.hashtags)}' placeholder='["tag1", "tag2"]'>
+        ${data.content.image_prompt ? `<p class="mb-4">Image Prompt: ${data.content.image_prompt}</p>` : ''}
+        ${data.media_url ? `<img src="${data.media_url}" class="w-full max-w-md rounded mb-4">` : ''}
+        <div class="space-x-2 mb-4">
+          <button onclick="generateImage('${taskId}')" class="bg-green-600 text-white px-4 py-2 rounded ${!data.content.image_prompt ? 'hidden' : ''}">Generate/Regenerate Image</button>
+          <button onclick="saveDraft('${taskId}')" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+          <button onclick="deleteDraft('${taskId}')" class="bg-red-600 text-white px-4 py-2 rounded">Delete</button>
+        </div>
+      `;
+      
+      document.getElementById('modalOverlay').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.add('hidden');
+    }
+
+    async function saveDraft(taskId) {
+      const caption = document.getElementById('caption').value;
+      const hashtags = document.getElementById('hashtags').value;
+      
+      const formData = new FormData();
+      formData.append('caption', caption);
+      formData.append('hashtags', hashtags);
+      
+      const res = await fetch(`/tasks/${taskId}`, {
+        method: 'PUT',
+        body: formData
+      });
+      if (res.ok) alert('Saved!');
+    }
+
+    async function deleteDraft(taskId) {
+      if (confirm('Delete?')) {
+        const res = await fetch(`/tasks/${taskId}`, { method: 'DELETE' });
+        if (res.ok) {
+          location.reload();
+        }
+      }
+    }
+
+    async function generateImage(taskId) {
+      const res = await fetch(`/tasks/${taskId}/generate-image`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        // Refresh modal or reload image
+        openModal(taskId);  // Reopen to show new image
+        alert('Image generated!');
+      }
+    }
+  </script>
+</body>
+</html>
