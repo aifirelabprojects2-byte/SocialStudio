@@ -34,11 +34,10 @@ class ImageGenClient:
         data = resp.json()
 
         image_url = data["output"]
-
         img_resp = _session.get(image_url, timeout=30)
         img_resp.raise_for_status()
 
-        return img_resp.content
+        return img_resp.content,image_url
 
 
 

@@ -2,16 +2,12 @@ from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 from ImgGen import ImageGenClient
-
-load_dotenv()
-
 import os
 import base64
 import io
 from datetime import datetime
 from typing import List, Optional, Literal
 from pathlib import Path
-
 from fastapi import Form, Query, Request, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse
 import json
@@ -20,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select, update, delete
 from sqlalchemy.orm import selectinload
 
-
+load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
@@ -32,13 +28,6 @@ image_client = ImageGenClient(api_key=os.getenv("IMG_API_KEY"))
 
 media_dir = Path("static/media")
 
-
-
-class GeneratedContentResponse(BaseModel):
-    caption: str = Field(..., max_length=2000)
-    hashtags: List[str] = Field(default_factory=list, max_items=10)
-    image_prompt: Optional[str] = Field(None, max_length=1000)
-    suggested_posting_time: str
 
 class GeneratedContentResponse(BaseModel):
     caption: str = Field(..., max_length=2000)
@@ -323,12 +312,13 @@ def init(app):
             raise HTTPException(status_code=400, detail="No image prompt available")
 
         try:
-            image_bytes = image_client.generate(
+            image_bytes,imgUrl = image_client.generate(
                 prompt=gen_content.image_prompt,
                 width=1024,
                 height=1024,
                 num_steps=4,   
             )
+
 
             # Save to media directory
             filename = f"{task_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
@@ -349,6 +339,7 @@ def init(app):
                     .values(
                         storage_path=str(filename),
                         size_bytes=len(image_bytes),
+                        img_url=imgUrl,
                         is_generated=True,
                     )
                 )
@@ -360,6 +351,7 @@ def init(app):
                     storage_path=str(filename),
                     mime_type="image/png",
                     size_bytes=len(image_bytes),
+                    img_url=imgUrl,
                     is_generated=True,
                 )
                 db.add(media)
@@ -381,6 +373,7 @@ def init(app):
             })
 
         except Exception as e:
+            print(e)
             raise HTTPException(status_code=500, detail=str(e))
 
 

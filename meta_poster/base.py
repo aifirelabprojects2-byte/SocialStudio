@@ -19,16 +19,15 @@ class BaseMetaPoster:
         access_token: Optional[str] = None
     ):
         self.page_id = page_id or os.getenv("PAGE_ID")
-        self.access_token = access_token or os.getenv("FB_LONG_LIVED_PAGE_TOKEN")
+        self.access_token = access_token or os.getenv("FB_LONG_LIVED_USER_ACCESS_TOKEN")
 
         if not self.page_id or not self.access_token:
-            raise ValueError("PAGE_ID and FB_LONG_LIVED_PAGE_TOKEN are required")
+            raise ValueError("PAGE_ID and FB_LONG_LIVED_USER_ACCESS_TOKEN are required")
 
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": "MetaPoster/1.0"})
 
     def _request(self, method: str, url: str, **kwargs) -> dict:
-        """Centralized request with proper error handling"""
         try:
             response = self.session.request(
                 method, url, timeout=self.TIMEOUT, **kwargs

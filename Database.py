@@ -1,8 +1,12 @@
+# Database.py 
+
 import os
 import enum
 import uuid
 from typing import AsyncGenerator, Optional
+from datetime import datetime
 
+import pytz
 from sqlalchemy import (
     Boolean,
     Column,
@@ -16,17 +20,25 @@ from sqlalchemy import (
     JSON,
     Enum as SAEnum,
     func,
+    create_engine,
 )
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs
-from sqlalchemy.orm import DeclarativeBase, relationship
-from sqlalchemy.ext.asyncio import AsyncSession
-
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs, AsyncSession
+from sqlalchemy.orm import DeclarativeBase, sessionmaker,relationship
+from sqlalchemy.exc import SQLAlchemyError
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./app.db")
 
+# Sync URL for Celery (remove aiosqlite)
+SYNC_DATABASE_URL = DATABASE_URL.replace("+aiosqlite", "").replace("aiosqlite://", "sqlite://")
 
-engine = create_async_engine(
+async_engine = create_async_engine(
     DATABASE_URL,
+    echo=False,
+    future=True,
+)
+
+sync_engine = create_engine(
+    SYNC_DATABASE_URL,
     echo=False,
     future=True,
 )
@@ -34,6 +46,11 @@ engine = create_async_engine(
 class Base(AsyncAttrs, DeclarativeBase):
     pass
 
+# Sync Base (without AsyncAttrs for Celery compatibility)
+class SyncBase(DeclarativeBase):
+    pass
+
+# Note: In production, consider separate sync models if issues arise, but models are shared here.
 
 class TaskStatus(enum.Enum):
     draft = "draft"
@@ -44,13 +61,11 @@ class TaskStatus(enum.Enum):
     failed = "failed"
     cancelled = "cancelled"
 
-
 class PublishStatus(enum.Enum):
     pending = "pending"
     scheduled = "scheduled"
     posted = "posted"
     failed = "failed"
-
 
 class AttemptStatus(enum.Enum):
     success = "success"
@@ -60,9 +75,7 @@ class AttemptStatus(enum.Enum):
 def gen_uuid_str() -> str:
     return str(uuid.uuid4())
 
-
-
-class Platform(Base):
+class Platform(Base, SyncBase):
     __tablename__ = "platform"
 
     platform_id = Column(String(36), primary_key=True, default=gen_uuid_str)
@@ -71,8 +84,7 @@ class Platform(Base):
     meta = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-
-class Task(Base):
+class Task(Base, SyncBase):
     __tablename__ = "task"
 
     task_id = Column(String(36), primary_key=True, default=gen_uuid_str)
@@ -90,8 +102,7 @@ class Task(Base):
     platform_selections = relationship("PlatformSelection", back_populates="task", cascade="all, delete-orphan")
     post_attempts = relationship("PostAttempt", back_populates="task", cascade="all, delete-orphan")
 
-
-class GeneratedContent(Base):
+class GeneratedContent(Base, SyncBase):
     __tablename__ = "generated_content"
 
     gen_id = Column(String(36), primary_key=True, default=gen_uuid_str)
@@ -108,8 +119,7 @@ class GeneratedContent(Base):
     task = relationship("Task", back_populates="generated_contents")
     media = relationship("Media", back_populates="generated_content", cascade="all, delete-orphan")
 
-
-class Media(Base):
+class Media(Base, SyncBase):
     __tablename__ = "media"
 
     media_id = Column(String(36), primary_key=True, default=gen_uuid_str)
@@ -117,6 +127,7 @@ class Media(Base):
     gen_id = Column(String(36), ForeignKey("generated_content.gen_id", ondelete="SET NULL"), nullable=True, index=True)
     storage_path = Column(Text, nullable=False)  # S3/MinIO/CNAME path or local path during testing
     mime_type = Column(String(64), nullable=True)
+    img_url = Column(String(128), nullable=True)
     width = Column(Integer, nullable=True)
     height = Column(Integer, nullable=True)
     duration_ms = Column(Integer, nullable=True)
@@ -128,8 +139,7 @@ class Media(Base):
     task = relationship("Task", back_populates="media")
     generated_content = relationship("GeneratedContent", back_populates="media")
 
-
-class PlatformSelection(Base):
+class PlatformSelection(Base, SyncBase):
     __tablename__ = "platform_selection"
 
     id = Column(String(36), primary_key=True, default=gen_uuid_str)
@@ -144,8 +154,7 @@ class PlatformSelection(Base):
 
     __table_args__ = (UniqueConstraint("task_id", "platform_id", name="uq_task_platform"),)
 
-
-class OAuthToken(Base):
+class OAuthToken(Base, SyncBase):
     __tablename__ = "oauth_token"
 
     token_id = Column(String(36), primary_key=True, default=gen_uuid_str)
@@ -158,8 +167,7 @@ class OAuthToken(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
-
-class PostAttempt(Base):
+class PostAttempt(Base, SyncBase):
     __tablename__ = "post_attempt"
 
     attempt_id = Column(String(36), primary_key=True, default=gen_uuid_str)
@@ -174,8 +182,7 @@ class PostAttempt(Base):
     task = relationship("Task", back_populates="post_attempts")
     platform = relationship("Platform")
 
-
-class ErrorLog(Base):
+class ErrorLog(Base, SyncBase):
     __tablename__ = "error_log"
 
     error_id = Column(String(36), primary_key=True, default=gen_uuid_str)
@@ -188,16 +195,12 @@ class ErrorLog(Base):
     details = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-
-
 Index("ix_task_scheduled_at_status", Task.scheduled_at, Task.status)
 Index("ix_generated_content_created_at", GeneratedContent.created_at)
 Index("ix_post_attempt_status_attempted_at", PostAttempt.status, PostAttempt.attempted_at)
 
-
-
 AsyncSessionLocal = async_sessionmaker(
-    bind=engine,
+    bind=async_engine,
     autoflush=False,
     autocommit=False,
     expire_on_commit=False,
@@ -205,12 +208,31 @@ AsyncSessionLocal = async_sessionmaker(
     future=True,
 )
 
+SyncSessionLocal = sessionmaker(
+    bind=sync_engine,
+    autoflush=False,
+    autocommit=False,
+    expire_on_commit=False,
+    future=True,
+)
 
 async def init_db() -> None:
-    async with engine.begin() as conn:
+    async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    # Also create sync tables if needed (idempotent)
+    with sync_engine.begin() as conn:
+        SyncBase.metadata.create_all(bind=conn)
 
-
+def get_sync_db():
+    db = SyncSessionLocal()
+    try:
+        yield db
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise
+    finally:
+        db.close()
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:

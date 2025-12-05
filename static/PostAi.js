@@ -25,31 +25,47 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
 
   // --- Helper 2: Generate Image HTML with Loading Spinner ---
   function getImageHtmlWithLoader(url, alt, imgClasses = 'h-full w-full object-cover') {
-      if (!url) {
-          return `
+    if (!url) {
+        return `
             <div class="flex items-center justify-center h-full w-full text-slate-300 dark:text-slate-600 bg-slate-100 dark:bg-slate-900">
-               <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+               <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+               </svg>
             </div>
-          `;
-      }
-      
-      return `
-          <div class="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center">
-              <div class="absolute inset-0 flex items-center justify-center img-loader">
-                  <svg class="animate-spin h-6 w-6 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-              </div>
-              <img src="${url}?t=${Date.now()}" 
-                   class="${imgClasses} opacity-0 transition-opacity duration-500 relative z-10" 
-                   alt="${alt}"
-                   onload="this.classList.remove('opacity-0'); this.parentElement.querySelector('.img-loader').remove()">
-          </div>
-      `;
-  }
+        `;
+    }
 
-  let currentOffset = 0;
+    const cacheBuster = Date.now();
+    const imgId = 'lazyimg-' + Math.random().toString(36).substr(2, 9);
+
+    return `
+        <div class="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center overflow-hidden">
+            <!-- Spinner -->
+            <div class="absolute inset-0 flex items-center justify-center img-loader z-20">
+                <svg class="animate-spin h-6 w-6 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+
+            <!-- Image (lazy in grid, eager in modal via forced src) -->
+            <img 
+                id="${imgId}"
+                ${url.includes('placeholder') ? '' : `data-src="${url}?t=${cacheBuster}"`}
+                src="${url}?t=${cacheBuster}"
+                class="${imgClasses} opacity-0 transition-opacity duration-500 z-10"
+                alt="${alt}"
+                loading="lazy"
+                onload="this.classList.remove('opacity-0'); this.closest('div').querySelector('.img-loader')?.remove()"
+                onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAyNCIgaGVpZ2h0PSI1NzYiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMjQiIGhlaWdodD0iNTc2IiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iNjQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij7wn5mD8J+ZiDwvdGV4dD48L3N2Zz4='"
+            />
+        </div>
+    `;
+}
+
+  let currentDraftOffset = 0;
   const DRAFT_LIMIT = 4; 
   
   function getGridColsClass(count) {
@@ -62,10 +78,10 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
   }
   
   async function loadDrafts(offset = 0) {
-      currentOffset = offset;
+      currentDraftOffset = offset;
       try {
   
-          const res = await fetch(`/api/tasks?limit=${DRAFT_LIMIT}&offset=${currentOffset}`);
+          const res = await fetch(`/api/tasks?limit=${DRAFT_LIMIT}&offset=${currentDraftOffset}`);
           const data = await res.json();
           
           const tasks = data.tasks;
@@ -155,6 +171,42 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
       }
   }
 
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                if (!img.src && img.dataset.src) {
+                    img.src = img.dataset.src;
+                }
+                img.onload = () => {
+                    img.classList.remove('opacity-0');
+                    const loader = img.closest('div')?.querySelector('.img-loader');
+                    if (loader) loader.remove();
+                };
+                observer.unobserve(img);
+            }
+        });
+    }, { rootMargin: '50px' });
+
+    window.triggerLazyLoad = () => {
+        document.querySelectorAll('img[data-src]').forEach(img => {
+            if (!img.src.includes('data:')) {
+                observer.observe(img);
+            }
+        });
+    };
+
+    // Auto-run after any dynamic content
+    new MutationObserver(() => {
+        window.triggerLazyLoad();
+    }).observe(document.body, { childList: true, subtree: true });
+
+    // Initial run
+    window.triggerLazyLoad();
+});
+
   loadDrafts();
 
   document.getElementById('generateForm').addEventListener('submit', async (e) => {
@@ -196,17 +248,17 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
 
   function renderPreview(data) {
     document.getElementById('preview').innerHTML = `
-      <div class="bg-gray-50 dark:bg-slate-700/50 p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+      <div class="bg-gray-50 dark:bg-slate-700/50 p-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
           <h3 class="text-lg font-bold text-gray-700 dark:text-gray-300">Draft Preview</h3>
           <button onclick="document.getElementById('preview').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       </div>
-      <div class="p-6 sm:p-8">
+      <div class="p-4 ">
           <div class="prose prose-slate dark:prose-invert max-w-none mb-6">
               <p class="whitespace-pre-wrap text-base leading-relaxed">${data.result.caption}</p>
           </div>
           <div class="flex flex-wrap gap-2 mb-6">
               ${data.result.hashtags.map(tag => 
-                  `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">${tag}</span>`
+                  `<span class="inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium bg-blue-100 text-gray-800 dark:bg-blue-900/50 dark:text-blue-200">${tag}</span>`
               ).join('')}
           </div>
           ${data.result.image_prompt ? `
@@ -215,7 +267,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
               <code class="text-xs sm:text-sm font-mono text-slate-700 dark:text-slate-300 block">${data.result.image_prompt}</code>
             </div>` : ''}
           
-          <div class="mt-8 flex justify-center">
+          <div class="mt-4 flex justify-center">
                <p class="text-sm text-slate-500">Draft saved to library automatically.</p>
           </div>
       </div>
@@ -411,50 +463,51 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
   }
 
   async function saveAndRegenerateImage(taskId) {
-    toggleLoading(`btn-regen-${taskId}`, true, 'Generating...');
-    try {
-        const success = await doSave(taskId, true);
-        if (success) {
-            const preview = document.getElementById('imagePreview');
-            // 1. Show immediate loading state inside preview
-            preview.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-full space-y-3">
-                    <svg class="animate-spin h-6 w-6 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span class="text-slate-500 text-sm font-medium">Creating visual...</span>
-                </div>
-            `;
+        toggleLoading(`btn-regen-${taskId}`, true, 'Generating...');
+        const preview = document.getElementById('imagePreview');
+        try {
+            const success = await doSave(taskId, true);
+            if (success) {
+                
+                const generateRes = await fetch(`/tasks/${taskId}/generate-image`, { method: 'POST' });
+                const generateData = await generateRes.json();
+                
+                if (generateData.success) { 
 
-            const res = await fetch(`/tasks/${taskId}/generate-image`, { method: 'POST' });
-            const data = await res.json();
-            
-            if (data.success) { 
-                // 2. Poll for result
-                const pollInterval = setInterval(async () => {
-                    try {
-                        const pollRes = await fetch(`/tasks/${taskId}`);
-                        const pollData = await pollRes.json();
-                        if (pollData.media_url) {
-                            clearInterval(pollInterval);
-                            // 3. Use the helper to show the spinner AGAIN while the browser downloads the new image URL
-                            preview.innerHTML = getImageHtmlWithLoader(pollData.media_url, 'Generated Preview', 'w-full h-full object-contain');
-                        }
-                    } catch (pollErr) { console.error(pollErr); }
-                }, 2000);
+                    const initialRes = await fetch(`/tasks/${taskId}`);
+                    const initialData = await initialRes.json();
+    
+                    preview.innerHTML = getImageHtmlWithLoader(initialData.media_url, 'Generated Preview', 'w-full h-full object-contain');
+                    window.triggerLazyLoad?.(); 
+    
 
-                setTimeout(() => clearInterval(pollInterval), 300000); 
-            } else { 
-                preview.innerHTML = `<span class="text-red-500 text-sm">Generation failed</span>`;
+                    const pollInterval = setInterval(async () => {
+                        try {
+                            const pollRes = await fetch(`/tasks/${taskId}`);
+                            const pollData = await pollRes.json(); // <-- pollData is defined here
+                            
+                           
+                            if (pollData.media_url && !pollData.media_url.includes('placeholder')) {
+                                clearInterval(pollInterval);
+                               
+                                preview.innerHTML = getImageHtmlWithLoader(pollData.media_url, 'Generated Preview', 'w-full h-full object-contain');
+                                window.triggerLazyLoad?.();
+                            }
+                        } catch (pollErr) { console.error(pollErr); }
+                    }, 2000);
+    
+                    setTimeout(() => clearInterval(pollInterval), 300000); 
+                } else { 
+                    preview.innerHTML = `<span class="text-red-500 text-sm">Generation failed</span>`;
+                }
             }
+        } catch (e) { 
+            console.error(e);
+        } finally {
+            toggleLoading(`btn-regen-${taskId}`, false);
+            
         }
-    } catch (e) { 
-        console.error(e);
-    } finally {
-        toggleLoading(`btn-regen-${taskId}`, false);
     }
-  }
 
   async function doSave(taskId, andRegenerate = false) {
     const caption = document.getElementById('caption').value;

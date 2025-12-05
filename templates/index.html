@@ -9,9 +9,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet"/>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
   <link rel="stylesheet" href="/static/PostAi.css">
   <link rel="stylesheet" href="/static/Nav.css">
+  <link rel="stylesheet" href="/static/Scheduled.css">
   <script>
     tailwind.config = {
       darkMode: "class",
@@ -78,13 +79,14 @@
       height: 100vh;
       overflow: hidden;
       color: var(--text-main);
+      width: 100%;
     }
 
 
 </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
-  <div class="app-container">
+  <div class="app-container w-full">
     <nav class="nav-header">
       <div class="flex h-16 w-full items-center shadow-[0px_20px_20px_8px_white]">
           
@@ -168,11 +170,11 @@
                       </div>
                     </div>
 
-                    <div id="preview" class="hidden mt-8 w-full bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div id="preview" class="hidden mt-8 w-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
                       </div>
                   </section>
 
-                  <section class="min-h-[20rem]">
+                  <section class="min-h-[20rem] ">
                     <div class="flex mb-6 px-1">
                       <h2 class="text-2xl flex items-center font-semibold tracking-tight text-slate-900 dark:text-white w-full">
                         <div class="mr-3">Recent Drafts</div>
@@ -245,7 +247,7 @@
               
                           <div class="bg-white rounded-lg overflow-hidden">
                               
-                              <div class="relative min-h-[300px]">
+                              <div class="relative">
                                   
                                 <div id="skeletonDraft" class="space-y-6">
                                   <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -292,7 +294,7 @@
                                   </div>
                               </div>
               
-                              <div class="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6">
+                              <div class="flex items-center justify-between  bg-white px-4 py-3 sm:px-6">
                                   <div class="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
                                       <div>
                                           <p class="text-sm text-gray-700">
@@ -331,7 +333,10 @@
                       <header class="bg-white shadow-sm border-b">
                         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                           <div class="flex justify-between items-center">
-                            <h1 class="text-3xl font-semibold text-gray-900">Platforms</h1>
+                            <div class="flex-1">
+                              <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Platforms</h1>
+                              <p class="text-sm text-neutral-500 mt-2 max-w-md">Manage platforms</p>
+                            </div>
                             <div class="flex gap-3">
                               <button id="refreshBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
                                 Refresh
@@ -391,6 +396,7 @@
                   <!-- Modal -->
                   <dialog id="createModal" class="p-8 rounded-2xl shadow-2xl max-w-lg w-full bg-white">
                     <h2 class="text-2xl font-bold mb-6">Add New Platform</h2>
+
                     <form id="createForm" class="space-y-5">
                       <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Platform Name *</label>
@@ -420,116 +426,201 @@
                     </form>
                   </dialog>
                 
-                  <script>
-                    const modal = document.getElementById('createModal')
-                    const tbody = document.getElementById('tbody')
-                    const table = document.getElementById('table')
-                    const PlatformEmptyState = document.getElementById('PlatformEmptyState')
-                    const skeletonPlatform = document.getElementById('skeletonPlatform')
-                    const form = document.getElementById('createForm')
-                    const saveBtn = document.getElementById('saveBtn')
-                    
-                
-                    // Open modal
-                    document.getElementById('openModalBtn').onclick = () => modal.showModal()
-                    document.getElementById('openModalBtn2').onclick = () => modal.showModal()
-                    document.getElementById('cancelBtn').onclick = () => modal.close()
-                
-                    async function loadPlatforms() {
-                      skeletonPlatform.classList.remove('hidden')
-                      table.classList.add('hidden')
-                      PlatformEmptyState.classList.add('hidden')
-                
-                      try {
-                        const res = await fetch('/api/platforms')
-                        const platforms = await res.json()
-                
-                        skeletonPlatform.classList.add('hidden')
-                
-                        if (platforms.length === 0) {
-                          PlatformEmptyState.classList.remove('hidden')
-                          return
-                        }
-                
-                        table.classList.remove('hidden')
-                        tbody.innerHTML = ''
-                
-                        platforms.forEach(p => {
-                          const status = p.token_valid
-                            ? `<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Valid</span>`
-                            : `<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Invalid</span>`
-                
-                          const row = document.createElement('tr')
-                          row.innerHTML = `
-                            <td class="px-6 py-4 font-medium text-gray-900">${p.name}</td>
-                            <td class="px-6 py-4 text-sm text-gray-500">${p.api_name || '—'}</td>
-                            <td class="px-6 py-4 text-sm font-mono">
-                              ${p.masked_token ? status + ' ' + p.masked_token : 'No token'}
-                            </td>
-                            <td class="px-6 py-4 text-sm text-gray-500">
-                              ${new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                              <button onclick="deletePlatform('${p.platform_id}', '${p.name.replace(/'/g, "\\'")}')"
-                                      class="text-red-600 hover:text-red-900 font-medium text-sm">Delete</button>
-                            </td>
-                          `
-                          tbody.appendChild(row)
-                        })
-                      } catch (err) {
-                        alert('Failed to load: ' + err.message)
-                        skeletonPlatform.classList.add('hidden')
-                      }
-                    }
-                
-                    async function deletePlatform(id, name) {
-                      if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
-                      try {
-                        const res = await fetch(`/api/platforms/${id}`, { method: 'DELETE' })
-                        if (!res.ok) throw new Error(await res.text())
-                        loadPlatforms()
-                      } catch (e) {
-                        alert('Delete failed: ' + e.message)
-                      }
-                    }
-                
-                    form.onsubmit = async e => {
-                      e.preventDefault()
-                      saveBtn.disabled = true
-                      saveBtn.textContent = 'Saving...'
-                
-                      const data = Object.fromEntries(new FormData(form))
-                
-                      try {
-                        const res = await fetch('/api/platforms/create', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify(data)
-                        })
-                
-                        if (!res.ok) {
-                          const err = await res.json()
-                          throw new Error(err.detail || 'Failed to create')
-                        }
-                
-                        modal.close()
-                        form.reset()
-                        loadPlatforms()
-                        alert('Platform created successfully!')
-                      } catch (e) {
-                        alert('Error: ' + e.message)
-                      } finally {
-                        saveBtn.disabled = false
-                        saveBtn.textContent = 'Save Platform'
-                      }
-                    }
-                
-                    // Refresh button
-                    document.getElementById('refreshBtn').onclick = loadPlatforms
-                
-                    // Load on start
-                    loadPlatforms()
-                  </script>
+
+
+                  </section>
+
+
+                  <section>
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+        
+                      <!-- Dashboard Header -->
+                      <div class="mb-8 flex flex-col lg:flex-row lg:items-end justify-between gap-6 slide-up">
+                          <div class="flex-1">
+                              <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Task Operations</h1>
+                              <p class="text-sm text-neutral-500 mt-2 max-w-md">Monitor scheduled automation, delivery status, and error logs with precision.</p>
+                          </div>
+                          <!-- Status Filter -->
+                          <div class="w-full lg:w-44">
+                              <label for="statusFilterShd" class="sr-only">Filter by Status</label>
+                              <div class="relative">
+                                  <select id="statusFilterShd" class="appearance-none block w-full pl-4 pr-10 py-3 text-sm border border-neutral-200 rounded-xl  bg-white focus:outline-none   transition-all duration-200 ease-in-out cursor-pointer hover:border-neutral-300">
+                                      <option value="">All Statuses</option>
+                                      <option value="scheduled">Scheduled</option>
+                                      <option value="posted">Posted</option>
+                                      <option value="failed">Failed</option>
+                                      <option value="cancelled">Cancelled</option>
+                                  </select>
+                              </div>
+                          </div>
+                      </div>
+              
+                      <!-- Main Card -->
+                      <div class="bg-white rounded-2xl border border-neutral-200 overflow-hidden fade-in">
+                          
+                          <!-- Table Container -->
+                          <div class="overflow-x-auto custom-scrollbar">
+                              <table id="tasksTableShd" class="min-w-full divide-y divide-neutral-100 hidden">
+                                  <thead class="bg-neutral-50">
+                                      <tr>
+                                          <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Task Title</th>
+                                          <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</th>
+                                          <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Created</th>
+                                          <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Scheduled For</th>
+                                          <th scope="col" class="px-6 py-5 text-right text-xs font-semibold text-neutral-500 uppercase tracking-wider">Actions</th>
+                                      </tr>
+                                  </thead>
+                                  <tbody id="tasksTableBodyShd" class="bg-white divide-y divide-neutral-100">
+                                      <!-- Rows injected via JS -->
+                                  </tbody>
+                              </table>
+                          </div>
+              
+                          <!-- Loading State -->
+                          <div id="tableLoadingShd" class="hidden flex flex-col justify-center items-center py-20 fade-in">
+                              <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                          </div>
+              
+                          <!-- Empty State -->
+                          <div id="noTasksShd" class="hidden flex flex-col justify-center items-center py-5 text-center fade-in">
+                              <div class="bg-neutral-100 rounded-full p-4 mb-4 inline-flex items-center justify-center">
+                                  <svg class="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                              </div>
+                              <h3 class="text-lg font-semibold text-neutral-900 mb-1">No tasks found</h3>
+                              <p class="text-sm text-neutral-500">Adjust filters or create a new task to see results.</p>
+                          </div>
+              
+                          <!-- Pagination Footer -->
+                          <div class="bg-neutral-50 px-6 py-5 border-t border-neutral-100 flex items-center justify-between">
+                              <span id="pageInfoShd" class="text-sm text-neutral-600 font-medium">Loading...</span>
+                              <div class="flex gap-2">
+                                  <button id="prevPageShd" class="inline-flex items-center gap-2 px-4 py-2 border border-neutral-300 text-sm font-medium rounded-xl text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none  disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200  hover:shadow-medium" disabled>
+                                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                                      Previous
+                                  </button>
+                                  <button id="nextPageShd" class="inline-flex items-center gap-2 px-4 py-2 border border-neutral-300 text-sm font-medium rounded-xl text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none  disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200  hover:shadow-medium" disabled>
+                                      Next
+                                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                                  </button>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              
+                  </section>
+
+
+
+
+                  <section>
+
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                      <div class="flex-1 mb-5">
+                        <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Error logs</h1>
+                        <p class="text-sm text-neutral-500 mt-2 max-w-md">Manage and monitor system error logs</p>
+                      </div>
+
+                      <div class="flex justify-between items-center mb-6">
+                        <button id="toggleFiltersBtnErr" class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 focus:outline-none  ">
+                          Filters
+                          <i id="filterIcon" class="fas fa-chevron-down text-gray-400"></i>
+                        </button>
+                        <button id="refreshBtnErr" class="inline-flex items-center gap-2 p-3 border border-gray-300 rounded-full text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 hover:border-gray-700 transition-all duration-200 shadow-sm focus:outline-none ">
+                          <svg fill="currentColor" width="12" height="12" viewBox="0 0 32 32" version="1.1" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15.544 28.080c-0.002-0.006-0.008-0.010-0.012-0.015l-2.873-4.489c-0.204-0.335-0.646-0.454-0.992-0.266l-0.256 0.157c-0.344 0.188-0.337 0.673-0.133 1.008l1.841 2.857c-0.157-0.035-0.316-0.063-0.471-0.103-3.224-0.843-5.953-3.026-7.485-5.988-1.448-2.797-1.72-5.99-0.766-8.992s3.118-5.452 5.915-6.899c0.476-0.247 0.662-0.832 0.416-1.308-0.246-0.477-0.832-0.663-1.308-0.416-3.258 1.686-5.763 4.54-6.874 8.036s-0.794 7.215 0.892 10.473c1.786 3.448 4.963 5.989 8.72 6.973 0.043 0.011 0.087 0.017 0.13 0.028l-2.541 1.288c-0.344 0.189-0.458 0.613-0.254 0.948l0.098 0.256c0.205 0.335 0.557 0.454 0.9 0.266l4.651-2.381c0.006-0.004 0.012-0.003 0.018-0.007l0.312-0.171c0.172-0.095 0.287-0.249 0.332-0.422 0.047-0.172 0.025-0.364-0.076-0.531zM28.559 10.025c-1.783-3.447-4.862-5.988-8.618-6.972-0.267-0.070-0.541-0.124-0.814-0.179l2.494-1.265c0.344-0.189 0.549-0.614 0.345-0.949l-0.099-0.255c-0.205-0.336-0.648-0.454-0.991-0.267l-4.651 2.381c-0.006 0.003-0.012 0.002-0.018 0.006l-0.312 0.171c-0.173 0.095-0.287 0.249-0.332 0.422-0.047 0.172-0.025 0.364 0.077 0.53l0.185 0.304c0.003 0.006 0.008 0.010 0.012 0.016l2.873 4.489c0.203 0.335 0.646 0.454 0.991 0.266l0.226-0.157c0.344-0.188 0.366-0.673 0.163-1.008l-1.85-2.87c0.407 0.063 0.811 0.138 1.207 0.242 3.226 0.845 5.856 3.027 7.387 5.986 1.448 2.797 1.72 5.99 0.765 8.991s-3.020 5.451-5.818 6.901c-0.476 0.247-0.662 0.831-0.415 1.308 0.172 0.332 0.511 0.524 0.863 0.524 0.15 0 0.302-0.035 0.446-0.109 3.259-1.686 5.664-4.54 6.776-8.035 1.111-3.497 0.794-7.217-0.893-10.473z"></path>
+                        </svg>
+                        </button>
+                      </div>
+                  
+                      <!-- Filters Bar (Hidden by Default) -->
+                      <div id="filtersBar" class="rounded-2xl shadow-sm border border-gray-200 p-5 mb-6 hidden transition-all duration-300 ease-in-out">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div class="md:col-span-2">
+                            <label for="searchInputErr" class="block text-sm font-medium text-gray-700 mb-1.5">Search logs</label>
+                            <div class="relative">
+                              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-search text-gray-400 text-sm"></i>
+                              </div>
+                              <input 
+                                type="text" 
+                                id="searchInputErr"
+                                placeholder="Search by task ID, platform, error type, message..."
+                                class="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-gray-700 text-sm transition-all duration-200 shadow-sm"
+                              />
+                            </div>
+                          </div>
+                  
+                          <div>
+                            <label for="fromDateErr" class="block text-sm font-medium text-gray-700 mb-1.5">From Date</label>
+                            <input 
+                              type="datetime-local" 
+                              id="fromDateErr"
+                              class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-gray-700 text-sm transition-all duration-200 shadow-sm"
+                            />
+                          </div>
+                  
+                          <div>
+                            <label for="toDateErr" class="block text-sm font-medium text-gray-700 mb-1.5">To Date</label>
+                            <input 
+                              type="datetime-local" 
+                              id="toDateErr"
+                              class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-gray-700 text-sm transition-all duration-200 shadow-sm"
+                            />
+                          </div>
+                        </div>
+                  
+                        <div class="mt-5 flex justify-end gap-3">
+                          <button id="clearFiltersBtnErr" class="px-5 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 focus:outline-none ">
+                            Clear filters
+                          </button>
+                        </div>
+                      </div>
+                  
+                      <!-- Table Card -->
+                      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                          <table id="errorLogsTableErr" class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                              <tr>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Error ID</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Task ID</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Platform</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Code</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Message</th>
+                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</th>
+                              </tr>
+                            </thead>
+                            <tbody id="errorLogsTbodyErr" class="bg-white divide-y divide-gray-200">
+                              <!-- Dynamic rows will be injected here -->
+                            </tbody>
+                          </table>
+                        </div>
+                  
+                        <!-- Pagination & Info -->
+                        <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
+                          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                            <div class="text-sm text-gray-700 opacity-0">
+                              Showing <span class="font-medium" id="pageInfoErr">1</span> to <span class="font-medium" id="limitInfoErr">20</span> of 
+                              <span class="font-medium" id="totalCountErr">127</span> results
+                            </div>
+                            <div class="mt-4 sm:mt-0 flex justify-center">
+                              <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                <button id="prevPageBtnErr" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 hover:border-gray-700 rounded-l-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 focus:outline-none ">
+                                  Previous
+                                </button>
+                                <button id="nextPageBtnErr" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-700 rounded-r-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 focus:outline-none ">
+                                  Next
+                                </button>
+                              </nav>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
                   </section>
 
@@ -571,305 +662,325 @@
     </div>
   </div>
 
-  <div id="modalOverlay" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"></div>
-    <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
-        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-            <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-xl border border-gray-200">
-                <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                    <div class="sm:flex sm:items-start">
-                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
-                            <h3 class="text-lg font-semibold leading-6 text-gray-900" id="modalTitle">Draft Details</h3>
-                            <div class="mt-4">
-                                <div class="rounded-lg bg-gray-50 border border-gray-100 p-2 flex justify-center mb-4">
-                                    <img id="modalImg" src="" class="max-h-64 object-contain rounded shadow-sm" style="display:none">
-                                    <div id="modalNoImg" class="text-gray-400 text-sm py-8 hidden">No Media Available</div>
-                                </div>
-                                <div class="bg-gray-50 rounded p-3 border border-gray-200">
-                                    <pre id="modalContentText" class="whitespace-pre-wrap text-sm text-gray-700 font-sans"></pre>
-                                </div>
-                                <div class="mt-3 flex gap-2">
-                                    <span id="modalHashtags" class="text-sm font-medium text-primary-600"></span>
-                                </div>
-                                <div class="mt-2 text-xs text-gray-500 border-t pt-2">
-                                    Scheduled: <span id="modalTime" class="font-medium text-gray-700"></span>
-                                </div>
-                            </div>
+<!-- Updated Modal HTML: Added scheduling form elements -->
+<div id="modalOverlay" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <!-- Backdrop -->
+  <div class="fixed inset-0 bg-gray-900/80 transition-opacity"></div>
+
+  <!-- Scrollable Container -->
+  <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+    <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
+      
+      <!-- Modal Panel -->
+      <div class="relative transform overflow-hidden rounded-3xl bg-white text-left  transition-all sm:w-full sm:max-w-5xl border border-gray-200 flex flex-col">
+        
+        <!-- Main Grid Container -->
+        <div class="flex flex-col lg:grid lg:grid-cols-12 h-full">
+            
+            <!-- LEFT COLUMN: Content Preview (Visuals & Text) -->
+            <div class="lg:col-span-5 bg-gray-50/50 border-b lg:border-b-0 lg:border-r border-gray-200 p-6 lg:p-8 flex flex-col gap-6">
+                
+                <!-- Image Section -->
+                <div class="group relative w-full overflow-hidden rounded-2xl bg-gray-200 border border-gray-300 shadow-sm aspect-video lg:aspect-square flex items-center justify-center">
+                    <img id="modalImg" src="" class="w-full h-full object-cover transition-transform duration-700 hover:scale-105" style="display:none">
+                    <div id="modalNoImg" class="flex flex-col items-center justify-center text-gray-400 hidden p-6 text-center">
+                        <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span class="text-xs font-medium uppercase tracking-wide">No Media Preview</span>
+                    </div>
+                </div>
+
+                <!-- Text Content Wrapper -->
+                <div class="flex-1 min-h-0 flex flex-col">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Caption Preview</label>
+                    <div class="bg-white rounded-lg p-4 border border-gray-200 shadow-sm flex-1 overflow-y-auto max-h-48 lg:max-h-[none]">
+                        <pre id="modalContentText" class="whitespace-pre-wrap text-sm leading-relaxed text-gray-600 font-sans"></pre>
+                        <div class="mt-4 pt-3 border-t border-gray-100 flex flex-wrap gap-2">
+                            <span id="modalHashtags" class="text-sm font-medium text-gray-500 italic"></span>
                         </div>
                     </div>
                 </div>
-                <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-gray-100">
-                    <button type="button" id="closeModalBtn" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">Close</button>
+            </div>
+
+            <!-- RIGHT COLUMN: Details & Scheduling Controls -->
+            <div class="lg:col-span-7 bg-white p-6 lg:p-8 flex flex-col h-full">
+                
+                <!-- Header -->
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 tracking-tight" id="modalTitle">Task Details</h3>
+                        
+                    </div>
+                    <span class="px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-bold uppercase tracking-wide border border-gray-200">
+                        Draft
+                    </span>
+                </div>
+
+                <!-- Scrolling Area for Form Inputs -->
+                <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    
+                    <!-- Scheduling Section -->
+                    <div id="schedulingSection" class="hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div class="mb-5 pb-4 border-b border-gray-100">
+                            <h4 class="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                Configuration
+                            </h4>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="px-4">
+                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Select Platforms</label>
+                                <div id="platformsList" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                                <div class="text-sm text-yellow-500 mt-2"> Instagram posting requires an image. Text-only posts are not supported. </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-5">
+                                <div>
+                                    <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                                      <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Publish Date & Time (IST)</label>
+                                      <svg class="w-4 h-4 mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                      <span class="mb-2">AI Suggestion: <span id="modalTime" class="font-medium text-gray-700"></span></span>
+                                    </div>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        </div>
+                                        <input type="datetime-local" id="scheduledAtInput" class="block w-full rounded-lg border-gray-300 bg-white pl-10 px-4 py-2.5 text-gray-900 shadow-sm focus:border-gray-500 focus:ring-gray-500 sm:text-sm transition-colors ">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Notes -->
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Internal Notes</label>
+                                <textarea id="notesInput" rows="3" class="block w-full rounded-lg border-gray-300 bg-white px-4 py-2 text-gray-900 shadow-sm focus:border-gray-500 focus:ring-gray-500 sm:text-sm resize-none transition-colors  " placeholder="Add specific instructions for the reviewer..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Empty State Placeholder (Visible if Scheduling hidden) -->
+                    <div id="emptyStatePlaceholder" class="hidden h-32 flex items-center justify-center border-2 border-dashed border-gray-100 rounded-lg">
+                        <span class="text-sm text-gray-400">Scheduling options not available</span>
+                    </div>
+
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="mt-8 pt-4 border-t border-gray-100 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                     <button type="button" id="closeModalBtn" class="inline-flex w-full justify-center rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto transition-all">
+                        Cancel
+                    </button>
+                    <button type="button" id="scheduleBtn" class="hidden w-full inline-flex justify-center items-center rounded-xl bg-gray-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 transition-all">
+                        Confirm Schedule
+                    </button>
                 </div>
             </div>
         </div>
+      </div>
     </div>
+  </div>
 </div>
 
-<script>
-  // Simplified State
-  let state = {
-      limit: 10,      // Default limit
-      nextOffset: null,
-      prevOffset: null,
-      currentOffset: 0
-  };
-
-  const els = {
-      tbody: document.getElementById('tableBody'),
-      skeletonDraft: document.getElementById('skeletonDraft'),
-      empty: document.getElementById('emptyState'),
-      error: document.getElementById('errorState'),
-      lblStart: document.getElementById('lblStart'),
-      lblEnd: document.getElementById('lblEnd'),
-      lblTotal: document.getElementById('lblTotal'),
-      btnPrev: document.getElementById('btnPrev'),
-      btnNext: document.getElementById('btnNext'),
-      modal: document.getElementById('modalOverlay')
-  };
-
-  document.addEventListener('DOMContentLoaded', () => {
-      fetchData(0);
-
-      els.btnPrev.addEventListener('click', () => {
-          if (state.prevOffset !== null) {
-              fetchData(state.prevOffset);
-          }
-      });
-
-      els.btnNext.addEventListener('click', () => {
-          if (state.nextOffset !== null) {
-              fetchData(state.nextOffset);
-          }
-      });
 
 
-      document.getElementById('closeModalBtn').addEventListener('click', () => {
-          els.modal.classList.add('hidden');
-      });
-  });
+<div id="taskDetailsModalShd" class="fixed inset-0 z-50 hidden transition-opacity duration-300" aria-labelledby="modalShd-title" role="dialog" aria-modal="true">
+  <div class="fixed inset-0 bg-slate-900/40 transition-opacity"></div>
 
-  async function fetchData(offset = 0) {
-      setLoading(true);
-      try {
-          state.currentOffset = offset;
+  <div class="fixed inset-0 z-10 overflow-y-auto">
+      <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
 
-          const res = await fetch(`/api/tasks/approved?limit=${state.limit}&offset=${offset}`);
-          if (!res.ok) throw new Error("API Failed");
-          
-          const data = await res.json();
-
-          state.nextOffset = data.next_offset; 
-          state.prevOffset = data.prev_offset;
-
-          if (data.limit) state.limit = data.limit;
-
-          renderTable(data.tasks);
-          renderPagination(data);
-          
-      } catch (err) {
-          console.error(err);
-          els.tbody.innerHTML = '';
-          els.error.classList.remove('hidden');
-          els.empty.classList.add('hidden');
-      } finally {
-          setLoading(false);
-      }
-  }
-
-  function renderPagination(data) {
-      const total = data.total_count || 0;
-      const count = data.tasks ? data.tasks.length : 0;
-      
-      // Calculate "Showing X - Y"
-      const start = count === 0 ? 0 : state.currentOffset + 1;
-      const end = state.currentOffset + count;
-      
-      els.lblStart.textContent = start;
-      els.lblEnd.textContent = end;
-      els.lblTotal.textContent = total;
-
-      els.btnPrev.disabled = (state.prevOffset === null);
-      els.btnNext.disabled = (state.nextOffset === null);
-  }
-
-  function renderTable(tasks) {
-      els.tbody.innerHTML = '';
-      els.error.classList.add('hidden');
-
-      if (!tasks || tasks.length === 0) {
-          els.empty.classList.remove('hidden');
-          els.empty.classList.add('flex');
-          return;
-      }
-      
-      els.empty.classList.add('hidden');
-      els.empty.classList.remove('flex');
-
-      tasks.forEach(t => {
-          const tr = document.createElement('tr');
-          tr.className = "hover:bg-gray-50 transition-colors duration-150 group";
-          
-          const dateStr = t.created_at ? new Date(t.created_at).toLocaleDateString() : '-';
-          
-          // Thumbnail Logic
-          let mediaHtml = '';
-          if(t.has_image && t.media_url) {
-              mediaHtml = `<img src="${t.media_url}" class="h-10 w-10 rounded-lg object-cover border border-gray-200 group-hover:border-gray-300">`;
-          } else {
-              mediaHtml = `<div class="h-10 w-10 rounded bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-400 border border-gray-200">TXT</div>`;
-          }
-
-          tr.innerHTML = `
-              <td class="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
-                  <div class="flex items-center">
-                      <div class="h-10 w-10 flex-shrink-0">
-                          ${mediaHtml}
+          <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl ring-1 ring-black/5 transition-all w-full max-w-7xl h-[85vh] flex flex-col">
+              <div class="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center flex-shrink-0 z-20">
+                  <div class="flex items-center gap-4">
+                      <div class="h-10 w-10 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100">
+                          <!-- Task Icon -->
+                          <svg class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
                       </div>
-                      <div class="ml-4">
-                          <div class="font-sembold text-gray-900">${escapeHtml(t.title || 'Untitled')}</div>
-                          <div class="text-gray-500 text-xs truncate max-w-[200px]">${escapeHtml(t.caption_preview || '')}</div>
+                      <div>
+                          <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-3">
+                              Task Details
+                              <span id="detailStatusHeaderShd" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border shadow-sm"></span>
+                          </h3>
+                          <p class="text-xs text-slate-400 font-mono mt-0.5 flex items-center gap-1">
+                              ID: <span id="detailIdDisplayShd" class="select-all hover:text-slate-600 transition-colors cursor-pointer">Loading...</span>
+                          </p>
                       </div>
                   </div>
-              </td>
-              <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">${dateStr}</td>
-              <td class="whitespace-nowrap px-3 py-4 text-sm">
-                <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-700 text-green-800 dark:text-green-200">Approved</span>  
-              </td>
-              <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+
+                  <button id="closeModalShd" type="button" class="rounded-full bg-slate-50 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 focus:outline-none  transition-all duration-200">
+                      <span class="sr-only">Close</span>
+                      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                  </button>
+              </div>
+
+              <!-- Loading State -->
+              <div id="modalLoadingShd" class="hidden flex flex-col justify-center items-center h-full bg-slate-50/50">
+                  <div class="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-b-slate-600 mb-3"></div>
+                  <span class="text-sm text-slate-500 font-medium">Retrieving data...</span>
+              </div>
+
+              <!-- Content Area: Split View Layout -->
+              <div id="modalContentShd" class="hidden flex-1 overflow-y-auto bg-slate-50/50 custom-scrollbar p-3">
                   
-              <button class="text-xs inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded hover:shadow-sm" onclick="openDetail('${t.task_id}')">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                View
-                </button>
-            </td>
-          `;
-          els.tbody.appendChild(tr);
-      });
-  }
+                  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+                      
+                      <!-- LEFT COLUMN: Overview & Metadata (Total 4/12 cols) -->
+                      <div class="lg:col-span-4 space-y-6">
+                          
+                          <!-- Main Info Card -->
+                          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                              <div class="flex justify-between items-start mb-4">
+                                  <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Overview</h4>
+                                  <span id="detailCreatedAtShd" class="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100"></span>
+                              </div>
 
-  function setLoading(bool) {
-      if(bool) {
-          skeletonDraft.classList.remove('hidden')
-          els.tbody.classList.add('opacity-50', 'pointer-events-none'); 
-      } else {
-          skeletonDraft.classList.add('hidden')
-          els.tbody.classList.remove('opacity-50', 'pointer-events-none');
-      }
-  }
+                              <div class="space-y-5">
+                                  <!-- Title -->
+                                  <div>
+                                      <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1 block">Task Title</label>
+                                      <p id="detailTitleShd" class="text-md text-slate-700 leading-snug"></p>
+                                  </div>
 
-  async function openDetail(taskId) {
-      try {
-          const res = await fetch(`/api/tasks/approved/${taskId}`);
-          if(!res.ok) throw new Error("Err");
-          const d = await res.json();
-          
-          const gc = d.generated_content || {};
-          console.log(gc);
-          document.getElementById('modalTitle').textContent = d.title || "Task Details";
-          document.getElementById('modalContentText').textContent = gc.caption ;
-          
-          const tags = gc.hashtags || [];
-          document.getElementById('modalHashtags').textContent = tags.map(t => `#${t}    `).join(' ');
+                                  <div class="h-px bg-slate-100 w-full"></div>
 
-          document.getElementById('modalTime').textContent = gc.suggested_posting_time || "Not scheduled";
+                                  <!-- Scheduled Info -->
+                                  <div>
+                                      <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1 block">Scheduled Execution</label>
+                                      <div class="flex items-center text-sm font-medium text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                          <svg class="flex-shrink-0 mr-2.5 h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                          </svg>
+                                          <span id="detailScheduledAtShd"></span>
+                                      </div>
+                                  </div>
 
-          const img = document.getElementById('modalImg');
-          const noImg = document.getElementById('modalNoImg');
-          if(d.preview_image) {
-              img.src = d.preview_image;
-              img.style.display = 'block';
-              noImg.classList.add('hidden');
-          } else {
-              img.style.display = 'none';
-              noImg.classList.remove('hidden');
-              noImg.style.display = 'block';
-          }
+                                  <!-- Metadata Grid -->
+                                  <div class="grid grid-cols-1 gap-4">
+                                      <div>
+                                          <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1 block">Last Updated</label>
+                                          <p id="detailUpdatedAtShd" class="text-sm text-slate-600 font-mono"></p>
+                                      </div>
+                                      <div id="detailTimeZoneShd">
+                                          <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1 block">Time Zone</label>
+                                          <p id="detailTimeZoneValueShd" class="text-sm text-slate-600 font-mono bg-slate-100 inline-block px-2 py-0.5 rounded"></p>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
 
-          els.modal.classList.remove('hidden');
-      } catch(e) {
-          console.error(e);
-          alert("Could not load details");
-      }
-  }
+                          <!-- Context/Notes Card -->
+                          <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 flex flex-col">
+                              <div class="p-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
+                                  <h4 class="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
+                                      <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                      </svg>
+                                      Context / Payload
+                                  </h4>
+                              </div>
+                              <div class="p-4">
+                                  <div id="detailNotesShd" class="text-sm text-slate-600 leading-relaxed font-mono bg-slate-50 p-3 rounded-lg border border-slate-100 overflow-x-auto max-h-[200px] custom-scrollbar"></div>
+                              </div>
+                          </div>
 
-  function escapeHtml(text) {
-      if (!text) return "";
-      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-  }
-</script>
+                      </div>
 
-<script>
-    const examples = [
-      "A LinkedIn post about the future of remote work, professional tone",
-      "A short social media caption about AI in education",
-      "A blog intro about sustainable business trends",
-      "A friendly announcement for a new product launch",
-      "A concise summary for a newsletter section"
-    ];
-    
-    const el = document.getElementById("animatedPlaceholder");
-    
-    let exampleIndex = 0;
-    let charIndex = 0;
-    let isDeleting = false;
-    let isPaused = false;  // <-- NEW
-    
-    const cursor = "▋"; 
-    
-    function type() {
-      if (!isPaused) {                         // <-- stop animation when paused
-        const full = examples[exampleIndex];
+                      <!-- RIGHT COLUMN: History & Logs (Total 8/12 cols) -->
+                      <div class="lg:col-span-8 flex flex-col gap-6">
+                          
+                          <!-- Attempts Section -->
+                          <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-auto overflow-hidden">
+                              <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
+                                  <h4 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                                      <div class="p-1.5 bg-blue-50 rounded-md">
+                                          <svg class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                          </svg>
+                                      </div>
+                                      Execution Attempts
+                                  </h4>
+                                  <span class="text-[10px] font-medium px-2 py-1 bg-slate-100 text-slate-500 rounded">Log</span>
+                              </div>
+                              
+                              <div class="overflow-y-auto custom-scrollbar flex-1 bg-white">
+                                  <table class="min-w-full divide-y divide-slate-100">
+                                      <thead class="bg-slate-50 sticky top-0 z-10">
+                                          <tr>
+                                              <th class="px-5 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Platform</th>
+                                              <th class="px-5 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                                              <th class="px-5 py-3 text-right text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Timestamp</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody id="attemptsTableBodyShd" class="bg-white divide-y divide-slate-50 text-sm"></tbody>
+                                  </table>
+                                  <!-- Empty State -->
+                                  <div id="noAttemptsShd" class="hidden flex flex-col items-center justify-center py-12 text-slate-400">
+                                      <svg class="h-10 w-10 mb-2 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      <p class="text-xs">No attempts recorded yet</p>
+                                  </div>
+                              </div>
+                          </div>
 
-        if (!isDeleting) {
-          charIndex++;
-        } else {
-          charIndex--;
-        }
+                          <!-- Errors Section -->
+                          <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-auto overflow-hidden">
+                              <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
+                                  <h4 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                                      <div class="p-1.5 bg-red-50 rounded-md">
+                                          <svg class="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                          </svg>
+                                      </div>
+                                      System Logs & Errors
+                                  </h4>
+                              </div>
 
-        const text = full.substring(0, charIndex);
+                              <div class="overflow-y-auto custom-scrollbar flex-1 bg-white">
+                                  <table class="min-w-full divide-y divide-slate-100">
+                                      <tbody id="errorsTableBodyShd" class="bg-white divide-y divide-slate-50 text-sm font-mono text-red-600"></tbody>
+                                  </table>
+                                  
+                                  <!-- Empty State: Healthy -->
+                                  <div id="noErrorsShd" class="hidden flex flex-col items-center justify-center py-12 bg-emerald-50/30 h-full">
+                                      <div class="rounded-full bg-emerald-100 p-3 mb-3">
+                                          <svg class="h-6 w-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                          </svg>
+                                      </div>
+                                      <span class="text-sm font-medium text-emerald-800">All systems operational</span>
+                                      <span class="text-xs text-emerald-600 mt-1">No errors logs found</span>
+                                  </div>
+                              </div>
+                          </div>
 
-        el.placeholder = text + " " + cursor;
+                      </div>
+                  </div>
+              </div>
 
-        let speed = isDeleting ? 45 : 70;
+              <!-- Footer -->
+              <div class="bg-white px-6 py-4 border-t border-slate-100 flex justify-end flex-shrink-0 z-20">
+                  <button type="button" id="closeModalBtnFooterShd" class="inline-flex justify-center rounded-lg border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900 focus:outline-none  transition-all duration-200">
+                      Close Details
+                  </button>
+              </div>
 
-        if (!isDeleting && charIndex === full.length) {
-          speed = 1300;
-          isDeleting = true;
-        }
+          </div>
+      </div>
+  </div>
+</div>
 
-        if (isDeleting && charIndex === 0) {
-          isDeleting = false;
-          exampleIndex = (exampleIndex + 1) % examples.length;
-          speed = 350;
-        }
 
-        setTimeout(type, speed);
-        return;
-      }
 
-      // If paused, check again soon
-      setTimeout(type, 150);
-    }
-
-    // ---- EVENT HANDLERS ----
-    el.addEventListener("focus", () => {
-      isPaused = true;
-      el.placeholder = "";         // optional: clear placeholder on focus
-    });
-
-    el.addEventListener("blur", () => {
-      isPaused = false;
-    });
-
-    type();
-</script>
-
-    
-    
-
-<script src="/static/Tabs.js"></script>
+<script src="/static/placeholderAnim.js" defer></script>
+<script src="/static/Tabs.js" ></script>
 <script src="/static/PostAi.js"></script>
-
+<script src="/static/plaform.js"></script>
+<script src="/static/Scheduled.js"></script>
+<script src="/static/Error.js"></script>
 </body>
 </html>
