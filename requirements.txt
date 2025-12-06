@@ -37,3 +37,4 @@ lightrag-hku
 docx
 greenlet
 aiosmtplib
+honcho==1.1.0
