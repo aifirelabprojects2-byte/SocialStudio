@@ -24,12 +24,6 @@ sqlalchemy[asyncio]>=2.0.0
 watchdog
 portalocker
 pypdf
-langchain-core>=0.2.0
-langchain-openai>=0.1.20
-langchain>=0.3.0
-langgraph>=0.1.0
-openai>=1.0.0
-tenacity>=8.0.0
 psutil
 numpy 
 scipy
@@ -38,3 +32,4 @@ docx
 greenlet
 aiosmtplib
 honcho==1.1.0
+cryptography
