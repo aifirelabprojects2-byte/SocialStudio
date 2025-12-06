@@ -121,58 +121,82 @@
         <div class="content-track">
             
             <div class="tab-content">
-                
-                <main class="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+              
+                <main class="flex-grow w-full max-w-7xl  mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
                   
                   <section class="max-w-3xl mx-auto" id="Section1">
                     <div class="text-center mb-8">
-                      <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900 dark:text-white mb-3">
-                        What would you like to post today?
-                      </h1>
-                      <p class="text-slate-500 dark:text-slate-400 text-lg">
-                        Describe your idea, and we'll craft the caption, hashtags, and visuals.
-                      </p>
+                        <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900 dark:text-white mb-3">
+                            What would you like to post today?
+                        </h1>
+                        <p class="text-slate-500 dark:text-slate-400 text-lg">
+                            Describe your idea, and we'll craft the caption, hashtags, and visuals.
+                        </p>
                     </div>
+                
+                    <div id="OutergenerateForm" class="bg-white dark:bg-slate-800 rounded-3xl  border border-slate-200 dark:border-slate-700 p-1 transition-transform duration-300 ease-out has-[:focus]:scale-105">
+                        <form id="generateForm" class="p-5 sm:p-6 space-y-4">
+                            <div class="relative">
+                                <textarea name="prompt" rows="3" required id="animatedPlaceholder" class="block w-full rounded-2xl border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-white shadow-sm focus:border-gray-500 focus:ring-gray-500 sm:text-base px-4 py-3 transition resize-none placeholder:text-slate-400" placeholder="">
+                                </textarea>
+                            </div>
+                            <div class="flex items-center justify-between pt-2">
+                                <div class="flex items-center space-x-4">
 
-                    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-1">
-                      <form id="generateForm" class="p-5 sm:p-6 space-y-4">
-                        <div class="relative">
-                          <textarea name="prompt" rows="3" required id="animatedPlaceholder"
-                            class="block w-full rounded-xl border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-white shadow-sm focus:border-gray-500 focus:ring-gray-500 sm:text-base px-4 py-3 transition resize-none placeholder:text-slate-400"
-                            placeholder=""></textarea>
-                        </div>
+                                  <label for="imgToggle" title="Click to generate image prompt" class="flex items-center space-x-2  p-[7px]  text-sm font-medium transition duration-150 cursor-pointer select-none">
+                                    <span class=" text-sm font-medium text-slate-700 dark:text-slate-300">
+                                      Image Prompt
+                                    </span>
+                                    <div class="relative ml-3">
+                                        <input type="checkbox" id="imgToggle" name="generate_image" value="yes" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-gray-300 rounded-full transition peer-checked:bg-gray-800 dark:bg-slate-700"></div>
+                                        <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition 
+                                                    peer-checked:translate-x-5 shadow"></div>
+                                    </div>
+                                  </label>
 
-                        <div class="flex items-center justify-between pt-2">
-                          <div class="flex items-center">
-                            <input type="checkbox" name="generate_image" value="yes" id="imgToggle" checked 
-                                  class="h-5 w-5 rounded border-slate-300 text-gray-600 focus:ring-gray-600 dark:border-slate-600 dark:bg-slate-700">
-                            <label for="imgToggle" class="ml-2 block text-sm font-medium text-slate-700 dark:text-slate-300 select-none cursor-pointer">
-                              Generate Image
-                            </label>
-                          </div>
+                                  <div id="useCaseCarouselDrf" class="flex items-center space-x-2 rounded-2xl  dark:bg-slate-700 border border-slate-200 dark:border-slate-600 p-[6px] text-sm font-medium transition duration-150">
+                                        
+                                    <button type="button" id="prevCaseBtnDrf" title="Previous Use Case"
+                                        class="text-slate-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 transition p-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                                    </button>
+            
+                                    <span id="currentCaseTextDrf" class="text-slate-700 dark:text-slate-200 whitespace-nowrap min-w-[110px] text-center">
+                                        Custom Idea
+                                    </span>
+            
+                                    <button type="button" id="nextCaseBtnDrf" title="Next Use Case"
+                                        class="text-slate-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 transition p-1">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                                    </button>
+                                  </div>
+                                
 
-                          <button type="submit" id="genBtnBtn"
-                            class="shiny-button inline-flex items-center justify-center rounded-xl bg-gray-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 transition-all duration-200">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"></path><line x1="16" y1="5" x2="22" y2="5"></line><line x1="19" y1="2" x2="19" y2="8"></line></svg>
-                            <span id="genBtnSpan" >Generate Draft</span>
-                          </button>
-                        </div>
-                      </form>
+                                </div>
+                
+                                <button type="submit" id="genBtnBtn"
+                                    class="shiny-button inline-flex items-center justify-center rounded-xl bg-gray-800 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 transition-all duration-200">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"></path><line x1="16" y1="5" x2="22" y2="5"></line><line x1="19" y1="2" x2="19" y2="8"></line></svg>
+                                    <span id="genBtnSpan" >Generate Draft</span>
+                                </button>
+                            </div>
+                        </form>
                     </div>
-
+                
                     <div id="loading" class="hidden mt-8 text-center animate-pulse">
-                      <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-gray-600 transition ease-in-out duration-150 cursor-not-allowed">
-                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Crafting your post...
-                      </div>
+                        <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-gray-600 transition ease-in-out duration-150 cursor-not-allowed">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Crafting your post...
+                        </div>
                     </div>
-
+                
                     <div id="preview" class="hidden mt-8 w-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
-                      </div>
-                  </section>
+                    </div>
+                </section>
 
                   <section class="min-h-[20rem] ">
                     <div class="flex mb-6 px-1">
@@ -280,9 +304,9 @@
                                   </table>
                                 </div>
               
-                                  <div id="errorState" class="hidden flex-col items-center justify-center py-12 text-center text-red-600">
-                                      <svg class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                      <p class="text-sm font-medium">Failed to load data.</p>
+                                  <div id="errorState" class="hidden flex flex-col items-center justify-center py-12 text-center text-red-600">
+                                      <div><svg class="h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
+                                      <div><p class="text-sm font-medium">Failed to load data.</p></div>
                                   </div>
               
                                   <div id="emptyState" class="hidden flex-col items-center justify-center py-16 text-center">
@@ -471,7 +495,7 @@
                                       </tr>
                                   </thead>
                                   <tbody id="tasksTableBodyShd" class="bg-white divide-y divide-neutral-100">
-                                      <!-- Rows injected via JS -->
+                                      
                                   </tbody>
                               </table>
                           </div>
@@ -974,6 +998,105 @@
   </div>
 </div>
 
+<script>
+  // --- USE CASE PROMPTS DICTIONARY ---
+  const content_library_prompts = {
+      // The value is an EMPTY STRING for the "Custom Option"
+      "Custom Option": "", 
+      "Educational Post": "Describe the specific concept, skill, or quick hack you want to teach your audience today, and who the target is.",
+      "Marketing Post": "Create a marketing post promoting [insert product/service name] by highlighting the main problem it solves and including a call to action.",
+      "Motivational Post": "Generate a motivational post focused on the theme of [insert theme, e.g., resilience, consistency, starting over], and what feeling you want to inspire.",
+      "Behind the Scenes (BTS) Post": "Design a post that gives a sneak peek into [describe the process, e.g., our team culture, how we develop our product, a typical day]. What's the main takeaway.",
+      "User Generated Content (UGC) Showcase": "Draft a post celebrating a customer who used our product/service. Describe the user's success story and which specific product they used.",
+      "Holiday/Seasonal Post": "Create a post recognizing the upcoming holiday/season: [insert holiday/season]. What is the connection to our brand, and what positive message should we convey?",
+      "Ask Me Anything (AMA) / Q&A Post": "Formulate a post inviting questions from the audience about [insert topic, e.g., a new feature, industry trends, personal experience]. Clearly state the topic for the Q&A.",
+      "Audience Poll/Feedback": "Create a poll or question-based post to get direct feedback on [insert topic, e.g., new product packaging, preferred content type, industry opinion]. What are the choices/options?",
+      "Thought Leadership Post": "Develop a strong opinion or unique insight about a recent [industry trend/news item]. What is your contrarian view, and what advice follows from it?",
+      "Industry News/Update": "Share a brief update on a recent and relevant piece of industry news. Explain why this news matters to your audience and what their next step should be.",
+      "Case Study/Success Story": "Outline a detailed customer success story. Focus on the 'Before' (the problem), the 'During' (how your solution was used), and the 'After' (the measurable result).",
+      "Product Feature Spotlight": "Highlight a single, powerful feature of your product: [feature name]. Describe the feature and the single biggest benefit it offers the user.",
+      "Contest/Giveaway": "Draft a post announcing a contest or giveaway. Define the prize, the entry rules (e.g., Tag 3 friends, Follow, Share), and the end date.",
+      "Flash Sale/Discount": "Write a time-sensitive post announcing a flash sale or discount. Specify the discount percentage, the product, and the expiration date/time."
+  };
+
+  // Mapping use case keys to a display text with an emoji
+  const useCaseDisplayMapDrf = {
+      "Custom Option": "Custom Idea", // Display text for the new option
+      "Educational Post": "Educational Post",
+      "Marketing Post": "Marketing Post",
+      "Motivational Post": "Motivational Post",
+      "Behind the Scenes (BTS) Post": "Behind the Scenes (BTS)",
+      "User Generated Content (UGC) Showcase": "UGC Showcase",
+      "Holiday/Seasonal Post": "Seasonal Post",
+      "Ask Me Anything (AMA) / Q&A Post": "AMA / Q&A",
+      "Audience Poll/Feedback": "Audience Poll/Feedback",
+      "Thought Leadership Post": "Thought Leadership",
+      "Industry News/Update": "Industry News",
+      "Case Study/Success Story": "Case Study / Success Story",
+      "Product Feature Spotlight": "Feature Spotlight",
+      "Contest/Giveaway": "Contest / Giveaway",
+      "Flash Sale/Discount": "Flash Sale / Discount"
+  };
+
+  // --- JAVASCRIPT LOGIC FOR CAROUSEL ---
+  document.addEventListener('DOMContentLoaded', function() {
+      const promptTextarea = document.getElementById('animatedPlaceholder');
+      const prevBtn = document.getElementById('prevCaseBtnDrf');
+      const nextBtn = document.getElementById('nextCaseBtnDrf');
+      const displayText = document.getElementById('currentCaseTextDrf');
+      
+      const useCaseKeysDrf = Object.keys(content_library_prompts);
+      const totalCasesDrf = useCaseKeysDrf.length;
+      let currentCaseIndexDrf = 0; // Starts at Custom Option (index 0)
+
+      // Define a general placeholder for the Custom Option for better UX
+      const customPlaceholderDrf = "Describe your idea here... We'll handle the caption, hashtags, and visuals.";
+
+      /**
+       * Updates the UI (text display) and the prompt textarea.
+       */
+      function updateCarouselDrf() {
+          const currentKey = useCaseKeysDrf[currentCaseIndexDrf];
+          
+          // 1. Update Display Text (with emoji)
+          displayText.textContent = useCaseDisplayMapDrf[currentKey];
+          
+          // 2. Conditional Logic for Textarea and Focus
+          if (currentKey === "Custom Option") {
+              // Clear the content (set value to empty string)
+              promptTextarea.value = ''; 
+              // Set the informative placeholder
+              promptTextarea.placeholder = customPlaceholderDrf; 
+              
+              // *** REMOVED: promptTextarea.focus(); ***
+          } else {
+              // For a predefined template, set the prompt and clear the placeholder
+              promptTextarea.placeholder = ''; 
+              promptTextarea.value = content_library_prompts[currentKey];
+              
+              // When selecting a new use case template, we might want to focus the field 
+              // so the user can immediately edit the [bracketed] text.
+              // NOTE: Keeping focus here is generally good practice for template selection.
+              promptTextarea.focus(); 
+          }
+      }
+
+      // Event listener for Next button with Cycling Logic
+      nextBtn.addEventListener('click', function() {
+          currentCaseIndexDrf = (currentCaseIndexDrf + 1) % totalCasesDrf;
+          updateCarouselDrf();
+      });
+
+      // Event listener for Previous button with Cycling Logic
+      prevBtn.addEventListener('click', function() {
+          currentCaseIndexDrf = (currentCaseIndexDrf - 1 + totalCasesDrf) % totalCasesDrf;
+          updateCarouselDrf();
+      });
+
+      // Initialize the carousel on page load with the Custom Option (no focus)
+      updateCarouselDrf();
+  });
+</script>
 
 
 <script src="/static/placeholderAnim.js" defer></script>

@@ -115,7 +115,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
   
           // --- Render Drafts (mapping HTML remains the same) ---
           grid.innerHTML = tasks.map(task => `
-          <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer overflow-hidden"
+          <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-all duration-200 cursor-pointer overflow-hidden"
               onclick="openPostUiModal('${task.task_id}')">
               
               <div class="relative h-48 w-full overflow-hidden">
@@ -243,6 +243,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
         genBtnSpan.innerText = originalBtnText; 
         genBtnBtn.disabled = false;
         genBtnBtn.style.cursor = 'pointer'; 
+        updateCarouselDrf();
     }
 });
 
