@@ -157,7 +157,7 @@ def init(app):
 
             # ───── Save draft task ─────
             task = Task(
-                title=prompt[:70] + "..." if len(prompt) > 70 else prompt,
+                title=prompt[:40] + "..." if len(prompt) > 40 else prompt,
                 status="draft",
                 time_zone="UTC",
             )

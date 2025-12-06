@@ -2,7 +2,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, ValidationError
 from ImgGen import ImageGenClient
 import PostGen,ManagePlatform
 from celery_app import Capp
@@ -14,12 +14,13 @@ from typing import List, Optional, Literal
 from pathlib import Path
 from enum import Enum
 from fastapi import FastAPI, Form, Query, Request, Depends, HTTPException, status, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 import json
 from Database import AttemptStatus, ErrorLog, OAuthToken, Platform, PostAttempt, PublishStatus, TaskStatus, get_db, init_db, Task, GeneratedContent, Media, PlatformSelection
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select, update, delete,desc
 from sqlalchemy.orm import selectinload,joinedload
+from fastapi.responses import StreamingResponse
 
 load_dotenv()
 
@@ -300,13 +301,6 @@ async def get_task_detail(task_id: str, db: AsyncSession = Depends(get_db)):
         error_logs=[ErrorLogOut.model_validate(el) for el in error_logs],
     )
 
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select, func, desc
-from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional, List
-from datetime import datetime
-from pydantic import BaseModel
-
 
 class ErrorLogResponse(BaseModel):
     error_id: str
@@ -360,4 +354,98 @@ async def list_error_logs(
         total=total,
         limit=limit,
         offset=offset
+    )
+    
+
+class FormatRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=10000, description="The text to format")
+    style: Optional[Literal["professional", "concise", "formal"]] = Field(
+        None, description="Predefined style (optional if custom_instruction is used)"
+    )
+    custom_instruction: Optional[str] = Field(
+        None,
+        max_length=1000,
+        description="Custom formatting instructions. If provided, overrides 'style'."
+    )
+
+    @field_validator("custom_instruction")
+    @classmethod
+    def validate_custom_instruction(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None:
+            v = v.strip()
+            if len(v) < 5:
+                raise ValueError("custom_instruction must be at least 5 characters long")
+        return v
+
+    @field_validator("style")
+    @classmethod
+    def validate_style_with_custom(cls, v: Optional[str], info):
+        # This runs after all fields are parsed
+        values = info.data
+        custom = values.get("custom_instruction")
+        if v is None and (custom is None or custom.strip() == ""):
+            raise ValueError("Either 'style' or 'custom_instruction' must be provided")
+        return v
+
+
+PREDEFINED_STYLES = {
+    "professional": "Rewrite in clear, polished, professional business tone. Keep it natural and confident.",
+    "concise": "Make it significantly shorter while keeping all key information. Be direct and crisp.",
+    "formal": "Use formal language suitable for official letters or academic writing. Avoid contractions.",
+}
+
+
+async def generate_formatted_text_stream(text: str, instruction: str):
+    system_prompt = (
+        "You are an expert editor. "
+        "Rewrite the given text exactly according to the user's instruction. "
+        "Output ONLY the formatted text — no quotes, no explanations, no markdown, "
+        "no headers, no 'Here is...', nothing except the clean final text."
+    )
+
+    user_prompt = f"Instruction: {instruction}\n\nText to rewrite:\n{text}"
+
+    try:
+        stream = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.5,
+            stream=True,
+            max_tokens=2000,
+        )
+
+        async for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content is not None:
+                yield chunk.choices[0].delta.content
+
+    except Exception as e:
+        error_msg = json.dumps({"error": "Generation failed", "details": str(e)})
+        yield error_msg
+
+
+@app.post("/format-text")
+async def format_text(request: FormatRequest):
+    if not request.text.strip():
+        raise HTTPException(status_code=400, detail="Text cannot be empty")
+
+    # Determine instruction
+    if request.custom_instruction and request.custom_instruction.strip():
+        instruction = request.custom_instruction.strip()
+    elif request.style:
+        instruction = PREDEFINED_STYLES.get(request.style, PREDEFINED_STYLES["professional"])
+    else:
+        raise HTTPException(status_code=400, detail="Either 'style' or 'custom_instruction' is required")
+
+    return StreamingResponse(
+        generate_formatted_text_stream(request.text, instruction),
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Content-Type-Options": "nosniff",
+            "Access-Control-Allow-Origin": "*",
+        },
     )

@@ -116,7 +116,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
           // --- Render Drafts (mapping HTML remains the same) ---
           grid.innerHTML = tasks.map(task => `
           <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-all duration-200 cursor-pointer overflow-hidden"
-              onclick="openPostUiModal('${task.task_id}')">
+              onclick="openPostUiModalGfr('${task.task_id}')">
               
               <div class="relative h-48 w-full overflow-hidden">
                   ${getImageHtmlWithLoader(task.media_url, 'Post Preview', 'h-full w-full object-cover transition-transform duration-500 group-hover:scale-105')}
@@ -276,122 +276,56 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
   }
 
 
-  async function openPostUiModal(taskId) {
+  async function openPostUiModalGfr(taskId) {
     const res = await fetch(`/tasks/${taskId}`);
     const data = await res.json();
     const content = data.content || {};
     const mediaUrl = data.media_url;
-    const initialImagePrompt = content.image_prompt || '';
-    
-    const modalContent = document.getElementById('modalContent');
-    
-    const iconSave = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 inline"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>`;
-    const iconRefresh = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 inline"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>`;
-    const iconTrash = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2 inline"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
-    const iconX = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
-    
-    modalContent.innerHTML = `
-      <div class="flex flex-col h-full">
-          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850">
-              <div class="text-left">
-                  <h2 class="text-lg font-bold text-slate-900 dark:text-white">Edit Draft</h2>
-                  <p class="text-xs text-slate-500 font-mono">${taskId}</p>
-              </div>
-                <div class="flex gap-3" >
-                    <button id="btn-approve-${taskId}" onclick="approveDraft('${taskId}')" 
-                            class="flex items-center justify-center bg-white border border-gray-200 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-3xl text-sm font-semibold transition-all">
-                            Approve Draft
-                    </button>
-                    <button onclick="closePostUiModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-lg transition-colors">
-                        ${iconX}
-                    </button>
-                </div>
-          </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-0">
-              <div class="lg:col-span-7 p-6 sm:p-8 space-y-6 max-h-[70vh] overflow-y-auto no-scrollbar border-r border-slate-200 dark:border-slate-700">
-                  <div class="space-y-1 text-left">
-                      <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Post Caption</label>
-                      <textarea id="caption" class="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-gray-500 focus:border-transparent transition shadow-sm outline-none" rows="8">${content.caption || ''}</textarea>
-                  </div>
+    // ---- Fill the static modal with data ----
+    document.getElementById('modalTaskIdGfr').textContent = taskId;
 
-                  <div class="space-y-1 text-left">
-                      <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Hashtags <span class="text-slate-400 normal-case font-normal">(JSON format)</span></label>
-                      <input id="hashtags" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-mono text-slate-600 dark:text-slate-300 focus:ring-2 focus:ring-gray-500 focus:border-transparent transition outline-none" 
-                             value='${JSON.stringify(content.hashtags || [])}'>
-                  </div>
+    document.getElementById('captionGfr').value       = content.caption || '';
+    document.getElementById('hashtagsGfr').value      = JSON.stringify(content.hashtags || []);
+    document.getElementById('imagePromptGfr').value   = content.image_prompt || '';
+    document.getElementById('taskStatusGfr').textContent = (data.task?.status) || 'unknown';
 
-                  <div class="space-y-1 text-left">
-                      <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Image Prompt</label>
-                      <textarea id="image_prompt" class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-600 dark:text-slate-300 focus:ring-2 focus:ring-gray-500 focus:border-transparent transition outline-none" rows="7">${initialImagePrompt}</textarea>
-                  </div>
-              </div>
+    // Image preview (reuse your existing helper)
+    document.getElementById('imagePreviewGfr').innerHTML = 
+        getImageHtmlWithLoader(mediaUrl, 'Preview', 'w-full h-full object-contain');
 
-              <div class="lg:col-span-5 bg-slate-50 dark:bg-black/20 p-6 sm:p-8 flex flex-col gap-6">
-                  <div id="imagePreview" class="flex-1 min-h-[250px] bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden flex items-center justify-center relative shadow-sm group">
-                       ${getImageHtmlWithLoader(mediaUrl, 'Preview', 'w-full h-full object-contain')}
-                  </div>
-
-                  <!-- add a small status display and the approve button (inside existing modal template) -->
-                <div class="flex flex-col gap-3">
-                    <div class="flex items-center justify-between px-2">
-                        <div class="text-xs text-slate-500">Status</div>
-                        <!-- show current status; id used to update after approval -->
-                        <div id="task-status-${taskId}" class="text-xs font-mono text-slate-700 dark:text-slate-300">
-                            ${ (data && data.task && data.task.status) ? data.task.status : 'unknown' }
-                        </div>
-                    </div>
-
-                    <button id="btn-save-${taskId}" onclick="savePostDraft('${taskId}')" 
-                            class="flex items-center justify-center w-full bg-gray-800 hover:bg-black text-white px-4 py-3 rounded-xl text-sm font-bold transition-all shadow-md">
-                        Save
-                    </button>
-
-                    <button id="btn-regen-${taskId}" onclick="saveAndRegenerateImage('${taskId}')" 
-                            class="hidden flex items-center justify-center w-full border border-slate-300 dark:border-slate-600 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 px-4 py-3 rounded-xl text-sm font-semibold transition-all">
-                        ${iconRefresh} Generate Image
-                    </button>
-
-                    <div class="h-px bg-slate-200 dark:bg-slate-700 my-1"></div>
-
-                    <button id="btn-del-${taskId}" onclick="deleteDraft('${taskId}')" 
-                            class="flex items-center justify-center w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/10 px-4 py-3 rounded-xl text-sm font-semibold transition-all">
-                        ${iconTrash} Delete Draft
-                    </button>
-                </div>
-
-              </div>
-          </div>
-      </div>
-    `;
-
-    const approveBtn = document.getElementById(`btn-approve-${taskId}`);
-    const status = data && data.task && data.task.status ? data.task.status : null;
-    if (approveBtn) {
-        if (status !== 'draft') {
-            // hide for non-draft states
-            approveBtn.classList.add('hidden');
-        } else {
-            approveBtn.classList.remove('hidden');
-        }
+    // Approve button visibility
+    const approveBtn = document.getElementById('btnApproveGfr');
+    if (data.task?.status !== 'draft') {
+        approveBtn.classList.add('hidden');
+    } else {
+        approveBtn.classList.remove('hidden');
     }
 
-    
-    const imgPromptField = document.getElementById('image_prompt');
-    const regenBtn = document.getElementById(`btn-regen-${taskId}`);
-    
-    const updatePostUiBtn = () => {
-        if(imgPromptField.value.trim() !== '') {
-            regenBtn.classList.remove('hidden');
-        } else {
-            regenBtn.classList.add('hidden');
-        }
-    }
-    updatePostUiBtn();
-    imgPromptField.addEventListener('input', updatePostUiBtn);
-    
-    document.getElementById('postUiModalOverlay').classList.remove('hidden');
-  }
+    // Wire up action buttons to use the current taskId (we store it on the button via dataset)
+    document.getElementById('btnApproveGfr').onclick = () => approveDraft(taskId);
+    document.getElementById('btnSaveGfr').onclick    = () => savePostDraft(taskId);
+    document.getElementById('btnRegenGfr').onclick   = () => saveAndRegenerateImage(taskId);
+    document.getElementById('btnDeleteGfr').onclick  = () => deleteDraft(taskId);
+
+    // Regenerate button show/hide based on image prompt
+    const imgPromptField = document.getElementById('imagePromptGfr');
+    const regenBtn       = document.getElementById('btnRegenGfr');
+
+    const updateRegenVisibility = () => {
+        regenBtn.classList.toggle('hidden', imgPromptField.value.trim() === '');
+    };
+    updateRegenVisibility();
+    imgPromptField.addEventListener('input', updateRegenVisibility);
+
+    // Finally show modal
+    document.getElementById('postUiModalOverlayGfr').classList.remove('hidden');
+}
+
+function closePostUiModalGfr() {
+    document.getElementById('postUiModalOverlayGfr').classList.add('hidden');
+}
+
 
   async function approveDraft(taskId) {
     const approveBtn = document.getElementById(`btn-approve-${taskId}`);
@@ -451,7 +385,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
 
 
   function closePostUiModal() {
-    document.getElementById('postUiModalOverlay').classList.add('hidden');
+    document.getElementById('postUiModalOverlayGfr').classList.add('hidden');
   }
 
   async function savePostDraft(taskId) { 
@@ -464,8 +398,8 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
   }
 
   async function saveAndRegenerateImage(taskId) {
-        toggleLoading(`btn-regen-${taskId}`, true, 'Generating...');
-        const preview = document.getElementById('imagePreview');
+        toggleLoading(`btnRegenGfr`, true, 'Generating...');
+        const preview = document.getElementById('imagePreviewGfr');
         try {
             const success = await doSave(taskId, true);
             if (success) {
@@ -504,16 +438,17 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
             }
         } catch (e) { 
             console.error(e);
+            toggleLoading(`btnRegenGfr`, false);
         } finally {
-            toggleLoading(`btn-regen-${taskId}`, false);
+            toggleLoading(`btnRegenGfr`, false);
             
         }
     }
 
   async function doSave(taskId, andRegenerate = false) {
-    const caption = document.getElementById('caption').value;
-    const hashtagsInput = document.getElementById('hashtags').value;
-    const imagePrompt = document.getElementById('image_prompt').value.trim();
+    const caption = document.getElementById('captionGfr').value;
+    const hashtagsInput = document.getElementById('hashtagsGfr').value;
+    const imagePrompt = document.getElementById('imagePromptGfr').value.trim();
 
     let hashtags = [];
     try { 
@@ -533,7 +468,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
     formData.append('caption', caption);
     formData.append('hashtags', JSON.stringify(hashtags));
     formData.append('image_prompt', imagePrompt);
-
+    toggleLoading(`btnSaveGfr`, true, 'Saving...');
     try {
         const res = await fetch(`/tasks/${taskId}`, { method: 'PUT', body: formData });
         if (res.ok) {
@@ -549,18 +484,24 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
         alert('Network error.');
         return false;
     }
+    finally{
+        toggleLoading(`btnSaveGfr`, false);
+    }
   }
 
   async function deleteDraft(taskId) {
     if (confirm('Delete this draft permanently?')) {
-        toggleLoading(`btn-del-${taskId}`, true, 'Deleting...');
+        toggleLoading(`btnDeleteGfr`, true, 'Deleting...');
         try {
             await fetch(`/tasks/${taskId}`, { method: 'DELETE' });
             closePostUiModal();
             loadDrafts();
         } catch (e) {
-            toggleLoading(`btn-del-${taskId}`, false);
+            toggleLoading(`btnDeleteGfr`, false);
             alert('Failed to delete.');
+        }
+        finally{
+            toggleLoading(`btnDeleteGfr`, false);
         }
     }
   }

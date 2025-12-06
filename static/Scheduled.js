@@ -113,6 +113,7 @@ async function fetchTasksShd(status = '', limit = 20, offset = 0) {
         const response = await fetch(`${TASKS_ENDPOINT}?${params}`);
         if (!response.ok) throw new Error('Failed to fetch tasks');
         const data = await response.json();
+        console.log(data);
 
         tasksData = data.tasks;
         totalTasks = data.total;

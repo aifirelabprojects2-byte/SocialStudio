@@ -147,7 +147,7 @@ lblEnd: document.getElementById('lblEnd'),
 lblTotal: document.getElementById('lblTotal'),
 btnPrev: document.getElementById('btnPrev'),
 btnNext: document.getElementById('btnNext'),
-modal: document.getElementById('modalOverlay'),
+overlaymodal: document.getElementById('modalOverlay'),
 title: document.getElementById('modalTitle'),
 content: document.getElementById('modalContentText'),
 hashtags: document.getElementById('modalHashtags'),
@@ -230,7 +230,7 @@ try {
     
     els.scheduleBtn.onclick = () => handleSchedule(task_id);
 
-    els.modal.classList.remove('hidden');
+    els.overlaymodal.classList.remove('hidden');
 } catch (e) {
     console.error(e);
     alert("Could not load details");
@@ -325,7 +325,7 @@ try {
 }
 
 function closeModal() {
-els.modal.classList.add('hidden');
+els.overlaymodal.classList.add('hidden');
 
 els.scheduleSection.classList.add('hidden');
 els.scheduleBtn.classList.add('hidden');
@@ -343,7 +343,7 @@ function escapeHtml(text) {
 }
 
 
-const modal = document.getElementById('createModal')
+const modalCreated = document.getElementById('createModal')
 const tbody = document.getElementById('tbody')
 const table = document.getElementById('table')
 const PlatformEmptyState = document.getElementById('PlatformEmptyState')
@@ -352,10 +352,10 @@ const form = document.getElementById('createForm')
 const saveBtn = document.getElementById('saveBtn')
 
 
-// Open modal
-document.getElementById('openModalBtn').onclick = () => modal.showModal()
-document.getElementById('openModalBtn2').onclick = () => modal.showModal()
-document.getElementById('cancelBtn').onclick = () => modal.close()
+// Open modalCreated
+document.getElementById('openModalBtn').onclick = () => modalCreated.showModal()
+document.getElementById('openModalBtn2').onclick = () => modalCreated.showModal()
+document.getElementById('cancelBtn').onclick = () => modalCreated.close()
 
 async function loadPlatforms() {
   skeletonPlatform.classList.remove('hidden')
@@ -434,7 +434,7 @@ form.onsubmit = async e => {
       throw new Error(err.detail || 'Failed to create')
     }
 
-    modal.close()
+    modalCreated.close()
     form.reset()
     loadPlatforms()
     alert('Platform created successfully!')
