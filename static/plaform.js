@@ -275,13 +275,13 @@ const platformCheckboxes = document.querySelectorAll('#platformsList input[type=
 const platformIds = Array.from(platformCheckboxes).map(cb => cb.value);
 
 if (platformIds.length === 0) {
-    alert('Please select at least one platform');
+    ShowNoti('info', 'Please select at least one platform');
     return;
 }
 
 const scheduledAtStr = els.scheduledInput.value;
 if (!scheduledAtStr) {
-    alert('Please select a scheduled date and time');
+    ShowNoti('info', 'Please select a scheduled date and time')
     return;
 }
 
