@@ -148,6 +148,11 @@ async function fetchTasksShd(status = '', limit = 20, offset = 0) {
 }
 
 async function viewTaskShd(taskId) {
+    document.getElementById('detailIdDisplayShd').textContent = "-----";
+    let statusHeader = document.getElementById('detailStatusHeaderShd');
+        statusHeader.textContent = "loading";
+        statusHeader.className = `ml-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadgeClass("loading")}`;
+
     const modalShd = document.getElementById('taskDetailsModalShd');
     const modalLoading = document.getElementById('modalLoadingShd');
     const modalContentShd = document.getElementById('modalContentShd');
@@ -173,7 +178,7 @@ async function viewTaskShd(taskId) {
 
         // HEADER
         document.getElementById('detailIdDisplayShd').textContent = taskId;
-        const statusHeader = document.getElementById('detailStatusHeaderShd');
+        let statusHeader = document.getElementById('detailStatusHeaderShd');
         statusHeader.textContent = data.task.status;
         statusHeader.className = `ml-2 inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadgeClass(data.task.status)}`;
 

@@ -19,7 +19,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
         btn.classList.remove('opacity-75', 'cursor-not-allowed');
         const icon = originalIconHtml || btn.dataset.originalIcon;
         const text = originalText || btn.dataset.originalText;
-        btn.innerHTML = `${icon} ${text}`;
+        btn.innerHTML = `${text}${icon}`;
     }
   }
 
@@ -78,7 +78,63 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
   }
   
   async function loadDrafts(offset = 0) {
-      currentDraftOffset = offset;
+       const grid = document.getElementById('draftsGrid');
+       grid.innerHTML="";
+       grid.innerHTML=`
+                        <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-pulse">
+                          <div class="relative h-48 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
+                          <div class="flex flex-1 flex-col justify-between p-5">
+                            <div>
+                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
+                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
+                            </div>
+                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                              <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
+                              <div class="flex items-center gap-1.5">
+                                <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-12 skeletonPlatform-loader"></div>
+                                <div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded skeletonPlatform-loader"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-pulse">
+                          <div class="relative h-48 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
+                          <div class="flex flex-1 flex-col justify-between p-5">
+                            <div>
+                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
+                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
+                            </div>
+                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                              <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
+                              <div class="flex items-center gap-1.5">
+                                <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-12 skeletonPlatform-loader"></div>
+                                <div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded skeletonPlatform-loader"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        
+
+                        <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-pulse">
+                          <div class="relative h-48 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
+                          <div class="flex flex-1 flex-col justify-between p-5">
+                            <div>
+                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
+                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
+                            </div>
+                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                              <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
+                              <div class="flex items-center gap-1.5">
+                                <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-12 skeletonPlatform-loader"></div>
+                                <div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded skeletonPlatform-loader"></div>
+                              </div>
+                            </div>
+                          </div>
+                      </div>`;
+      
+        currentDraftOffset = offset;
       try {
   
           const res = await fetch(`/api/tasks?limit=${DRAFT_LIMIT}&offset=${currentDraftOffset}`);
@@ -87,7 +143,8 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
           const tasks = data.tasks;
           const totalCount = data.total_count;
   
-          const grid = document.getElementById('draftsGrid');
+          
+          
           const countSpan = document.getElementById('draftCount');
           const noDrafts = document.getElementById('noDrafts');
           const PaginBtns = document.getElementById('PaginBtns');
@@ -95,12 +152,9 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
           const nextButton = document.getElementById('nextDrafts');
   
           countSpan.textContent = totalCount;
-          
-          // --- Handle No Drafts State ---
           if (totalCount === 0) {
               noDrafts.classList.remove('hidden');
               grid.innerHTML = '';
-              // Disable both buttons when no drafts exist
               prevButton.setAttribute('disabled', 'disabled');
               nextButton.setAttribute('disabled', 'disabled');
               return;
@@ -134,10 +188,10 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
                    <span class="text-xs font-medium text-slate-400">
                       ${new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                    </span>
-                   <span class="inline-flex items-center text-xs font-medium text-gray-600 dark:text-gray-400 group-hover:underline">
-                      Edit
-                      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                   </span>
+                   <button id="editBtnDrf-${task.task_id}" class=" text-gray-600 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl border  border-gray-200 transition-all duration-200 inline-flex items-center  hover:shadow-medium" >
+                    Edit
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </button>
                 </div>
               </div>
           </div>
@@ -167,8 +221,8 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
   
       } catch (err) {
           console.error('Failed to load drafts:', err);
-          // You might want to display an error message here
       }
+      
   }
 
 
@@ -276,50 +330,94 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
   }
 
 
-  async function openPostUiModalGfr(taskId) {
+
+const modalCacheDfd = new WeakMap();
+
+async function openPostUiModalGfr(taskId) {
+  const modalDfd = document.getElementById('postUiModalOverlayGfr');
+  if (!modalDfd) return;
+
+  // Prevent double-opening on fast clicks
+  if (modalDfd.dataset.loading === 'true') return;
+  modalDfd.dataset.loading = 'true';
+
+  toggleLoading(`editBtnDrf-${taskId}`, true, 'Opening...');
+
+  try {
     const res = await fetch(`/tasks/${taskId}`);
+    if (!res.ok) throw new Error('Network error');
     const data = await res.json();
+
     const content = data.content || {};
     const mediaUrl = data.media_url;
+    const status = data.task?.status || 'unknown';
 
-    // ---- Fill the static modal with data ----
-    document.getElementById('modalTaskIdGfr').textContent = taskId;
-
-    document.getElementById('captionGfr').value       = content.caption || '';
-    document.getElementById('hashtagsGfr').value      = JSON.stringify(content.hashtags || []);
-    document.getElementById('imagePromptGfr').value   = content.image_prompt || '';
-    document.getElementById('taskStatusGfr').textContent = (data.task?.status) || 'unknown';
-
-    // Image preview (reuse your existing helper)
-    document.getElementById('imagePreviewGfr').innerHTML = 
-        getImageHtmlWithLoader(mediaUrl, 'Preview', 'w-full h-full object-contain');
-
-    // Approve button visibility
-    const approveBtn = document.getElementById('btnApproveGfr');
-    if (data.task?.status !== 'draft') {
-        approveBtn.classList.add('hidden');
-    } else {
-        approveBtn.classList.remove('hidden');
+    // === CACHE ALL DOM ELEMENTS ONCE (Gfr IDs, Dfd cache) ===
+    let elsDfd = modalCacheDfd.get(modalDfd);
+    if (!elsDfd) {
+      elsDfd = {
+        taskIdEl:      document.getElementById('modalTaskIdGfr'),
+        caption:       document.getElementById('captionGfr'),
+        hashtags:      document.getElementById('hashtagsGfr'),
+        imagePrompt:   document.getElementById('imagePromptGfr'),
+        taskStatus:    document.getElementById('taskStatusGfr'),
+        imagePreview:  document.getElementById('imagePreviewGfr'),
+        approveBtn:    document.getElementById('btnApproveGfr'),
+        saveBtn:       document.getElementById('btnSaveGfr'),
+        regenBtn:      document.getElementById('btnRegenGfr'),
+        deleteBtn:     document.getElementById('btnDeleteGfr'),
+      };
+      modalCacheDfd.set(modalDfd, elsDfd);
     }
 
-    // Wire up action buttons to use the current taskId (we store it on the button via dataset)
-    document.getElementById('btnApproveGfr').onclick = () => approveDraft(taskId);
-    document.getElementById('btnSaveGfr').onclick    = () => savePostDraft(taskId);
-    document.getElementById('btnRegenGfr').onclick   = () => saveAndRegenerateImage(taskId);
-    document.getElementById('btnDeleteGfr').onclick  = () => deleteDraft(taskId);
+    elsDfd.taskIdEl.textContent = taskId;
 
-    // Regenerate button show/hide based on image prompt
-    const imgPromptField = document.getElementById('imagePromptGfr');
-    const regenBtn       = document.getElementById('btnRegenGfr');
+    elsDfd.caption.value = content.caption || '';
+    
+    elsDfd.hashtags.value = JSON.stringify(content.hashtags || []);
 
-    const updateRegenVisibility = () => {
-        regenBtn.classList.toggle('hidden', imgPromptField.value.trim() === '');
+    elsDfd.imagePrompt.value = content.image_prompt || '';
+    elsDfd.taskStatus.textContent = status;
+
+    elsDfd.imagePreview.innerHTML = getImageHtmlWithLoader(
+      mediaUrl,
+      'Preview',
+      'w-full h-full object-contain'
+    );
+
+    elsDfd.approveBtn.classList.toggle('hidden', status !== 'draft');
+
+    const rewireBtnDfd = (btn, handler) => {
+      const newBtn = btn.cloneNode(true);
+      newBtn.onclick = () => handler(taskId);
+      btn.parentNode.replaceChild(newBtn, btn);
+      return newBtn;
     };
-    updateRegenVisibility();
-    imgPromptField.addEventListener('input', updateRegenVisibility);
 
-    // Finally show modal
-    document.getElementById('postUiModalOverlayGfr').classList.remove('hidden');
+    elsDfd.approveBtn = rewireBtnDfd(elsDfd.approveBtn, approveDraft);
+    elsDfd.saveBtn    = rewireBtnDfd(elsDfd.saveBtn,    savePostDraft);
+    elsDfd.regenBtn   = rewireBtnDfd(elsDfd.regenBtn,   saveAndRegenerateImage);
+    elsDfd.deleteBtn  = rewireBtnDfd(elsDfd.deleteBtn,  deleteDraft);
+
+
+    const updateRegenVisibilityDfd = () => {
+      elsDfd.regenBtn.classList.toggle('hidden', elsDfd.imagePrompt.value.trim() === '');
+    };
+
+    elsDfd.imagePrompt.oninput = null;
+    elsDfd.imagePrompt.addEventListener('input', updateRegenVisibilityDfd);
+    updateRegenVisibilityDfd(); 
+
+
+    modalDfd.classList.remove('hidden');
+
+  } catch (err) {
+    console.error('openPostUiModalGfr error:', err);
+    alert('Failed to load post. Please try again.');
+  } finally {
+    toggleLoading(`editBtnDrf-${taskId}`, false);
+    modalDfd.dataset.loading = 'false';
+  }
 }
 
 function closePostUiModalGfr() {
@@ -333,11 +431,10 @@ function closePostUiModalGfr() {
 
     if (!approveBtn) return;
 
-    // Confirm user action (production: could be a nicer dialog)
     const confirmed = window.confirm("Approve this draft and mark it ready to schedule?");
     if (!confirmed) return;
 
-    // optimistic UI: disable button to prevent double clicks
+
     approveBtn.disabled = true;
     const previousHtml = approveBtn.innerHTML;
     approveBtn.innerHTML = 'Approving...';
@@ -351,7 +448,7 @@ function closePostUiModalGfr() {
         });
 
         if (!res.ok) {
-            // try to parse JSON error body
+
             let errMsg = `${res.status} ${res.statusText}`;
             try {
                 const err = await res.json();
@@ -381,6 +478,7 @@ function closePostUiModalGfr() {
         approveBtn.disabled = false;
         approveBtn.innerHTML = previousHtml;
     }
+    
 }
 
 

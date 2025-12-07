@@ -114,7 +114,7 @@ function renderTable(tasks) {
             </td>
             <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                 
-            <button class="text-xs inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:shadow-sm" onclick="openDetail('${t.task_id}')">
+            <button id="viewBtnApr" class="text-xs inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:shadow-sm" onclick="openDetail('${t.task_id}')">
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
               View
               </button>
@@ -163,6 +163,8 @@ closeBtn: document.getElementById('closeModalBtn')
 };
 
 async function openDetail(taskId) {
+    toggleLoading(`viewBtnApr`, true, 'Opening');
+    
 try {
     const res = await fetch(`/api/tasks/approved/${taskId}`);
     if (!res.ok) throw new Error("Err");
@@ -234,6 +236,10 @@ try {
 } catch (e) {
     console.error(e);
     alert("Could not load details");
+    toggleLoading(`viewBtnApr`, true, 'Opening');
+}
+finally{
+    toggleLoading(`viewBtnApr`, false);
 }
 }
 
