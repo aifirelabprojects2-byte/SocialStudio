@@ -19,7 +19,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
         btn.classList.remove('opacity-75', 'cursor-not-allowed');
         const icon = originalIconHtml || btn.dataset.originalIcon;
         const text = originalText || btn.dataset.originalText;
-        btn.innerHTML = `${text}${icon}`;
+        btn.innerHTML = `${icon} ${text}`;
     }
   }
 
@@ -188,9 +188,9 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
                    <span class="text-xs font-medium text-slate-400">
                       ${new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                    </span>
-                   <button id="editBtnDrf-${task.task_id}" class=" text-gray-600 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl border  border-gray-200 transition-all duration-200 inline-flex items-center  hover:shadow-medium" >
-                    Edit
+                   <button id="editBtnDrf-${task.task_id}" class=" text-gray-600 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl border  border-gray-200 transition-all duration-200 inline-flex gap-1 items-center  hover:shadow-medium" >
                     <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    Edit
                     </button>
                 </div>
               </div>
@@ -426,8 +426,8 @@ function closePostUiModalGfr() {
 
 
   async function approveDraft(taskId) {
-    const approveBtn = document.getElementById(`btn-approve-${taskId}`);
-    const statusEl = document.getElementById(`task-status-${taskId}`);
+    const approveBtn = document.getElementById(`btnApproveGfr`);
+    const statusEl = document.getElementById(`taskStatusGfr`);
 
     if (!approveBtn) return;
 
@@ -448,14 +448,14 @@ function closePostUiModalGfr() {
         });
 
         if (!res.ok) {
+           
 
             let errMsg = `${res.status} ${res.statusText}`;
             try {
                 const err = await res.json();
                 errMsg = err.detail || JSON.stringify(err);
             } catch (_) {}
-            // show friendly message
-            window.alert(`Failed to approve draft: ${errMsg}`);
+            ShowNoti('error', 'Failed to approve draft');
             approveBtn.disabled = false;
             approveBtn.innerHTML = previousHtml;
             return;
@@ -468,13 +468,12 @@ function closePostUiModalGfr() {
             statusEl.textContent = data.task.status;
         }
 
-
+        ShowNoti('success', 'Draft Approved');
         approveBtn.innerHTML = 'Approved';
         approveBtn.disabled = true;
 
     } catch (err) {
-        console.error("approveDraft error:", err);
-        window.alert('Network error while approving draft. Please try again.');
+        ShowNoti('error', 'Failed to approve draft');
         approveBtn.disabled = false;
         approveBtn.innerHTML = previousHtml;
     }
@@ -506,7 +505,7 @@ function closePostUiModalGfr() {
                 const generateData = await generateRes.json();
                 
                 if (generateData.success) { 
-
+                    ShowNoti('success', 'Image Generated');
                     const initialRes = await fetch(`/tasks/${taskId}`);
                     const initialData = await initialRes.json();
     
@@ -531,6 +530,7 @@ function closePostUiModalGfr() {
     
                     setTimeout(() => clearInterval(pollInterval), 300000); 
                 } else { 
+                    ShowNoti('error', 'Generation failed');
                     preview.innerHTML = `<span class="text-red-500 text-sm">Generation failed</span>`;
                 }
             }
@@ -538,6 +538,7 @@ function closePostUiModalGfr() {
             console.error(e);
             toggleLoading(`btnRegenGfr`, false);
         } finally {
+            
             toggleLoading(`btnRegenGfr`, false);
             
         }
@@ -556,6 +557,7 @@ function closePostUiModalGfr() {
         alert('Hashtags must be a JSON array, e.g. ["#tech"]'); 
         return false; 
     }
+
 
     if (andRegenerate && !imagePrompt) { 
         alert('Please enter an image prompt.'); 
@@ -600,6 +602,7 @@ function closePostUiModalGfr() {
         }
         finally{
             toggleLoading(`btnDeleteGfr`, false);
+            ShowNoti('success', 'Draft deleted');
         }
     }
   }

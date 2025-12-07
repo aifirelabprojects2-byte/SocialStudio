@@ -3,233 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Expandable UI Fixed</title>
+    <title>Google Play Style Notification</title>
     <script src="/static/tailwind.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    transitionTimingFunction: {
-                        'spring': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-                    }
-                }
-            }
+    <style>
+        .ease-elastic {
+            transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-    </script>
+        .ease-smooth {
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
 </head>
-<body class="bg-gray-100 h-screen w-full relative flex items-center justify-center font-sans">
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
 
-    <div class="fixed bottom-10 right-10 flex flex-col items-end gap-3 z-50">
-
-        <div id="tools-menu" 
-             class="flex flex-col items-center gap-2 p-1.5 bg-white rounded-full shadow-xl 
-                    transition-all duration-300 ease-spring origin-bottom 
-                    opacity-0 scale-y-50 translate-y-10 pointer-events-none absolute bottom-20 right-0">
-            
-            <button name="Concise" class="p-3 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="25px" height="25px" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"><path d="m17.5 10.5l2 2M14 14l2 2m-5.5 1.5l2 2"/><path stroke-linejoin="round" d="M10.536 4.678c1.364-1.365 2.047-2.047 2.808-2.363a4.14 4.14 0 0 1 3.17 0c.761.316 1.444.998 2.808 2.363c1.365 1.364 2.047 2.047 2.363 2.808a4.14 4.14 0 0 1 0 3.17c-.316.761-.998 1.444-2.363 2.808l-5.857 5.858c-1.365 1.365-2.048 2.047-2.809 2.363a4.14 4.14 0 0 1-3.17 0c-.761-.316-1.444-.998-2.808-2.363c-1.365-1.364-2.047-2.047-2.363-2.808a4.14 4.14 0 0 1 0-3.17c.316-.761.998-1.444 2.363-2.808z"/></g></svg>
+    <!-- UI Controls -->
+    <div class="text-center space-y-8 z-10">
+        <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
+            Capsule Notifications
+        </h1>
+        <p class="text-gray-400">Click buttons to trigger the animation</p>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-md mx-auto">
+            <button onclick="ShowNoti('success', 'Achievement Unlocked')" 
+                class="px-6 py-3 bg-green-600 hover:bg-green-500 rounded-lg shadow-lg transition-all active:scale-95 font-medium">
+                Success
             </button>
             
-            <button name="Professional" class="p-3 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors">
-                <svg width="25px" height="25px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M3 11C3 9.11438 3 8.17157 3.58579 7.58579C4.17157 7 5.11438 7 7 7H8H16H17C18.8856 7 19.8284 7 20.4142 7.58579C21 8.17157 21 9.11438 21 11V17C21 18.8856 21 19.8284 20.4142 20.4142C19.8284 21 18.8856 21 17 21H16H8H7C5.11438 21 4.17157 21 3.58579 20.4142C3 19.8284 3 18.8856 3 17V11Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                    <path d="M8 21V5C8 3.89543 8.89543 3 10 3H14C15.1046 3 16 3.89543 16 5V21" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-                    </svg>
-            </button>
-
-            <button name="Formal" class="p-3 text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-full transition-colors">
-                <svg width="25px" height="25px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 19V6.2C4 5.0799 4 4.51984 4.21799 4.09202C4.40973 3.71569 4.71569 3.40973 5.09202 3.21799C5.51984 3 6.0799 3 7.2 3H16.8C17.9201 3 18.4802 3 18.908 3.21799C19.2843 3.40973 19.5903 3.71569 19.782 4.09202C20 4.51984 20 5.0799 20 6.2V17H6C4.89543 17 4 17.8954 4 19ZM4 19C4 20.1046 4.89543 21 6 21H20M9 7H15M9 11H15M19 17V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
+            <button onclick="ShowNoti('error', 'Connection Lost')" 
+                class="px-6 py-3 bg-red-600 hover:bg-red-500 rounded-lg shadow-lg transition-all active:scale-95 font-medium">
+                Error
             </button>
             
-            <button onclick="activateInputMode()" class="p-3 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
-            <svg fill="currentColor" width="25px" height="25px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.764,2A4.2,4.2,0,0,0,14.77,3.241L3.155,14.855a1,1,0,0,0-.28.55l-.863,5.438a1,1,0,0,0,1.145,1.145L8.6,21.125a1,1,0,0,0,.55-.28L20.759,9.23a4.236,4.236,0,0,0-3-7.23ZM7.96,19.2,4.2,19.8l.6-3.757,8.39-8.391,3.162,3.162ZM19.345,7.816,17.765,9.4,14.6,6.235l1.581-1.58a2.289,2.289,0,0,1,3.161,0,2.234,2.234,0,0,1,0,3.161Z"/></svg>
+            <button onclick="ShowNoti('warning', 'Low Battery')" 
+                class="px-6 py-3 bg-amber-600 hover:bg-amber-500 rounded-lg shadow-lg transition-all active:scale-95 font-medium">
+                Warning
+            </button>
+            
+            <button onclick="ShowNoti('info', 'Downloading update...')" 
+                class="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg shadow-lg transition-all active:scale-95 font-medium">
+                Info
             </button>
         </div>
+    </div>
 
-        <div class="flex items-center gap-2 relative">
-            
-            <div id="input-container" class="w-0 opacity-0 overflow-hidden transition-all duration-500 ease-spring origin-right bg-white rounded-full shadow-lg flex items-center h-16">
-            <input  type="text"  id="chat-input" placeholder="Ask anything..." class="w-full h-full px-6 py-3 bg-transparent text-gray-700 min-w-[280px] outline-none ring-0 focus:ring-0 focus-visible:ring-0 focus:outline-none border-none"></div>
-            <button id="main-btn" onclick="handleMainClick()" class="group relative w-14 h-14 bg-white hover:bg-gray-50 text-gray-800 rounded-full shadow-lg border border-gray-100 z-10 flex items-center justify-center overflow-hidden transition-transform active:scale-95">     
-            
-            <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 ease-spring rotate-0 scale-100 opacity-100 group-[.input-mode]:-rotate-90 group-[.input-mode]:scale-0 group-[.input-mode]:opacity-0 group-[.menu-open]:rotate-45">
-                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+
+    <div id="noti-capsule" class="fixed top-8 left-1/2 -translate-x-1/2 z-50 flex items-center bg-slate-200 border border-gray-700 rounded-full shadow-2xl shadow-black/50 opacity-0 -translate-y-10 transition-all duration-500 ease-elastic pointer-events-none">
+        <div class="relative w-12 h-12 flex items-center justify-center shrink-0">
+            <div id="noti-icon" class="text-gray-800"></div>
+        </div>
+        <div id="noti-text-wrapper" class="overflow-hidden max-w-0 opacity-0 transition-all duration-500 ease-smooth">
+            <div id="noti-message" class="pr-6 pl-1 text-sm font-semibold whitespace-nowrap text-gray-800">
             </div>
-                <div class="absolute inset-0 flex items-center justify-center transition-all duration-300 ease-spring rotate-90 scale-0 opacity-0 group-[.input-mode]:rotate-0 group-[.input-mode]:scale-100 group-[.input-mode]:opacity-100">
-                <svg width="27" height="27" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"> <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3C12.2652 3 12.5196 3.10536 12.7071 3.29289L19.7071 10.2929C20.0976 10.6834 20.0976 11.3166 19.7071 11.7071C19.3166 12.0976 18.6834 12.0976 18.2929 11.7071L13 6.41421V20C13 20.5523 12.5523 21 12 21C11.4477 21 11 20.5523 11 20V6.41421L5.70711 11.7071C5.31658 12.0976 4.68342 12.0976 4.29289 11.7071C3.90237 11.3166 3.90237 10.6834 4.29289 10.2929L11.2929 3.29289C11.4804 3.10536 11.7348 3 12 3Z" stroke="currentColor" stroke-width=".5" fill="currentColor"/>
-                </svg> </div>
-            </button>
         </div>
-
     </div>
 
     <script>
-        const toolsMenu = document.getElementById('tools-menu');
-        const inputContainer = document.getElementById('input-container');
-        const mainBtn = document.getElementById('main-btn');
-        const chatInput = document.getElementById('chat-input');
 
-        let state = {
-            menuOpen: false,
-            inputMode: false
+        let animationTimeouts = [];
+
+        const icons = {
+            success: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+            error: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
+            warning: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
+            info: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`
         };
 
-        function handleMainClick() {
-            if (state.inputMode) {
-                const userMessage = chatInput.value.trim();
-                if (userMessage) {
-                    console.log("User message:", userMessage);
-                    console.log("Current style:", selectedStyle || "Default");
-    
-                    fetch('https://httpbin.org/post', { 
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            message: userMessage,
-                            style: selectedStyle || "normal"
-                        })
-                    })
-                    .then(r => r.json())
-                    .then(data => console.log("Sent successfully:", data))
-                    .catch(err => console.error("Send failed:", err));
-                }
-    
-                chatInput.value = "";
-                resetToIdle();
-            } else {
-                toggleMenu();
-            }
+        function ShowNoti(type, message) {
+            const capsule = document.getElementById('noti-capsule');
+            const iconContainer = document.getElementById('noti-icon');
+            const textWrapper = document.getElementById('noti-text-wrapper');
+            const messageEl = document.getElementById('noti-message');
+
+            // 1. Reset Animation State (in case one is running)
+            clearTimeouts();
+            
+            // Immediately hide to reset if mid-animation
+            capsule.classList.add('opacity-0', '-translate-y-10');
+            textWrapper.classList.add('max-w-0', 'opacity-0');
+            
+            // Small delay to allow DOM to register the reset class application
+            setTimeout(() => {
+                // 2. Set Content
+                iconContainer.innerHTML = icons[type] || icons['info'];
+                messageEl.textContent = message;
+
+                // 3. Start Animation Sequence
+
+                // Step A: Drop down and Fade In (Icon only)
+                capsule.classList.remove('opacity-0', '-translate-y-10');
+                
+                // Step B: Expand to show text (after 400ms)
+                const t1 = setTimeout(() => {
+                    textWrapper.classList.remove('max-w-0', 'opacity-0');
+                    textWrapper.classList.add('max-w-[500px]', 'opacity-100'); // Large max-width to accommodate text
+                }, 400);
+
+                // Step C: Collapse text (after 3000ms)
+                const t2 = setTimeout(() => {
+                    textWrapper.classList.remove('max-w-[500px]', 'opacity-100');
+                    textWrapper.classList.add('max-w-0', 'opacity-0');
+                }, 3000);
+
+                // Step D: Fade out and move up (after 3500ms)
+                const t3 = setTimeout(() => {
+                    capsule.classList.add('opacity-0', '-translate-y-10');
+                }, 3500);
+
+                animationTimeouts.push(t1, t2, t3);
+            }, 50);
         }
 
-        function toggleMenu() {
-            state.menuOpen = !state.menuOpen;
-            updateUI();
+        function clearTimeouts() {
+            animationTimeouts.forEach(id => clearTimeout(id));
+            animationTimeouts = [];
         }
-
-        function activateInputMode() {
-            state.menuOpen = false; 
-            state.inputMode = true; 
-            updateUI();
-
-        }
-
-        function resetToIdle() {
-            state.menuOpen = false;
-            state.inputMode = false;
-            updateUI();
-        }
-
-        function updateUI() {
-            if (state.menuOpen) {
-                toolsMenu.classList.remove('opacity-0', 'scale-y-50', 'translate-y-10', 'pointer-events-none');
-                mainBtn.classList.add('menu-open'); 
-            } else {
-                toolsMenu.classList.add('opacity-0', 'scale-y-50', 'translate-y-10', 'pointer-events-none');
-                mainBtn.classList.remove('menu-open');
-            }
-
-
-            if (state.inputMode) {
-                inputContainer.classList.remove('w-0', 'opacity-0');
-                inputContainer.classList.add('w-auto', 'opacity-100');
-
-                mainBtn.classList.add('input-mode');
-            } else {
-                inputContainer.classList.add('w-0', 'opacity-0');
-                inputContainer.classList.remove('w-auto', 'opacity-100');
-
-                mainBtn.classList.remove('input-mode');
-            }
-        }
-
-        document.addEventListener('click', (e) => {
-            const floatingContainer = document.querySelector('.fixed.bottom-10.right-10');
-
-            if (!floatingContainer.contains(e.target)) {
-                if (state.inputMode || state.menuOpen) {
-                    if (state.inputMode) {
-                        chatInput.value = "";
-                    }
-                    resetToIdle();
-                }
-            }
-        });
-
-        document.querySelector('.fixed.bottom-10.right-10').addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-    </script>
-    <script>
-
-        let selectedStyle = null;
-
-        const confirmationModal = `
-            <div id="confirm-modal" class="fixed inset-0 bg-black/30 flex items-center justify-center z-[100] hidden">
-                <div class="bg-white rounded-3xl p-6 shadow-2xl max-w-md w-full mx-4 animate-in fade-in zoom-in duration-200">
-                    <h3 class="text-lg font-medium text-gray-800 mb-4">
-                        Click cofirm to make the paragraph <span id="style-name" class="text-blue-600"></span>
-                    </h3>
-                    <div class="flex gap-3 justify-end mt-3">
-                        <button id="cancel-style" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-full font-medium transition">
-                            Cancel
-                        </button>
-                        <button id="confirm-style" class="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-full font-medium transition">
-                            Confirm
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', confirmationModal);
-    
-        const modal = document.getElementById('confirm-modal');
-        const styleNameEl = document.getElementById('style-name');
-
-        document.querySelectorAll('#tools-menu button[name]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const style = btn.getAttribute('name'); 
-                selectedStyle = style;
-    
-                styleNameEl.textContent = style;
-                modal.classList.remove('hidden');
-
-                if (state.menuOpen) {
-                    state.menuOpen = false;
-                    updateUI();
-                }
-            });
-        });
-
-        document.getElementById('confirm-style').addEventListener('click', () => {
-            if (selectedStyle) {
-                console.log(`Style confirmed: ${selectedStyle}`);
-                alert(`Switched to ${selectedStyle} mode!`); 
-            }
-            closeModal();
-            activateInputMode(); 
-        });
-    
-        document.getElementById('cancel-style').addEventListener('click', closeModal);
-
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) closeModal();
-        });
-    
-        function closeModal() {
-            modal.classList.add('hidden');
-            selectedStyle = null;
-        }
-
-        function activateInputMode() {
-            state.menuOpen = false;
-            state.inputMode = true;
-            updateUI();
-            setTimeout(() => chatInput.focus(), 300); 
-        }
-
-
     </script>
 </body>
 </html>
