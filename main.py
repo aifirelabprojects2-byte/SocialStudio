@@ -43,6 +43,10 @@ app.mount("/media", StaticFiles(directory="static/media"), name="media")
 templates = Jinja2Templates(directory="templates")
 
 
+@app.api_route("/health", methods=["GET", "HEAD"])
+async def health_check():
+    return {"status": "ok"}
+
 @app.on_event("startup")
 async def startup():
     await init_db()
