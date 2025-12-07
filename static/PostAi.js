@@ -79,6 +79,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
   
   async function loadDrafts(offset = 0) {
        const grid = document.getElementById('draftsGrid');
+       grid.className = `grid gap-6 grid-cols-3`; 
        grid.innerHTML="";
        grid.innerHTML=`
                         <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-pulse">
