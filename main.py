@@ -65,7 +65,6 @@ import pytz
 from tasks import execute_posting 
 
 execute_posting = Capp.tasks["tasks.execute_posting"]
-# OR register it properly:
 execute_posting = Capp.task(name="tasks.execute_posting")(execute_posting)
 
 ist = pytz.timezone("Asia/Kolkata")

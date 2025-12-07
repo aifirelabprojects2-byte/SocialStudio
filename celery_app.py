@@ -19,5 +19,3 @@ Capp.conf.update(
     task_soft_time_limit=280,
     worker_prefetch_multiplier=1,  # Conservative for DB
 )
-
-Capp.autodiscover_tasks(["tasks"])
