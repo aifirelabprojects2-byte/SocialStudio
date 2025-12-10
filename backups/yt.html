@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Social Media Video Downloader</title>
+  <script src="/static/tailwind.js"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              black: '#0F172A',
+              gray: '#64748B',
+              light: '#F8FAFC',
+              border: '#E2E8F0',
+            }
+          },
+          boxShadow: {
+            'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02)',
+            'card': '0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01)',
+          }
+        },
+      },
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Custom Toggle Switch Styling */
+    .toggle-checkbox:checked {
+      right: 0;
+      border-color: #0F172A;
+    }
+    .toggle-checkbox:checked + .toggle-label {
+      background-color: #0F172A;
+    }
+    .toggle-checkbox:checked + .toggle-label:before {
+      transform: translateX(100%);
+    }
+  </style>
+</head>
+<body class="bg-white min-h-screen flex flex-col items-center pt-16 px-4">
+
+  <!-- Top Navigation (Visual Imitation) -->
+  <nav class="flex gap-2 mb-16 overflow-x-auto max-w-full pb-2">
+    <button class="px-5 py-2 bg-gray-100 text-gray-900 rounded-full text-sm font-medium hover:bg-gray-200 transition">Video</button>
+    <button class="px-5 py-2 text-gray-500 hover:text-gray-900 rounded-full text-sm font-medium transition">Playlist</button>
+    <button class="px-5 py-2 text-gray-500 hover:text-gray-900 rounded-full text-sm font-medium transition">Shorts</button>
+    <button class="px-5 py-2 text-gray-500 hover:text-gray-900 rounded-full text-sm font-medium transition">Audio</button>
+  </nav>
+
+  <!-- Header Section -->
+  <div class="text-center max-w-2xl mx-auto mb-10">
+    <h1 class="text-4xl md:text-5xl font-bold text-slate-900 tracking-tight mb-4">
+      What video would you like to download?
+    </h1>
+    <p class="text-lg text-slate-500">
+      Paste a link from YouTube, Instagram, or TikTok, and we'll handle the rest.
+    </p>
+  </div>
+
+  <!-- Main Input Card -->
+  <div class="w-full max-w-3xl">
+    <form id="downloadFormYtb" class="relative group">
+      
+      <!-- Card Container -->
+      <div class="bg-white border border-slate-200 rounded-3xl shadow-card p-2 transition-shadow duration-300 hover:shadow-lg hover:border-slate-300">
+        
+        <!-- URL Input Area -->
+        <div class="p-4 bg-slate-50/50 rounded-2xl mb-2">
+          <textarea 
+            id="urlYtb" 
+            required
+            placeholder="Paste your video link here..." 
+            class="w-full h-24 bg-transparent border-none focus:ring-0 text-lg text-slate-800 placeholder-slate-400 resize-none p-2"
+          ></textarea>
+        </div>
+
+        <!-- Bottom Controls Bar -->
+        <div class="flex flex-col md:flex-row items-center justify-between px-4 pb-2 gap-4">
+          
+          <div class="flex items-center gap-6 w-full md:w-auto">
+            <!-- Audio Toggle (Styled like Image Prompt) -->
+            <div class="flex items-center gap-3">
+              <span class="text-sm font-medium text-slate-700">Audio Only</span>
+              <div class="relative inline-block w-10 h-6 align-middle select-none transition duration-200 ease-in">
+                <input type="checkbox" name="audioOnly" id="audioOnlyYtb" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                <label for="audioOnlyYtb" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-200 cursor-pointer transition-colors duration-200 ease-in"></label>
+              </div>
+              <style>
+                #audioOnlyYtb:checked + .toggle-label {
+                  background-color: #0F172A;
+                }
+                #audioOnlyYtb:checked {
+                  right: 0;
+                  border-color: #0F172A;
+                }
+                .toggle-checkbox { right: 4px; z-index: 10; border-color: transparent; transition: all 0.2s ease;}
+              </style>
+            </div>
+
+            <!-- Vertical Divider -->
+            <div class="hidden md:block w-px h-6 bg-slate-200"></div>
+
+            <!-- Quality Dropdown -->
+            <div class="relative w-full md:w-auto">
+              <select id="qualityYtb" class="appearance-none bg-white border border-slate-200 text-slate-700 text-sm font-medium py-2 pl-4 pr-10 rounded-full cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all w-full md:w-auto">
+                <option value="best">Best Quality</option>
+                <option value="1080p">1080p HD</option>
+                <option value="720p">720p</option>
+                <option value="4k">4K Ultra</option>
+              </select>
+              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                <i class="ph ph-caret-down"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button 
+            type="submit" 
+            id="submitBtnYtb"
+            class="w-full md:w-auto bg-[#0F172A] hover:bg-[#1E293B] text-white px-6 py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-slate-900/10"
+          >
+            <i class="ph ph-download-simple text-lg"></i>
+            <span>Download</span>
+          </button>
+
+        </div>
+      </div>
+    </form>
+
+    <!-- Status & Results Area -->
+    <div class="mt-8 space-y-4">
+      <div id="statusYtb" class="hidden p-4 rounded-xl text-center text-sm font-medium animate-fade-in"></div>
+      <div id="downloadLinkYtb" class="flex justify-center"></div>
+    </div>
+
+    <!-- Footer Info -->
+    <div class="mt-12 text-center">
+      <div class="inline-flex gap-6 text-slate-400">
+        <i class="ph ph-youtube-logo text-2xl hover:text-red-500 transition"></i>
+        <i class="ph ph-instagram-logo text-2xl hover:text-pink-500 transition"></i>
+        <i class="ph ph-tiktok-logo text-2xl hover:text-black transition"></i>
+        <i class="ph ph-twitter-logo text-2xl hover:text-blue-400 transition"></i>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const formYtb = document.getElementById('downloadFormYtb');
+    const urlInputYtb = document.getElementById('urlYtb');
+    const qualitySelectYtb = document.getElementById('qualityYtb');
+    const audioOnlyCheckboxYtb = document.getElementById('audioOnlyYtb');
+    const submitBtnYtb = document.getElementById('submitBtnYtb');
+    const statusDivYtb = document.getElementById('statusYtb');
+    const downloadLinkDivYtb = document.getElementById('downloadLinkYtb');
+
+    const API_URL_Ytb = 'http://localhost:8000/download'; // Change in production
+
+    // Helper for loading state button
+    const setLoading = (isLoading) => {
+      if (isLoading) {
+        submitBtnYtb.disabled = true;
+        submitBtnYtb.innerHTML = '<i class="ph ph-spinner animate-spin text-lg"></i><span>Processing...</span>';
+        submitBtnYtb.classList.add('opacity-75', 'cursor-not-allowed');
+      } else {
+        submitBtnYtb.disabled = false;
+        submitBtnYtb.innerHTML = '<i class="ph ph-download-simple text-lg"></i><span>Download</span>';
+        submitBtnYtb.classList.remove('opacity-75', 'cursor-not-allowed');
+      }
+    };
+
+    formYtb.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const urlYtb = urlInputYtb.value.trim();
+      const qualityYtb = qualitySelectYtb.value;
+      const audioOnlyYtb = audioOnlyCheckboxYtb.checked;
+
+      if (!urlYtb) return;
+
+      // UI: Loading state
+      setLoading(true);
+      statusDivYtb.className = 'bg-blue-50 text-blue-700 border border-blue-100 p-4 rounded-xl text-center text-sm font-medium';
+      statusDivYtb.textContent = 'Fetching video information...';
+      statusDivYtb.classList.remove('hidden');
+      downloadLinkDivYtb.innerHTML = '';
+
+      try {
+        const responseYtb = await fetch(API_URL_Ytb, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url: urlYtb,
+            quality: qualityYtb,
+            audio_only: audioOnlyYtb
+          })
+        });
+
+        const dataYtb = await responseYtb.json();
+
+        if (responseYtb.ok) {
+          statusDivYtb.className = 'bg-emerald-50 text-emerald-700 border border-emerald-100 p-4 rounded-xl text-center text-sm font-medium';
+          statusDivYtb.textContent = `Success! Video found on ${dataYtb.platform || 'Platform'}`;
+          
+          downloadLinkDivYtb.innerHTML = `
+            <a href="${dataYtb.download_url}" download 
+               class="group relative inline-flex items-center justify-center px-8 py-4 font-semibold text-white transition-all duration-200 bg-[#0F172A] rounded-2xl hover:bg-[#1E293B] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#0F172A] shadow-lg hover:shadow-xl hover:-translate-y-0.5">
+              <span class="mr-2 text-lg"><i class="ph ph-file-arrow-down"></i></span>
+              Download ${audioOnlyYtb ? 'Audio' : 'Video'}
+              <div class="absolute inset-0 rounded-2xl ring-2 ring-white/20 group-hover:ring-white/40"></div>
+            </a>
+          `;
+        } else {
+          throw new Error(dataYtb.detail || 'Download failed');
+        }
+      } catch (errorYtb) {
+        statusDivYtb.className = 'bg-red-50 text-red-700 border border-red-100 p-4 rounded-xl text-center text-sm font-medium';
+        statusDivYtb.textContent = `Error: ${errorYtb.message}`;
+      } finally {
+        setLoading(false);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,8 +1,17 @@
+import asyncio
+from functools import lru_cache
+import hashlib
+import re
+import subprocess
+import time
+import aiohttp
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Field, field_validator, ValidationError
+import requests
+import yt_dlp
 from ImgGen import ImageGenClient
 import PostGen,ManagePlatform
 from celery_app import Capp
@@ -10,22 +19,28 @@ import os
 import base64
 import io
 from datetime import datetime
-from typing import List, Optional, Literal
+from typing import List, AsyncGenerator, Dict, Any, Annotated, Optional, Literal
 from pathlib import Path
 from enum import Enum
-from fastapi import FastAPI, Form, Query, Request, Depends, HTTPException, status, UploadFile, File
+from fastapi import Body, FastAPI, Form, Query, Request, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 import json
-from Database import AttemptStatus, ErrorLog, OAuthToken, Platform, PostAttempt, PublishStatus, TaskStatus, get_db, init_db, Task, GeneratedContent, Media, PlatformSelection
+from Database import AttemptStatus, ErrorLog, OAuthToken, Platform, PostAttempt, PublishStatus, TaskStatus, gen_uuid_str, get_db, init_db, Task, GeneratedContent, Media, PlatformSelection
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select, update, delete,desc
 from sqlalchemy.orm import selectinload,joinedload
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from werkzeug.utils import secure_filename
+from PIL import Image
+import unicodedata
+import pytz
+from tasks import execute_posting 
 
 load_dotenv()
 
 image_client = ImageGenClient(api_key=os.getenv("IMG_API_KEY"))   
-
+IMG_BB_API_KEY = os.getenv('IMGBB_API')
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     raise RuntimeError("Set OPENAI_API_KEY in .env")
@@ -34,6 +49,16 @@ client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/downloads", StaticFiles(directory="downloads"), name="downloads")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Mount media folder for serving images
 media_dir = Path("static/media")
@@ -61,8 +86,7 @@ ManagePlatform.init(app)
 
 
 
-import pytz
-from tasks import execute_posting 
+
 
 execute_posting = Capp.tasks["tasks.execute_posting"]
 execute_posting = Capp.task(name="tasks.execute_posting")(execute_posting)
@@ -136,9 +160,8 @@ async def schedule_task(
         db.add(sel)
 
     await db.commit()
-    await db.refresh(task)  # Optional
+    await db.refresh(task) 
 
-    # Schedule Celery task (eta in UTC)
     scheduled_utc = request.scheduled_at.astimezone(pytz.UTC)
     execute_posting.apply_async(args=(task.task_id,), eta=scheduled_utc)
 
@@ -174,13 +197,8 @@ class ErrorLogListResponse(BaseModel):
     offset: int
 
 
-from sqlalchemy.orm import selectinload
-from sqlalchemy import select, desc
-from fastapi import HTTPException, Depends
-from pydantic import BaseModel
-from typing import List, Optional, Dict
-from datetime import datetime
-#
+
+
 class PlatformOut(BaseModel):
     platform_id: str
     name: str
@@ -240,6 +258,13 @@ class TaskDetailOut(BaseModel):
     task: TaskOut
     post_attempts: List[PostAttemptOut]
     error_logs: List[ErrorLogOut]
+    
+    image_url: Optional[str] = None
+    caption: Optional[str] = None
+    caption_with_hashtags: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
 
 
 @app.get("/api/tasks-scheduled", response_model=TaskListResponse)
@@ -264,7 +289,7 @@ async def list_tasks(
     result = await db.execute(query)
     tasks = result.scalars().all()
 
-    # Extract only mapped columns to dict, excluding internal state
+
     task_dicts = []
     for task in tasks:
         task_dict = {column.name: getattr(task, column.name) for column in Task.__table__.columns}
@@ -277,7 +302,7 @@ async def get_task_detail(task_id: str, db: AsyncSession = Depends(get_db)):
     stmt = (
         select(Task)
         .options(
-            selectinload(Task.generated_contents),
+            selectinload(Task.generated_contents).selectinload(GeneratedContent.media),
             selectinload(Task.media),
             selectinload(Task.platform_selections).selectinload(PlatformSelection.platform),
             selectinload(Task.post_attempts).selectinload(PostAttempt.platform),
@@ -289,21 +314,54 @@ async def get_task_detail(task_id: str, db: AsyncSession = Depends(get_db)):
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    # Fetch error logs separately (no relationship, so kept simple)
-    error_stmt = (
+    # Error logs
+    error_result = await db.execute(
         select(ErrorLog)
         .where(ErrorLog.task_id == task_id)
         .order_by(desc(ErrorLog.created_at))
     )
-    error_result = await db.execute(error_stmt)
     error_logs = error_result.scalars().all()
+
+    image_url: str | None = None
+
+    for m in task.media:
+        if m.img_url:
+            image_url = m.img_url
+            break
+
+    if not image_url:
+        for gc in task.generated_contents:
+            for m in gc.media:
+                if m.img_url:
+                    image_url = m.img_url
+                    break
+            if image_url:
+                break
+
+    print(image_url)
+    caption: str | None = None
+    caption_with_hashtags: str | None = None
+
+    if task.generated_contents:
+        latest = max(task.generated_contents, key=lambda x: x.created_at)
+        caption = latest.caption
+        hashtags = latest.hashtags or []
+
+        if caption:
+            if hashtags:
+                tags_str = " ".join(f"#{tag.strip('# ')}" for tag in hashtags if tag)
+                caption_with_hashtags = f"{caption.strip()} {tags_str}".strip()
+            else:
+                caption_with_hashtags = caption.strip()
 
     return TaskDetailOut(
         task=TaskOut.model_validate(task),
         post_attempts=[PostAttemptOut.model_validate(pa) for pa in task.post_attempts],
         error_logs=[ErrorLogOut.model_validate(el) for el in error_logs],
+        image_url=image_url,                   
+        caption=caption,
+        caption_with_hashtags=caption_with_hashtags,
     )
-
 
 class ErrorLogResponse(BaseModel):
     error_id: str
@@ -342,7 +400,6 @@ async def list_error_logs(
     if to_date:
         query = query.where(ErrorLog.created_at <= to_date)
 
-    # Total count
     count_query = select(func.count(ErrorLog.error_id)).select_from(query.subquery())
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
@@ -452,3 +509,635 @@ async def format_text(request: FormatRequest):
             "Access-Control-Allow-Origin": "*",
         },
     )
+
+
+
+DOWNLOADS_DIR = Path("./downloads")
+DOWNLOADS_DIR.mkdir(exist_ok=True)
+
+
+FFMPEG_AVAILABLE = False
+try:
+    subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
+    FFMPEG_AVAILABLE = True
+except (subprocess.CalledProcessError, FileNotFoundError):
+    print("error")
+
+class DownloadRequest(BaseModel):
+    url: str
+    quality: Optional[str] = "best"
+    audio_only: Optional[bool] = False
+
+def sanitize_filename(name: str, max_length: int = 80) -> str:
+    if not name:
+        name = "video"
+    name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', name)
+    name = name.replace(' ', '_')
+    name = re.sub(r'_+', '_', name)
+    name = name.strip('_')
+    if len(name) > max_length:
+        name = name[:max_length]
+    return name
+
+def detect_platform(url: str) -> str:
+    if "youtube.com" in url or "youtu.be" in url:
+        return "YouTube"
+    elif "instagram.com" in url:
+        return "Instagram"
+    elif "facebook.com" in url or "fb.watch" in url:
+        return "Facebook"
+    elif "tiktok.com" in url:
+        return "TikTok"
+    elif "twitter.com" in url or "x.com" in url:
+        return "Twitter/X"
+    elif "reddit.com" in url:
+        return "Reddit"
+    elif "vimeo.com" in url:
+        return "Vimeo"
+    elif "twitch.tv" in url:
+        return "Twitch"
+    else:
+        return "Unknown (yt-dlp will handle if supported)"
+
+def get_ydl_format(quality: str, audio_only: bool) -> dict:
+    base_formats = {
+        "best": "best",
+        "720p": "best[height<=720]",
+        "1080p": "best[height<=1080]",
+        "4k": "best[height<=2160]"
+    }
+    
+    if audio_only:
+        if FFMPEG_AVAILABLE:
+            return {"format": "bestaudio/best", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3"}]}
+        else:
+            
+            return {"format": "bestaudio[ext=m4a]/bestaudio"}
+    
+   
+    fmt = base_formats.get(quality, "best")
+    if FFMPEG_AVAILABLE:
+        return {"format": f"{fmt}+bestaudio/best" if not audio_only else "bestaudio/best"}
+    else:
+        return {"format": f"{fmt}[ext=mp4]/{fmt}"}  
+
+def slugify_filename(text: str, max_length: int = 100) -> str:
+    text = unicodedata.normalize('NFKC', text)
+
+    text = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '', text)      
+    text = re.sub(r'[\[\](){}]', '', text)                
+    text = re.sub(r'[^\w\s\-.£€$!&+]', '', text)           
+    text = re.sub(r'\s+', '_', text)                      
+    text = re.sub(r'_+', '_', text)                        
+    text = text.strip('_.- ')
+    
+    if not text:
+        text = "video"
+    
+    if len(text) > max_length:
+        text = text[:max_length]
+    
+    return text
+
+async def download_video(url: str, quality: str, audio_only: bool) -> tuple[str, str, str]:
+    loop = asyncio.get_event_loop()
+
+    # Step 1: Extract info first
+    with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True, "noplaylist": True}) as ydl:
+        info = await loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
+
+    raw_title = info.get("title", "video")
+    vid_id = info.get("id", "unknown")[:11] 
+
+    # This is the safe name we will actually use
+    safe_title = slugify_filename(raw_title, max_length=90)
+    final_base = f"{safe_title}_{vid_id}"       
+
+    # Determine final extension
+    if audio_only:
+        ext = "mp3" if FFMPEG_AVAILABLE else "m4a"
+    else:
+        ext = "mp4"
+
+    final_filename = f"{final_base}.{ext}"
+    filepath = DOWNLOADS_DIR / final_filename
+
+    # Only now do the real download with exact known filename
+    opts = {
+        "format": get_ydl_format(quality, audio_only)["format"],
+        "outtmpl": str(filepath.as_posix().replace(f".{ext}", ".%(ext)s")),  # forces exact name
+        "merge_output_format": "mp4" if not audio_only and FFMPEG_AVAILABLE else None,
+        "postprocessors": [{
+            "key": "FFmpegExtractAudio",
+            "preferredcodec": "mp3",
+            "preferredquality": "192",
+        }] if audio_only and FFMPEG_AVAILABLE else [],
+        "retries": 10,
+        "fragment_retries": 10,
+        "noplaylist": True,
+    }
+
+    try:
+        with yt_dlp.YoutubeDL(opts) as ydl:
+            await loop.run_in_executor(None, lambda: ydl.download([url]))
+
+        if not filepath.exists():
+            raise FileNotFoundError(f"File was not created: {filepath}")
+
+        return "success", str(filepath), final_filename
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/download", response_model=dict)
+async def download_endpoint(request: DownloadRequest = Body(...)):
+    platform = detect_platform(request.url)
+
+    
+    if platform == "Unknown":
+        raise HTTPException(status_code=400, detail="Unsupported platform. yt-dlp supports 1000+ sites—try anyway!")
+    
+    try:
+        status, filepath, filename = await download_video(request.url, request.quality, request.audio_only)
+
+        base_url = "http://127.0.0.1:8000"  
+        download_url = f"{base_url}/downloads/{filename}"
+        
+        return {
+            "status": status,
+            "platform": platform,
+            "download_url": download_url,  
+            "file_path": filepath,
+            "message": f"Downloaded to {filepath} ({'MP3' if request.audio_only and FFMPEG_AVAILABLE else 'M4A/MP4'})"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
+    
+
+
+DEFAULT_CONCURRENT_LIMIT = 5
+DEFAULT_RPM = 60
+CACHE_TTL_SECONDS = 86400
+API_TIMEOUT = 30.0
+MAX_RETRIES = 3
+BASE_DELAY = 1.0
+MAX_DELAY = 10.0
+SEARCH_IMAGE_LIMIT = 3
+SEARCH_NUM_RESULTS = 5
+DEEP_RESEARCH_NUM_RESULTS = 10
+
+class AsyncRateLimiter:
+    def __init__(self, concurrent_limit: int = DEFAULT_CONCURRENT_LIMIT, rpm: int = DEFAULT_RPM):
+        self.semaphore = asyncio.Semaphore(concurrent_limit)
+        self.rpm = rpm
+        self.tokens = rpm
+        self.last_refill = time.time()
+        self.lock = asyncio.Lock()
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+    async def acquire(self):
+        async with self.semaphore:
+            async with self.lock:
+                now = time.time()
+                elapsed = now - self.last_refill
+                self.tokens = min(self.rpm, self.tokens + (elapsed / 60) * self.rpm)
+                self.last_refill = now
+                
+                while self.tokens < 1:
+                    await asyncio.sleep(60 / self.rpm)
+                    now = time.time()
+                    elapsed = now - self.last_refill
+                    self.tokens = min(self.rpm, self.tokens + (elapsed / 60) * self.rpm)
+                    self.last_refill = now
+                
+                self.tokens -= 1
+
+
+@lru_cache(maxsize=1)
+def get_rate_limiter() -> AsyncRateLimiter:
+    concurrent = int(os.getenv("RATE_LIMIT_CONCURRENT", DEFAULT_CONCURRENT_LIMIT))
+    rpm = int(os.getenv("RATE_LIMIT_RPM", DEFAULT_RPM))
+    return AsyncRateLimiter(concurrent, rpm)
+
+
+def get_openai_client():
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
+    return AsyncOpenAI(api_key=api_key)
+
+
+def get_search_api_key():
+    key = os.getenv("SEARCH_API_KEY")
+    if not key:
+        raise HTTPException(status_code=500, detail="SEARCH_API_KEY not configured")
+    return key
+
+
+async def retry_on_failure(coro_func, max_retries: int = MAX_RETRIES, base_delay: float = BASE_DELAY, max_delay: float = MAX_DELAY):
+    last_exception = None
+    
+    for attempt in range(max_retries + 1):
+        try:
+            return await coro_func()
+        except Exception as e:
+            last_exception = e
+            if attempt == max_retries:
+                raise
+            
+            delay = min(base_delay * (2 ** attempt) + (time.time() % 1.0), max_delay)
+            await asyncio.sleep(delay)
+    
+    raise last_exception
+
+
+async def search_web(query: str, num: int, search_key: str) -> List[Dict[str, str]]:
+    params = {
+        "engine": "google",
+        "q": query,
+        "api_key": search_key,
+        "num": num,
+    }
+
+    limiter = get_rate_limiter()
+    await limiter.acquire()
+
+    async def fetch_coro():
+        connector = aiohttp.TCPConnector(limit=10)
+        timeout = aiohttp.ClientTimeout(total=API_TIMEOUT)
+        async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+            async with session.get("https://www.searchapi.io/api/v1/search", params=params) as resp:
+                resp.raise_for_status()
+                data = await resp.json(content_type=None)
+                return data.get("organic_results", [])
+
+    try:
+        results = await retry_on_failure(fetch_coro, max_retries=MAX_RETRIES)
+        return [
+            {
+                "title": result.get("title", ""),
+                "url": result.get("link", ""),
+                "snippet": result.get("snippet", ""),
+            }
+            for result in results
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Search failed for query '{query}'")
+
+
+async def validate_and_extract(product_company: str, client: Annotated[AsyncOpenAI, Depends(get_openai_client)]) -> Optional[Dict[str, str]]:
+    system_prompt = (
+        "You are an input validator and extractor. Analyze the input to determine if it refers to a product and its company, "
+        "handling natural language variations, casual phrasing, and comparisons. Always be flexible and recognize common products. "
+        "Key guidelines:\n"
+        "- Product names can include numbers/models (e.g., 'iPhone 15', 'iPhone 14', 'Maggi 2 Minute').\n"
+        "- Ignore case, extra words like 'from', 'by', 'of', 'the', 'a'.\n"
+        "- For comparisons (e.g., 'compare maggi and yippee'), extract the primary product-company pair (e.g., Maggi-Nestle), and note it's for single review focus.\n"
+        "- Common products: iPhone (Apple), Maggi (Nestle), Yippee (ITC), Galaxy (Samsung), etc.\n"
+        "Examples of valid inputs:\n"
+        "- 'iPhone Apple' -> product: 'iPhone', company: 'Apple'\n"
+        "- 'iphone 15 apple' -> product: 'iPhone 15', company: 'Apple'\n"
+        "- 'iPhone 14 from apple' -> product: 'iPhone 14', company: 'Apple'\n"
+        "- 'Maggi Nestle' -> product: 'Maggi', company: 'Nestle'\n"
+        "- 'Nestle Maggi' -> product: 'Maggi', company: 'Nestle'\n"
+        "- 'compare maggi and yippee' -> product: 'Maggi', company: 'Nestle' (primary focus)\n"
+        "- 'can you compare maggi and yippee noodles' -> product: 'Maggi', company: 'Nestle'\n"
+        "If it clearly references a product and company (even loosely), validate as true. Only invalid if no product/company identifiable."
+    )
+    user_prompt = f"""Input: "{product_company}".
+Extract the primary product name and company name if valid. Respond with JSON:
+{{"is_valid": true, "product": "extracted product name", "company": "extracted company name", "reason": "brief explanation"}}
+If invalid, respond with JSON:
+{{"is_valid": false, "reason": "brief explanation"}}"""
+
+    try:
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0,
+            response_format={"type": "json_object"},
+            max_tokens=150,
+        )
+        content = response.choices[0].message.content
+        data = json.loads(content)
+        if data.get("is_valid"):
+            return {
+                "product": data["product"].strip(),
+                "company": data["company"].strip(),
+                "reason": data.get("reason", "")
+            }
+        else:
+            return None
+    except json.JSONDecodeError as e:
+        return None
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Validation service unavailable")
+
+
+async def generate_search_queries(product_company: str, custom_filter: Optional[str], client: Annotated[AsyncOpenAI, Depends(get_openai_client)]) -> List[str]:
+    system_prompt = "You are a search query expert. Generate diverse, effective Google search queries focused on finding customer reviews (good and bad) for the given product-company pair."
+    filter_part = f" Include focus on: {custom_filter}" if custom_filter else ""
+    user_prompt = f'Product-Company: "{product_company}".{filter_part} Generate exactly 5 queries. Respond with JSON: {{"queries": ["query1", "query2", "query3", "query4", "query5"]}}'
+
+    try:
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.5,
+            response_format={"type": "json_object"},
+            max_tokens=300,
+        )
+        content = response.choices[0].message.content
+        data = json.loads(content)
+        queries = data.get("queries", [])
+        if custom_filter:
+            queries = [q + " " + custom_filter for q in queries]
+        return queries
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=503, detail="Query generation failed")
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Query generation failed")
+
+
+async def validate_and_prepare(
+    product_company: str,
+    is_deepresearch_needed: bool,
+    custom_filter: Optional[str],
+    client: Annotated[AsyncOpenAI, Depends(get_openai_client)],
+    search_key: Annotated[str, Depends(get_search_api_key)]
+) -> tuple[str, str, List[Dict[str, Any]]]:
+    # Step 1: Validate and extract
+    extract = await validate_and_extract(product_company, client)
+    if extract is None:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid input: '{product_company}'. Please provide a product and company reference (e.g., 'iPhone 15 Apple', 'iPhone 14 from Apple', 'compare Maggi and Yippee')."
+        )
+
+    product = extract['product']
+    company = extract['company']
+    normalized_product_company = f"{product} {company}"
+
+    # Step 2: Generate queries
+    queries = await generate_search_queries(normalized_product_company, custom_filter, client)
+    if not queries:
+        raise HTTPException(status_code=503, detail="Failed to generate search queries.")
+
+    # Step 3: Search
+    num_results = DEEP_RESEARCH_NUM_RESULTS if is_deepresearch_needed else SEARCH_NUM_RESULTS
+    all_sources: List[Dict[str, Any]] = []
+    source_counter = 1
+    for query in queries:
+        results = await search_web(query, num_results, search_key)
+        for result in results:
+            all_sources.append(
+                {
+                    "id": source_counter,
+                    "title": result["title"],
+                    "url": result["url"],
+                    "content": result["snippet"],
+                }
+            )
+            source_counter += 1
+
+    if not all_sources:
+        raise HTTPException(status_code=404, detail="No search results found for the product.")
+
+    # Step 4: Format context
+    formatted_context = "\n\n".join(
+        [
+            f"Source [{s['id']}]: {s['title']}\nURL: {s['url']}\nContent: {s['content']}"
+            for s in all_sources
+        ]
+    )
+
+    return formatted_context, product, all_sources
+
+
+async def generate_review_stream(
+    context: str, product: str, client: Annotated[AsyncOpenAI, Depends(get_openai_client)]
+) -> AsyncGenerator[str, None]:
+    system_prompt = (
+        "You are an expert reviewer analyzer. Extract and summarize key good and bad customer "
+        "reviews from the sources. Use inline citations like [1] after relevant points. "
+        "Structure your output exactly as:\n"
+        "# Good Reviews for {product}\n"
+        "- Bullet point summarizing a positive aspect [citation]\n"
+        "...\n\n"
+        "# Bad Reviews for {product}\n"
+        "- Bullet point summarizing a negative aspect [citation]\n"
+        "...\n\n"
+        "## Sources\n"
+        "1. Title - URL\n"
+        "2. Title - URL\n"
+        "...\n"
+        "Output ONLY this formatted text—no introductions, explanations, markdown beyond bullets, "
+        "or extra content. Aim for 3-5 bullets per section. Ensure citations are used."
+    ).format(product=product)
+
+    user_prompt = f"Context from searches:\n{context}\n\nProvide the review analysis."
+
+    try:
+        stream = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.7,  
+            stream=True,
+            max_tokens=1500,
+        )
+        async for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content is not None:
+                content = chunk.choices[0].delta.content
+                yield content
+    except Exception as e:
+        raise HTTPException(status_code=503, detail="Review generation failed")
+
+class ProductCompanyRequest(BaseModel):
+    product_company: str
+    is_deepresearch_needed: bool = False
+    custom_filter: Optional[str] = None
+
+@app.post("/reviews", response_class=StreamingResponse)
+async def get_reviews(
+    request: ProductCompanyRequest, 
+    client: Annotated[AsyncOpenAI, Depends(get_openai_client)], 
+    search_key: Annotated[str, Depends(get_search_api_key)]
+):
+    if not request.product_company.strip():
+        raise HTTPException(status_code=400, detail="product_company is required")
+
+    try:
+        formatted_context, product, _ = await validate_and_prepare(
+            request.product_company,
+            request.is_deepresearch_needed,
+            request.custom_filter,
+            client,
+            search_key
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+    async def event_generator():
+        try:
+            async for chunk in generate_review_stream(formatted_context, product, client):
+                yield chunk
+        except Exception as e:
+            raise HTTPException(status_code=500, detail="Internal server error")
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/plain",
+        headers={"X-Accel-Buffering": "no"}  
+    )
+    
+    
+
+@app.post("/manual-tasks", response_model=dict)
+async def create_manual_task(
+    title: str = Form(..., description="Task title"),
+    caption: str = Form(..., description="Post caption"),
+    hashtags: str = Form(..., description="Comma-separated hashtags"),
+    notes: Optional[str] = Form(None, description="Optional notes for the task"),
+    image: UploadFile = File(..., description="Image file to upload"),
+    db: AsyncSession = Depends(get_db)
+):
+
+    if not image.content_type or not image.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Uploaded file must be an image")
+
+    filename = secure_filename(image.filename)
+    if not filename or not Path(filename).suffix:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"manual_{timestamp}.jpg"
+
+    allowed_extensions = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+    if Path(filename).suffix.lower() not in allowed_extensions:
+        raise HTTPException(status_code=400, detail="Unsupported image format")
+
+    try:
+        content = await image.read()
+    except Exception as e:
+        print(f"Failed to read image file: {e}")
+        raise HTTPException(status_code=400, detail="Failed to read image file")
+
+    size_bytes = len(content)
+
+    checksum = hashlib.sha256(content).hexdigest()
+    filepath = media_dir / filename
+    try:
+        with open(filepath, "wb") as f:
+            f.write(content)
+        storage_path = str(filename)  
+    except Exception as e:
+        print(f"Failed to save image locally: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save image")
+
+    try:
+        with Image.open(filepath) as img:
+            width, height = img.size
+    except Exception as e:
+        print(f"Failed to extract image dimensions: {e}")
+        width, height = None, None
+
+    # Upload to ImgBB if API key available
+    imgbb_url = None
+    if IMG_BB_API_KEY:
+        try:
+            files = {"image": (filename, content, image.content_type)}
+            data = {"key": IMG_BB_API_KEY}
+            response = requests.post("https://api.imgbb.com/1/upload", data=data, files=files, timeout=30)
+            if response.status_code == 200:
+                res = response.json()
+                if res.get("success"):
+                    imgbb_url = res["data"]["url"]
+                    print(f"Successfully uploaded to ImgBB: {imgbb_url}")
+                else:
+                    print(f"ImgBB upload failed: {res.get('error', 'Unknown error')}")
+            else:
+                print(f"ImgBB HTTP error: {response.status_code}")
+        except Exception as e:
+            print(f"ImgBB upload exception: {e}")
+    else:
+        print("ImgBB API key not provided; skipping upload")
+
+    # Parse hashtags
+    hashtags_list = [h.strip() for h in hashtags.split(",") if h.strip()]
+
+    # Create Task
+    task_id = gen_uuid_str()
+    task = Task(
+        task_id=task_id,
+        title=title,
+        status=TaskStatus.draft_approved,
+        notes=notes
+    )
+    db.add(task)
+    await db.flush()  
+
+    # Create GeneratedContent
+    gen_id = gen_uuid_str()
+    current_date = datetime.now().date()
+    gen_content = GeneratedContent(
+        gen_id=gen_id,
+        task_id=task_id,
+        prompt=f"Manual with {current_date}",
+        caption=caption,
+        hashtags=hashtags_list,
+        image_generated=False,  
+    )
+    db.add(gen_content)
+    await db.flush()
+
+    media_id = gen_uuid_str()
+    media = Media(
+        media_id=media_id,
+        task_id=task_id,
+        gen_id=gen_id,
+        storage_path=storage_path,
+        mime_type=image.content_type,
+        img_url=imgbb_url,
+        width=width,
+        height=height,
+        duration_ms=None,  
+        checksum=checksum,
+        size_bytes=size_bytes,
+        is_generated=False,
+    )
+    db.add(media)
+
+    # Commit all
+    try:
+        await db.commit()
+        print(f"Manual task created: task_id={task_id}, gen_id={gen_id}, media_id={media_id}")
+    except Exception as e:
+        await db.rollback()
+        print(f"Database commit failed: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save task to database")
+
+    return {
+        "task_id": task_id,
+        "gen_id": gen_id,
+        "media_id": media_id,
+        "storage_path": storage_path,
+        "img_url": imgbb_url,
+        "message": "Manual task created successfully"
+    }

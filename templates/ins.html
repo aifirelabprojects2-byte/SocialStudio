@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual Post Creator</title>
+    <script src="/static/tailwind.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+    <div class="min-h-screen flex items-center justify-center p-6">
+        <button id="createBtnMnl" class="group relative flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-800 px-4 py-3 rounded-full border border-gray-100 shadow-sm transition-all duration-300 hover:shadow-md">
+            <div class="bg-gray-50 text-gray-400 p-2 rounded-full group-hover:bg-gray-700 group-hover:text-white transition-colors duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            </div>
+            <div class="text-left">
+                <h3 class="text-sm font-semibold text-gray-800">Create Post Manually</h3>
+                <p class="text-xs text-gray-500">Draft a new post from scratch</p>
+            </div>
+        </button>
+    </div>
+
+    <div id="modalOverlayMnl" class="fixed inset-0 bg-black/60 hidden z-50 transition-opacity duration-300 opacity-0 flex items-center justify-center p-4">
+
+        <div id="modalContentMnl" class="bg-white w-full max-w-lg rounded-2xl transform scale-90 transition-all duration-300 max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
+
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+                <div>
+                    <h2 class="text-xl font-semibold text-gray-800 tracking-tight">New Post</h2>
+                </div>
+                <button id="closeBtnMnl" class="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto px-7 py-4">
+                <form id="manualFormMnl" class="space-y-4">
+                    
+                    <!-- Title Input -->
+                    <div class="space-y-1.5">
+                        <label for="titleMnl" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Task Title</label>
+                        <input type="text" id="titleMnl" name="title" required 
+                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200" 
+                            placeholder="e.g., Product Launch Announcement">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label for="captionMnl" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Caption</label>
+                        <textarea id="captionMnl" name="caption" rows="4" required 
+                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200 resize-none" 
+                            placeholder="Write your engaging caption here..."></textarea>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label for="hashtagsMnl" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Hashtags</label>
+                        <input type="text" id="hashtagsMnl" name="hashtags" required 
+                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200" 
+                            placeholder="#tech, #news (comma separated)">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Image Asset</label>
+                        <div class="relative">
+                            <label for="imageMnl" class="flex flex-row items-center justify-between w-full px-4 py-2.5 bg-white border border-gray-300 border-dashed rounded-xl cursor-pointer hover:bg-gray-50 hover:border-gray-400 transition-all group">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-gray-100 p-1.5 rounded-md group-hover:bg-white transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    </div>
+                                    <span class="text-sm text-gray-600 font-medium truncate max-w-[200px]" id="fileNameMnl">Select image file...</span>
+                                </div>
+                                <span class="text-xs text-blue-600 font-semibold group-hover:underline">Browse</span>
+                                <input id="imageMnl" name="image" type="file" accept="image/*" required class="hidden" />
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="progressContainerMnl" class="hidden pt-2">
+                        <div class="flex justify-between mb-1">
+                            <span class="text-xs font-medium text-gray-600">Uploading media...</span>
+                            <span id="progressTextMnl" class="text-xs font-medium text-gray-800">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                            <div id="progressBarMnl" class="bg-gray-900 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label for="notesMnl" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Internal Notes</label>
+                        <textarea id="notesMnl" name="notes" rows="2" 
+                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200 resize-none" 
+                            placeholder="Optional..."></textarea>
+                    </div>
+
+                    <div class="pt-4">
+                        <button type="submit" id="submitBtnMnl" class="w-full bg-[#0f172a] hover:bg-[#1e293b] text-white py-3 px-6 rounded-2xl text-sm font-semibold shadow-sm hover:shadow-md transform active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2">
+                            <span>Create Post</span>
+                        </button>
+                    </div>
+                </form>
+
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const createBtnMnl = document.getElementById('createBtnMnl');
+        const modalOverlayMnl = document.getElementById('modalOverlayMnl');
+        const modalContentMnl = document.getElementById('modalContentMnl');
+        const closeBtnMnl = document.getElementById('closeBtnMnl');
+        const manualFormMnl = document.getElementById('manualFormMnl');
+        const submitBtnMnl = document.getElementById('submitBtnMnl');
+        const progressContainerMnl = document.getElementById('progressContainerMnl');
+        const progressBarMnl = document.getElementById('progressBarMnl');
+        const progressTextMnl = document.getElementById('progressTextMnl');
+        const imageInputMnl = document.getElementById('imageMnl');
+        const fileNameMnl = document.getElementById('fileNameMnl');
+
+        // File input styling helper
+        imageInputMnl.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                fileNameMnl.textContent = e.target.files[0].name;
+                fileNameMnl.classList.add('text-gray-800');
+                fileNameMnl.classList.remove('text-gray-600');
+            } else {
+                fileNameMnl.textContent = "Select image file...";
+                fileNameMnl.classList.remove('text-gray-800');
+                fileNameMnl.classList.add('text-gray-600');
+            }
+        });
+
+        // Open modal
+        createBtnMnl.addEventListener('click', () => {
+            modalOverlayMnl.classList.remove('hidden');
+            setTimeout(() => {
+                modalOverlayMnl.classList.remove('opacity-0');
+                modalContentMnl.classList.remove('scale-95');
+                modalContentMnl.classList.add('scale-100');
+            }, 10);
+            document.body.style.overflow = 'hidden';
+        });
+
+        // Close modal function
+        function closeModalMnl() {
+            modalOverlayMnl.classList.add('opacity-0');
+            modalContentMnl.classList.remove('scale-100');
+            modalContentMnl.classList.add('scale-95');
+            
+            setTimeout(() => {
+                modalOverlayMnl.classList.add('hidden');
+                document.body.style.overflow = 'auto';
+                resetFormMnl();
+            }, 300); 
+        }
+
+        closeBtnMnl.addEventListener('click', closeModalMnl);
+        modalOverlayMnl.addEventListener('click', (e) => {
+            if (e.target === modalOverlayMnl) closeModalMnl();
+        });
+
+        function resetFormMnl() {
+            manualFormMnl.reset();
+            fileNameMnl.textContent = "Select image file...";
+            fileNameMnl.classList.remove('text-gray-800');
+            fileNameMnl.classList.add('text-gray-600');
+            
+            progressContainerMnl.classList.add('hidden');
+            progressBarMnl.style.width = '0%';
+            progressTextMnl.textContent = '0%';
+
+            submitBtnMnl.disabled = false;
+            submitBtnMnl.innerHTML = `<span>Create Post</span>`;
+            submitBtnMnl.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        manualFormMnl.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formDataMnl = new FormData(manualFormMnl);
+            const scheduledAtElMnl = document.getElementById('scheduled_atMnl');
+            if (scheduledAtElMnl) {
+                const scheduledAtValMnl = scheduledAtElMnl.value;
+                if (scheduledAtValMnl) {
+                    const dateMnl = new Date(scheduledAtValMnl);
+                    formDataMnl.set('scheduled_at', dateMnl.toISOString());
+                }
+            }
+
+            const xhrMnl = new XMLHttpRequest();
+            xhrMnl.open('POST', '/manual-tasks', true);
+
+            // Track progress
+            xhrMnl.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const percentCompleteMnl = (e.loaded / e.total) * 100;
+                    progressBarMnl.style.width = percentCompleteMnl + '%';
+                    progressTextMnl.textContent = Math.round(percentCompleteMnl) + '%';
+                }
+            });
+
+            xhrMnl.addEventListener('load', () => {
+                if (xhrMnl.status === 200) {
+                    let responseMnl;
+                    try {
+                        responseMnl = JSON.parse(xhrMnl.responseText);
+                    } catch(err) {
+                        responseMnl = { task_id: 'Unknown', img_url: 'Unknown' };
+                    }
+                    
+                    submitBtnMnl.textContent = 'Post Created!';
+                    submitBtnMnl.disabled = true;
+                    submitBtnMnl.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    submitBtnMnl.disabled = false;
+                    submitBtnMnl.innerHTML = `<span>Try Again</span>`;
+                }
+                progressContainerMnl.classList.add('hidden');
+            });
+
+            xhrMnl.addEventListener('error', () => {
+                progressContainerMnl.classList.add('hidden');
+                submitBtnMnl.disabled = false;
+                submitBtnMnl.textContent = 'Try Again';
+            });
+
+            // Show progress and update UI
+            progressContainerMnl.classList.remove('hidden');
+            progressBarMnl.style.width = '0%';
+            progressTextMnl.textContent = '0%';
+            submitBtnMnl.disabled = true;
+            submitBtnMnl.innerHTML = `<span>Uploading...</span>`;
+
+            xhrMnl.send(formDataMnl);
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !modalOverlayMnl.classList.contains('hidden')) {
+                closeModalMnl();
+            }
+        });
+    </script>
+</body>
+</html>

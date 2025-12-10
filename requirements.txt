@@ -33,3 +33,12 @@ greenlet
 aiosmtplib
 honcho==1.1.0
 cryptography
+yt_dlp
+google-generativeai
+google-genai
+instaloader
+facebook-scraper
+twscrape
+beautifulsoup4
+pillow
+twitter-scraper

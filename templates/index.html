@@ -13,6 +13,9 @@
   <link rel="stylesheet" href="/static/PostAi.css">
   <link rel="stylesheet" href="/static/Nav.css">
   <link rel="stylesheet" href="/static/Scheduled.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  
   <script>
     tailwind.config = {
       darkMode: "class",
@@ -24,6 +27,14 @@
           },
           rotate: {
             '360': '360deg', 
+          },
+          colors: {
+            slate: {
+                850: '#1e293b',
+            }
+          },
+          animation: {
+              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
           }
         },
       },
@@ -45,6 +56,21 @@
       background-size: 200% 100%;
       animation: skeletonPlatform-loading 1.8s ease-in-out infinite;
     }
+
+    .markdown-body h1 { font-size: 1.5em; font-weight: 700; margin-top: 1em; margin-bottom: 0.5em; color: #111827; }
+    .markdown-body h2 { font-size: 1.25em; font-weight: 600; margin-top: 1em; margin-bottom: 0.5em; color: #374151; }
+    .markdown-body h3 { font-size: 1.1em; font-weight: 600; margin-top: 1em; margin-bottom: 0.5em; }
+    .markdown-body p { margin-bottom: 1em; line-height: 1.7; color: #4B5563; }
+    .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
+    .markdown-body ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 1em; }
+    .markdown-body li { margin-bottom: 0.25em; }
+    .markdown-body strong { font-weight: 600; color: #111827; }
+    .markdown-body em { font-style: italic; color: #4B5563; }
+    .markdown-body blockquote { border-left: 4px solid #E5E7EB; padding-left: 1em; color: #6B7280; font-style: italic; }
+    
+    /* Smooth fade in for content */
+    .fade-in { animation: fadeIn 0.5s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   
     @keyframes skeletonPlatform-loading {
       0%   { background-position: 200% 0; }
@@ -106,8 +132,8 @@
               <ul class="nav-list">
                   <div class="nav-pill"></div>
                   <li class="pill-nav-item active" data-index="0">Leads</li>
-                  <li class="pill-nav-item" data-index="1">Competitors</li>
-                  <li class="pill-nav-item" data-index="2">Mentions</li>
+                  <li class="pill-nav-item" data-index="1">MediaSnag</li>
+                  <li class="pill-nav-item" data-index="2">Research</li>
                   <li class="pill-nav-item" data-index="3">Engagement</li>
                   <li class="pill-nav-item" data-index="4">Campaigns</li>
               </ul>
@@ -139,7 +165,7 @@
                         </p>
                     </div>
                 
-                    <div id="OutergenerateForm" class="bg-white dark:bg-slate-800 rounded-3xl  border border-slate-200 dark:border-slate-700 p-1 transition-transform duration-300 ease-out has-[:focus]:scale-105">
+                    <div id="OutergenerateForm" class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-1 transition-transform duration-300 ease-out has-[:focus]:scale-105">
                         <form id="generateForm" class="p-5 sm:p-6 space-y-4">
                             <div class="relative">
                                 <textarea name="prompt" rows="3" required id="animatedPlaceholder" class="block w-full rounded-2xl border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 text-slate-900 dark:text-white shadow-sm focus:border-gray-500 focus:ring-gray-500 sm:text-base px-4 py-3 transition resize-none placeholder:text-slate-400" placeholder="">
@@ -147,37 +173,37 @@
                             </div>
                             <div class="flex items-center justify-between pt-2">
                                 <div class="flex items-center space-x-4">
-
-                                  <label for="imgToggle" title="Click to generate image prompt" class="flex items-center space-x-2  p-[7px]  text-sm font-medium transition duration-150 cursor-pointer select-none">
-                                    <span class=" text-sm font-medium text-slate-700 dark:text-slate-300">
-                                      Image Prompt
-                                    </span>
-                                    <div class="relative ml-3">
-                                        <input type="checkbox" id="imgToggle" name="generate_image" value="yes" class="sr-only peer" checked>
-                                        <div class="w-11 h-6 bg-gray-300 rounded-full transition peer-checked:bg-gray-800 dark:bg-slate-700"></div>
-                                        <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition 
-                                                    peer-checked:translate-x-5 shadow"></div>
+                
+                                    <label for="imgToggle" title="Click to generate image prompt" class="flex items-center space-x-2 p-[7px] text-sm font-medium transition duration-150 cursor-pointer select-none">
+                                        <span class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                            Image Prompt
+                                        </span>
+                                        <div class="relative ml-3">
+                                            <input type="checkbox" id="imgToggle" name="generate_image" value="yes" class="sr-only peer" checked>
+                                            <div class="w-11 h-6 bg-gray-300 rounded-full transition peer-checked:bg-gray-800 dark:bg-slate-700"></div>
+                                            <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition 
+                                                      peer-checked:translate-x-5 shadow"></div>
+                                        </div>
+                                    </label>
+                
+                                    <div id="useCaseCarouselDrf" class="flex items-center space-x-2 rounded-2xl dark:bg-slate-700 border border-slate-200 dark:border-slate-600 p-[6px] text-sm font-medium transition duration-150">
+                
+                                        <button type="button" id="prevCaseBtnDrf" title="Previous Use Case"
+                                            class="text-slate-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 transition p-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+                                        </button>
+                
+                                        <span id="currentCaseTextDrf" class="text-slate-700 dark:text-slate-200 whitespace-nowrap min-w-[110px] text-center">
+                                            Custom Idea
+                                        </span>
+                
+                                        <button type="button" id="nextCaseBtnDrf" title="Next Use Case"
+                                            class="text-slate-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 transition p-1">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                                        </button>
                                     </div>
-                                  </label>
-
-                                  <div id="useCaseCarouselDrf" class="flex items-center space-x-2 rounded-2xl  dark:bg-slate-700 border border-slate-200 dark:border-slate-600 p-[6px] text-sm font-medium transition duration-150">
-                                        
-                                    <button type="button" id="prevCaseBtnDrf" title="Previous Use Case"
-                                        class="text-slate-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 transition p-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-                                    </button>
-            
-                                    <span id="currentCaseTextDrf" class="text-slate-700 dark:text-slate-200 whitespace-nowrap min-w-[110px] text-center">
-                                        Custom Idea
-                                    </span>
-            
-                                    <button type="button" id="nextCaseBtnDrf" title="Next Use Case"
-                                        class="text-slate-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 transition p-1">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-                                    </button>
-                                  </div>
-                                
-
+                
+                
                                 </div>
                 
                                 <button type="submit" id="genBtnBtn"
@@ -188,7 +214,12 @@
                             </div>
                         </form>
                     </div>
-                
+                    <div class="flex justify-center mt-4">
+                        <button type="button" id="createBtnMnl" title="Draft a post from scratch without AI generation"
+                            class="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-gray-900 dark:hover:text-white transition duration-200 p-2 rounded-xl border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
+                             Prefer to draft a post manually?
+                        </button>
+                    </div>
                     <div id="loading" class="hidden mt-8 text-center animate-pulse">
                         <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-gray-600 transition ease-in-out duration-150 cursor-not-allowed">
                             <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -319,12 +350,8 @@
                                   </h2>
                                   <p class="mt-1 text-sm text-gray-500">Overview of all content approved for publication.</p>
                               </div>
-                              <div class="mt-4 flex md:ml-4 md:mt-0">
-                                  <button type="button" onclick="fetchData()" class="ml-3 inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
-                                      <svg class="-ml-0.5 mr-1.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" /></svg>
-                                      Refresh
-                                  </button>
-                              </div>
+                              
+
                           </div>
               
                           <div class="bg-white rounded-lg overflow-hidden">
@@ -538,11 +565,9 @@
                               </div>
                           </div>
                       </div>
-              
-                      <!-- Main Card -->
+
                       <div class="bg-white rounded-2xl border border-neutral-200 overflow-hidden fade-in">
-                          
-                          <!-- Table Container -->
+
                           <div class="overflow-x-auto custom-scrollbar">
                               <table id="tasksTableShd" class="min-w-full divide-y divide-neutral-100 hidden">
                                   <thead class="bg-neutral-50">
@@ -711,11 +736,207 @@
                 </main>
             </div>
             <div class="tab-content">
-              <div class="placeholder-screen">on the way !</div>
-          </div>
+
+              <main class="flex-grow w-full max-w-7xl  mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+                  
+                <section class="max-w-3xl mx-auto" >
+                  <div class="text-center mb-8">
+                      <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900 dark:text-white mb-3">
+                        What video would you like to download?
+                      </h1>
+                      <p class="text-gray-600 dark:text-slate-400 text-lg">
+                        Paste a link from YouTube, Instagram, or TikTok, and we'll handle the rest.
+                      </p>
+                  </div>
+
+
+                <div class="w-full max-w-3xl">
+                  <form id="downloadFormYtb" class="relative group">
+                    
+                    <!-- Card Container -->
+                    <div class="bg-white border border-slate-200 rounded-3xl shadow-card p-2 transition-shadow duration-300 hover:shadow-lg hover:border-slate-300">
+                      
+                      <!-- URL Input Area -->
+                      <div class="p-4 bg-slate-50/50 rounded-2xl mb-2">
+                        <textarea 
+                          id="urlYtb" 
+                          required
+                          placeholder="Paste your video link here..." 
+                          class="w-full h-24 bg-transparent border-none focus:ring-0 text-lg text-slate-800 placeholder-slate-400 resize-none p-2"
+                        ></textarea>
+                      </div>
+              
+                      <!-- Bottom Controls Bar -->
+                      <div class="flex flex-col md:flex-row items-center justify-between px-4 pb-2 gap-4">
+                        <div class="flex items-center gap-3">
+
+                            <label for="audioOnlyYtb" title="Click to generate image prompt" class="flex items-center space-x-2  p-[7px]  text-sm font-medium transition duration-150 cursor-pointer select-none">
+                              <span class=" text-sm font-medium text-slate-700 dark:text-slate-300">
+                                Audio Only
+                              </span>
+                              <div class="relative ml-3">
+                                  <input type="checkbox" id="audioOnlyYtb" name="audioOnly" value="no" class="sr-only peer">
+                                  <div class="w-11 h-6 bg-gray-300 rounded-full transition peer-checked:bg-gray-800 dark:bg-slate-700"></div>
+                                  <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition 
+                                              peer-checked:translate-x-5 shadow"></div>
+                              </div>
+                            </label>
+                            
+
+              
+                          <!-- Vertical Divider -->
+                          <div class="hidden md:block w-px h-6 bg-slate-200"></div>
+              
+                          <!-- Quality Dropdown -->
+                          <div class="relative w-full md:w-auto">
+                            <select id="qualityYtb" class="appearance-none bg-white border border-slate-200 text-slate-700 text-sm font-medium py-2 pl-4 pr-10 rounded-full cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all w-full md:w-auto">
+                              <option value="best">Best Quality</option>
+                              <option value="1080p">1080p HD</option>
+                              <option value="720p">720p</option>
+                              <option value="4k">4K Ultra</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                              <i class="ph ph-caret-down"></i>
+                            </div>
+                          </div>
+                        </div>
+              
+                        <!-- Submit Button -->
+                        <button type="submit" 
+                          id="submitBtnYtb"
+                          class="w-full md:w-auto text-sm bg-[#0F172A] hover:bg-[#1E293B] text-white px-7 py-2 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-slate-900/10"
+                        >
+                          <i class="ph ph-download-simple text-lg"></i>
+                          <span>Download</span>
+                        </button>
+              
+                      </div>
+                    </div>
+                  </form>
+              
+                  <!-- Status & Results Area -->
+                  <div class="mt-8 space-y-4">
+                    <div id="statusYtb" class="hidden p-4 rounded-xl text-center text-sm font-medium animate-fade-in"></div>
+                    <div id="downloadLinkYtb" class="flex justify-center"></div>
+                  </div>
+              
+                  <!-- Footer Info -->
+                  <div class="mt-12 text-center">
+                    <div class="inline-flex gap-6 text-slate-400">
+                      <i class="ph ph-youtube-logo text-2xl hover:text-red-500 transition"></i>
+                      <i class="ph ph-instagram-logo text-2xl hover:text-pink-500 transition"></i>
+                      <i class="ph ph-tiktok-logo text-2xl hover:text-black transition"></i>
+                      <i class="ph ph-twitter-logo text-2xl hover:text-blue-400 transition"></i>
+                    </div>
+                  </div>
+              
+                </div>
+              </section>
+              </main>
+
+
+            </div>
 
             <div class="tab-content">
-                <div class="placeholder-screen">?</div>
+            <main class="flex-grow w-full max-w-7xl  mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+              <section class="max-w-3xl mx-auto" >
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900 dark:text-white mb-3">
+                      Product Intelligence
+                    </h1>
+                    <p class="text-gray-600 dark:text-slate-400 text-lg">
+                      Instant market feedback. Enter a product and company to stream real-time sentiment analysis and review summaries.
+                    </p>
+                </div>
+                
+
+              <div class="bg-white rounded-3xl border border-slate-200 p-5 transition-shadow duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+                  <form id="reviewFormRes" class="relative">
+                      <div class="relative group">
+                          <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                              <svg class="w-5 h-5 text-slate-300 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                              </svg>
+                          </div>
+                          <input
+                              type="text"
+                              id="productCompanyInputRes"
+                              placeholder="e.g., iPhone 15 Apple"
+                              class="w-full pl-12 pr-4 py-6 bg-transparent text-xl text-slate-800 placeholder-slate-300 outline-none rounded-2xl"
+                              autocomplete="off"
+                              required
+                          >
+                      </div>
+      
+                      <div id="customFilterContainer" class="hidden p-4">
+                          <input 
+                              type="text" 
+                              id="customFilterInput" 
+                              placeholder="Filter criteria (e.g., 'Focus on battery life', 'Ignore shipping complaints')" 
+                              class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all text-slate-700 placeholder-slate-400"
+                          >
+                      </div>
+      
+                      <!-- Controls Bar -->
+                      <div class="flex items-center justify-between px-4 pb-4 pt-2 border-t border-slate-50 mt-2">
+                          <div class="flex items-center space-x-4">
+                              <label class="flex items-center cursor-pointer group">
+                                  <div class="relative">
+                                      <input type="checkbox" id="deepSearchToggle" class="sr-only peer">
+                                      <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
+                                  </div>
+                                  <span class="ml-2 text-sm font-medium text-slate-500 group-hover:text-slate-700 transition-colors">Deep Search</span>
+                              </label>
+                              
+                              <div class="h-4 w-px bg-slate-200"></div>
+      
+                              <button type="button" id="customFilterToggle" class="flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
+                                  <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                  Custom Filters
+                              </button>
+                          </div>
+      
+                          <button
+                              type="submit"
+                              id="submitButtonRes"
+                              class="flex items-center px-6 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 focus:ring-4 focus:ring-slate-200 transition-all transform active:scale-95 shadow-lg shadow-slate-900/10"
+                          >
+                              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                              Generate Report
+                          </button>
+                      </div>
+                  </form>
+              </div>
+
+              <div id="loadingIndicatorRes" class="hidden mt-8 text-center fade-in">
+                  <div class="flex items-center justify-center space-x-2">
+                      <div class="w-2 h-2 bg-gray-800 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                      <div class="w-2 h-2 bg-gray-800 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                      <div class="w-2 h-2 bg-gray-800 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                  </div>
+                  <p class="mt-3 text-sm text-slate-400 font-medium tracking-wide uppercase">Analysing Sentiment</p>
+              </div>
+      
+              <div id="errorMessageRes" class="hidden mt-6 mx-auto max-w-lg bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm text-center fade-in"></div>
+
+              </section>
+
+              <div id="resultsContainer" class="hidden mt-10">
+                <div class="flex items-center justify-between mb-4 px-2">
+                    <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Analysis Results</h2>
+                    <button onclick="copyToClipboard()" class="text-sm text-slate-400 hover:text-blue-600 transition-colors flex items-center">
+                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                        Copy Report
+                    </button>
+                </div>
+                
+                <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 fade-in relative overflow-hidden">
+                    <div id="reviewsDisplayRes" class="markdown-body font-sans text-base text-slate-700 leading-relaxed overflow-y-auto custom-scrollbar pr-2"></div>
+    
+                    <div id="Rescursor" class="hidden w-2 h-5 bg-slate-900 inline-block align-middle ml-1 animate-pulse"></div>
+                </div>
+              </div>
+            </main>
             </div>
 
             <div class="tab-content">
@@ -731,9 +952,6 @@
 </div>
 
 
-  
-
-
   <div id="postUiModalOverlay" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="fixed inset-0 bg-slate-900/60 transition-opacity" onclick="closePostUiModal()"></div>
     <div class="fixed inset-0 z-10 overflow-y-auto">
@@ -746,25 +964,13 @@
     </div>
   </div>
 
-<!-- Updated Modal HTML: Added scheduling form elements -->
 <div id="modalOverlay" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-  <!-- Backdrop -->
   <div class="fixed inset-0 bg-gray-900/80 transition-opacity"></div>
-
-  <!-- Scrollable Container -->
   <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
     <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
-      
-      <!-- Modal Panel -->
       <div class="relative transform overflow-hidden rounded-3xl bg-white text-left  transition-all sm:w-full sm:max-w-5xl border border-gray-200 flex flex-col">
-        
-        <!-- Main Grid Container -->
         <div class="flex flex-col lg:grid lg:grid-cols-12 h-full">
-            
-            <!-- LEFT COLUMN: Content Preview (Visuals & Text) -->
             <div class="lg:col-span-5 bg-gray-50/50 border-b lg:border-b-0 lg:border-r border-gray-200 p-6 lg:p-8 flex flex-col gap-6">
-                
-                <!-- Image Section -->
                 <div class="group relative w-full overflow-hidden rounded-2xl bg-gray-200 border border-gray-300 shadow-sm aspect-video lg:aspect-square flex items-center justify-center">
                     <img id="modalImg" src="" class="w-full h-full object-cover transition-transform duration-700 hover:scale-105" style="display:none">
                     <div id="modalNoImg" class="flex flex-col items-center justify-center text-gray-400 hidden p-6 text-center">
@@ -772,8 +978,6 @@
                         <span class="text-xs font-medium uppercase tracking-wide">No Media Preview</span>
                     </div>
                 </div>
-
-                <!-- Text Content Wrapper -->
                 <div class="flex-1 min-h-0 flex flex-col">
                     <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Caption Preview</label>
                     <div class="bg-white rounded-lg p-4 border border-gray-200 shadow-sm flex-1 overflow-y-auto max-h-48 lg:max-h-[none]">
@@ -784,11 +988,8 @@
                     </div>
                 </div>
             </div>
-
-            <!-- RIGHT COLUMN: Details & Scheduling Controls -->
             <div class="lg:col-span-7 bg-white p-6 lg:p-8 flex flex-col h-full">
-                
-                <!-- Header -->
+
                 <div class="flex justify-between items-start mb-6">
                     <div>
                         <h3 class="text-xl font-bold text-gray-900 tracking-tight" id="modalTitle">Task Details</h3>
@@ -798,11 +999,7 @@
                         Draft
                     </span>
                 </div>
-
-                <!-- Scrolling Area for Form Inputs -->
                 <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
-                    
-                    <!-- Scheduling Section -->
                     <div id="schedulingSection" class="hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
                         <div class="mb-5 pb-4 border-b border-gray-100">
                             <h4 class="text-sm font-semibold text-gray-900 flex items-center gap-2">
@@ -841,15 +1038,11 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Empty State Placeholder (Visible if Scheduling hidden) -->
                     <div id="emptyStatePlaceholder" class="hidden h-32 flex items-center justify-center border-2 border-dashed border-gray-100 rounded-lg">
                         <span class="text-sm text-gray-400">Scheduling options not available</span>
                     </div>
 
                 </div>
-
-                <!-- Footer Actions -->
                 <div class="mt-8 pt-4 border-t border-gray-100 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                      <button type="button" id="closeModalBtn" class="inline-flex w-full justify-center rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto transition-all">
                         Cancel
@@ -904,15 +1097,12 @@
                   <span class="text-sm text-gray-600 font-medium">Retrieving data...</span>
               </div>
 
-              <!-- Content Area: Split View Layout -->
               <div id="modalContentShd" class="hidden flex-1 overflow-y-auto bg-slate-50/50 custom-scrollbar p-3">
                   
                   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
-                      
-                      <!-- LEFT COLUMN: Overview & Metadata (Total 4/12 cols) -->
+
                       <div class="lg:col-span-4 space-y-6">
-                          
-                          <!-- Main Info Card -->
+
                           <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
                               <div class="flex justify-between items-start mb-4">
                                   <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Overview</h4>
@@ -928,7 +1118,7 @@
 
                                   <div class="h-px bg-slate-100 w-full"></div>
 
-                                  <!-- Scheduled Info -->
+
                                   <div>
                                       <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1 block">Scheduled Execution</label>
                                       <div class="flex items-center text-sm font-medium text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
@@ -939,7 +1129,6 @@
                                       </div>
                                   </div>
 
-                                  <!-- Metadata Grid -->
                                   <div class="grid grid-cols-1 gap-4">
                                       <div>
                                           <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1 block">Last Updated</label>
@@ -953,7 +1142,6 @@
                               </div>
                           </div>
 
-                          <!-- Context/Notes Card -->
                           <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 flex flex-col">
                               <div class="p-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
                                   <h4 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-2">
@@ -964,8 +1152,49 @@
                                   </h4>
                               </div>
                               <div class="p-4">
-                                  <div id="detailNotesShd" class="text-sm text-slate-600 leading-relaxed font-mono bg-slate-50 p-3 rounded-lg border border-slate-100 overflow-x-auto max-h-[200px] custom-scrollbar"></div>
+                                  <div id="detailNotesShd" class="text-sm text-slate-600 leading-relaxed font-mono bg-slate-50 p-3 rounded-lg border border-slate-100 overflow-x-auto custom-scrollbar"></div>
                               </div>
+                          </div>
+                          <div class="bg-white rounded-xl border border-gray-200 shadow-sm flex-1 flex flex-col">
+                            <div class="p-4 border-b border-gray-100 bg-gray-50 rounded-t-xl">
+                              <h4 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Caption & Media
+                              </h4>
+                            </div>
+                          
+
+                            <div class="p-5 border-b border-gray-100">
+                              <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-medium text-gray-600">Caption with Hashtags</span>
+                                <button
+                                    id="copyCaptionBtn"
+                                    class="flex items-center justify-center p-1.5 text-gray-600  hover:border-gray-200 border rounded-xl transition-all duration-200">
+                                    <svg id="copyIcon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <!-- Default copy icon -->
+                                        <path d="M6 11C6 8.17157 6 6.75736 6.87868 5.87868C7.75736 5 9.17157 5 12 5H15C17.8284 5 19.2426 5 20.1213 5.87868C21 6.75736 21 8.17157 21 11V16C21 18.8284 21 20.2426 20.1213 21.1213C19.2426 22 17.8284 22 15 22H12C9.17157 22 7.75736 22 6.87868 21.1213C6 20.2426 6 18.8284 6 16V11Z" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M6 19C4.34315 19 3 17.6569 3 16V10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H15C16.6569 2 18 3.34315 18 5" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                </button>
+                              </div>
+                              <pre id="captionWithHash" class="text-sm text-gray-800 bg-gray-50 p-4 rounded-lg border border-gray-200 overflow-x-auto whitespace-pre-wrap break-words max-h-[200px] custom-scrollbar"></pre>
+                            </div>
+                          
+                            <div class="p-5">
+                              <div class="flex justify-between items-center">
+                                <span class="text-xs font-medium text-gray-600">Attached Image</span>
+                                <button
+                                  id="ImgDwnBtn"
+                                  class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-800 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                  </svg>
+                                  <span id="downloadBtnText">Download</span>
+                                </button>
+                              </div>
+                            </div>
                           </div>
 
                       </div>
@@ -1180,6 +1409,90 @@
   </div>
 </div>
 
+
+<div id="modalOverlayMnl" class="fixed inset-0 bg-black/60 hidden z-50 transition-opacity duration-300 opacity-0 flex items-center justify-center p-4">
+  <div id="modalContentMnl" class="bg-white w-full max-w-2xl rounded-3xl transform scale-90 transition-all duration-300 max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
+      <div class="py-4 px-8 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
+          <div>
+              <h2 class="text-2xl font-semibold text-gray-800 tracking-tight">New Post</h2>
+          </div>
+          <button id="closeBtnMnl" class="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+          </button>
+      </div>
+
+      <div class="overflow-y-auto px-8 py-5">
+          <form id="manualFormMnl" class="space-y-4">
+              <div class="space-y-1.5">
+                  <label for="titleMnl" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Task Title</label>
+                  <input type="text" id="titleMnl" name="title" required 
+                      class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200" 
+                      placeholder="e.g., Product Launch Announcement">
+              </div>
+
+              <div class="space-y-1.5">
+                  <label for="captionMnl" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Caption</label>
+                  <textarea id="captionMnl" name="caption" rows="4" required 
+                      class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200 resize-none" 
+                      placeholder="Write your engaging caption here..."></textarea>
+              </div>
+
+              <div class="space-y-1.5">
+                  <label for="hashtagsMnl" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Hashtags</label>
+                  <input type="text" id="hashtagsMnl" name="hashtags" required 
+                      class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200" 
+                      placeholder="#tech, #news (comma separated)">
+              </div>
+
+              <div class="space-y-1">
+                  <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Image Asset</label>
+                  <div class="relative">
+                      <label for="imageMnl" class="flex flex-row items-center justify-between w-full px-4 py-2.5 bg-white border border-gray-300 border-dashed rounded-xl cursor-pointer hover:bg-gray-50 hover:border-gray-400 transition-all group">
+                          <div class="flex items-center gap-3">
+                              <div class="bg-gray-100 p-1.5 rounded-md group-hover:bg-white transition-colors">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                              </div>
+                              <span class="text-sm text-gray-600 font-medium truncate max-w-[200px]" id="fileNameMnl">Select image file...</span>
+                          </div>
+                          <span class="text-xs text-blue-600 font-semibold group-hover:underline">Browse</span>
+                          <input id="imageMnl" name="image" type="file" accept="image/*" required class="hidden" />
+                      </label>
+                  </div>
+              </div>
+
+              <div id="progressContainerMnl" class="hidden pt-2">
+                  <div class="flex justify-between mb-1">
+                      <span class="text-xs font-medium text-gray-600">Uploading media...</span>
+                      <span id="progressTextMnl" class="text-xs font-medium text-gray-800">0%</span>
+                  </div>
+                  <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                      <div id="progressBarMnl" class="bg-gray-900 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                  </div>
+              </div>
+              <div class="space-y-1.5">
+                  <label for="notesMnl" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Internal Notes</label>
+                  <textarea id="notesMnl" name="notes" rows="2" 
+                      class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200 resize-none" 
+                      placeholder="Optional..."></textarea>
+              </div>
+
+              <div class="pt-4 flex justify-end">
+                  <div class="inline-flex">
+                    <button type="submit" id="submitBtnMnl" class="w-full border-2 border-gray-200 text-gray-700 py-4 px-7 rounded-3xl text-sm font-semibold shadow-sm hover:shadow-md transform active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2">
+                      <span>Create Post</span>
+                  </button>
+                  </div>
+              </div>
+          </form>
+
+
+      </div>
+  </div>
+</div>
+
+
 <script>
   const content_library_prompts = {
       "Custom Option": "", 
@@ -1198,10 +1511,8 @@
       "Contest/Giveaway": "Draft a post announcing a contest or giveaway. Define the prize, the entry rules (e.g., Tag 3 friends, Follow, Share), and the end date.",
       "Flash Sale/Discount": "Write a time-sensitive post announcing a flash sale or discount. Specify the discount percentage, the product, and the expiration date/time."
   };
-
-  // Mapping use case keys to a display text with an emoji
   const useCaseDisplayMapDrf = {
-      "Custom Option": "Custom Idea", // Display text for the new option
+      "Custom Option": "Custom Idea", 
       "Educational Post": "Educational Post",
       "Marketing Post": "Marketing Post",
       "Motivational Post": "Motivational Post",
@@ -1217,8 +1528,6 @@
       "Contest/Giveaway": "Contest / Giveaway",
       "Flash Sale/Discount": "Flash Sale / Discount"
   };
-
-  // --- JAVASCRIPT LOGIC FOR CAROUSEL ---
   document.addEventListener('DOMContentLoaded', function() {
       const promptTextarea = document.getElementById('animatedPlaceholder');
       const prevBtn = document.getElementById('prevCaseBtnDrf');
@@ -1228,35 +1537,16 @@
       const useCaseKeysDrf = Object.keys(content_library_prompts);
       const totalCasesDrf = useCaseKeysDrf.length;
       let currentCaseIndexDrf = 0; // Starts at Custom Option (index 0)
-
-      // Define a general placeholder for the Custom Option for better UX
       const customPlaceholderDrf = "Describe your idea here... We'll handle the caption, hashtags, and visuals.";
-
-      /**
-       * Updates the UI (text display) and the prompt textarea.
-       */
       function updateCarouselDrf() {
           const currentKey = useCaseKeysDrf[currentCaseIndexDrf];
-          
-          // 1. Update Display Text (with emoji)
           displayText.textContent = useCaseDisplayMapDrf[currentKey];
-          
-          // 2. Conditional Logic for Textarea and Focus
           if (currentKey === "Custom Option") {
-              // Clear the content (set value to empty string)
               promptTextarea.value = ''; 
-              // Set the informative placeholder
               promptTextarea.placeholder = customPlaceholderDrf; 
-              
-              // *** REMOVED: promptTextarea.focus(); ***
           } else {
-              // For a predefined template, set the prompt and clear the placeholder
               promptTextarea.placeholder = ''; 
               promptTextarea.value = content_library_prompts[currentKey];
-              
-              // When selecting a new use case template, we might want to focus the field 
-              // so the user can immediately edit the [bracketed] text.
-              // NOTE: Keeping focus here is generally good practice for template selection.
               promptTextarea.focus(); 
           }
       }
@@ -1592,11 +1882,15 @@
   }
 </script>
 
+
 <script src="/static/placeholderAnim.js" defer></script>
 <script src="/static/Tabs.js" ></script>
 <script src="/static/PostAi.js"></script>
 <script src="/static/plaform.js"></script>
 <script src="/static/Scheduled.js"></script>
 <script src="/static/Error.js"></script>
+<script src="/static/ManualDraft.js"></script>
+<script src="/static/Research.js"></script>
+<script src="/static/Downloader.js" ></script>
 </body>
 </html>

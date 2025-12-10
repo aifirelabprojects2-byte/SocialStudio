@@ -113,7 +113,6 @@ async function fetchTasksShd(status = '', limit = 20, offset = 0) {
         const response = await fetch(`${TASKS_ENDPOINT}?${params}`);
         if (!response.ok) throw new Error('Failed to fetch tasks');
         const data = await response.json();
-        console.log(data);
 
         tasksData = data.tasks;
         totalTasks = data.total;
@@ -188,6 +187,86 @@ async function viewTaskShd(taskId) {
         document.getElementById('detailUpdatedAtShd').textContent = formatDate(data.task.updated_at);
         document.getElementById('detailScheduledAtShd').textContent = data.task.scheduled_at ? formatDate(data.task.scheduled_at) : 'Not scheduled';
         document.getElementById('detailNotesShd').textContent = data.task.notes || 'No additional notes provided.';
+        const captionEl = document.getElementById('captionWithHash');
+        const copyBtn = document.getElementById('copyCaptionBtn');
+        const copyBtnText = document.getElementById('copyBtnText');
+        const copyIcon = document.getElementById('copyIcon');
+
+        if (data.caption_with_hashtags && data.caption_with_hashtags.trim()) {
+            const captionText = data.caption_with_hashtags.trim();
+            captionEl.textContent = captionText;
+        
+            const copyIcon = document.getElementById('copyIcon');
+            const defaultIconPath = copyIcon.innerHTML; // Save original
+        
+            copyBtn.onclick = async () => {
+                try {
+                    await navigator.clipboard.writeText(captionText);
+        
+                    // Switch to checkmark
+                    copyIcon.innerHTML = `
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                              d="M5 13l4 4L19 7" fill="none" stroke="currentColor"/>
+                    `;
+        
+                    // Optional: add a little "success" pulse
+                    copyBtn.classList.add('text-green-600');
+        
+                    setTimeout(() => {
+                        copyIcon.innerHTML = defaultIconPath; // Restore original copy icon
+                        copyBtn.classList.remove('text-green-600');
+                    }, 2000);
+        
+                } catch (err) {
+                    // Optional: brief red flash on fail
+                    copyBtn.classList.add('text-red-600');
+                    setTimeout(() => copyBtn.classList.remove('text-red-600'), 2000);
+                }
+            };
+        } else {
+            captionEl.textContent = 'No caption provided.';
+            copyBtn.disabled = true;
+            copyBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        // === Image Download Button (Actually Downloads!) ===
+        const imgBtn = document.getElementById('ImgDwnBtn');
+        const downloadText = document.getElementById('downloadBtnText');
+
+        if (data.image_url && data.image_url.trim()) {
+            const imageUrl = data.image_url.trim();
+
+            imgBtn.onclick = async (e) => {
+                e.preventDefault();
+                try {
+                    const response = await fetch(imageUrl);
+                    if (!response.ok) throw new Error('Image fetch failed');
+
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = imageUrl.split('/').pop().split('?')[0].split('#')[0] || 'image.jpg';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    // Optional: visual feedback
+                    downloadBtnText.textContent = 'Downloaded!';
+                    setTimeout(() => downloadBtnText.textContent = 'Download Image', 2000);
+                } catch (err) {
+                    alert('Failed to download image. Please try opening the link manually.');
+                }
+            };
+        } else {
+            imgBtn.disabled = true;
+            imgBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('downloadBtnText').textContent = 'No Image';
+        }
+
+
         const timeZoneEl = document.getElementById('detailTimeZoneShd');
         if (data.task.time_zone) {
             timeZoneEl.classList.remove('hidden');

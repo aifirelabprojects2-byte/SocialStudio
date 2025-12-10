@@ -84,6 +84,16 @@ class Platform(Base, SyncBase):
     meta = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+class TaskStatus(enum.Enum):
+    draft = "draft"
+    draft_approved = "draft_approved"
+    scheduled = "scheduled"
+    queued = "queued"
+    posted = "posted"
+    failed = "failed"
+    cancelled = "cancelled"
+
+
 class Task(Base, SyncBase):
     __tablename__ = "task"
 

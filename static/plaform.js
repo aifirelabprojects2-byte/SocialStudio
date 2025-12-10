@@ -95,7 +95,6 @@ function renderTable(tasks) {
         } else {
             mediaHtml = `<div class="h-10 w-10 rounded bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-400 border border-gray-200">TXT</div>`;
         }
-
         tr.innerHTML = `
             <td class="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
                 <div class="flex items-center">
@@ -114,7 +113,7 @@ function renderTable(tasks) {
             </td>
             <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
                 
-            <button id="viewBtnApr" class="text-xs inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:shadow-sm" onclick="openDetail('${t.task_id}')">
+            <button id="viewBtnApr-${t.task_id}" class="text-xs inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:shadow-sm" onclick="openDetail('${t.task_id}')">
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
               View
               </button>
@@ -163,7 +162,7 @@ closeBtn: document.getElementById('closeModalBtn')
 };
 
 async function openDetail(taskId) {
-    toggleLoading(`viewBtnApr`, true, 'Opening');
+    toggleLoading(`viewBtnApr-${taskId}`, true, 'Opening');
     
 try {
     const res = await fetch(`/api/tasks/approved/${taskId}`);
@@ -204,31 +203,23 @@ try {
         const platformsData = await platformsRes.json();
         populatePlatforms(platformsData || []);
     }
-
-    // Set default scheduled time (Current Time + 1 Hour)
-    // Note: Creating a Date object and handling offset for input[type="datetime-local"]
     const now = new Date();
     now.setHours(now.getHours() + 1);
-    
-    // datetime-local expects YYYY-MM-DDTHH:MM. 
-    // We use a simple trick to get local ISO string format adjusted for timezone
+
     const offset = now.getTimezoneOffset() * 60000;
     const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
     
     els.scheduledInput.value = localISOTime;
-    
-    // Set Min time to now
+
     const minTime = (new Date(Date.now() - offset)).toISOString().slice(0, 16);
     els.scheduledInput.min = minTime;
 
-    // Show UI sections
     els.scheduleSection.classList.remove('hidden');
     els.scheduleBtn.classList.remove('hidden');
 
-    // Clean up previous event listeners (to prevent duplicate firings)
     const newBtn = els.scheduleBtn.cloneNode(true);
     els.scheduleBtn.parentNode.replaceChild(newBtn, els.scheduleBtn);
-    els.scheduleBtn = newBtn; // Update reference
+    els.scheduleBtn = newBtn; 
     
     els.scheduleBtn.onclick = () => handleSchedule(task_id);
 
@@ -236,22 +227,20 @@ try {
 } catch (e) {
     console.error(e);
     alert("Could not load details");
-    toggleLoading(`viewBtnApr`, true, 'Opening');
+    toggleLoading(`viewBtnApr-${taskId}`, true, 'Opening');
 }
 finally{
-    toggleLoading(`viewBtnApr`, false);
+    toggleLoading(`viewBtnApr-${taskId}`, false);
 }
 }
 
 function populatePlatforms(platforms) {
-    // Clear the existing content
     els.platforms.innerHTML = ''; 
 
     platforms.forEach(platform => {
         const platformId = platform.platform_id;
         const div = document.createElement('div');
-        
-        // This structure uses the label to style the toggle switch
+
         div.className = 'relative flex items-center justify-between p-3 bg-white rounded-xl  border border-gray-100 hover:border-gray-500 transition-all cursor-pointer';
 
         div.innerHTML = `
