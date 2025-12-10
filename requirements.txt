@@ -33,7 +33,7 @@ greenlet
 aiosmtplib
 honcho==1.1.0
 cryptography
-yt_dlp
+yt_dlp>=2025.12.8
 google-generativeai
 google-genai
 instaloader
