@@ -17,3 +17,7 @@ celery -A celery_app worker --loglevel=info --pool=solo
 # Generate Facebook Page Access Token:
 
 `https://graph.facebook.com/v24.0/me/accounts?access_token=YOUR_CURRENT_USER_TOKEN_HERE `
+
+# To Get Instagram Account ID:
+
+`curl -i -X GET "https://graph.facebook.com/v21.0/me?fields=instagram_business_account&access_token=YOUR_PAGE_TOKEN"`

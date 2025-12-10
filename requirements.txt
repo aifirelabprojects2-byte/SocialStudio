@@ -42,3 +42,4 @@ twscrape
 beautifulsoup4
 pillow
 twitter-scraper
+werkzeug
