@@ -13,7 +13,7 @@ const setDwnLoading = (isLoading) => {
     submitBtnYtb.disabled = true;
     submitBtnYtb.innerHTML = '<i class="ph ph-spinner animate-spin text-lg"></i><span>Processing...</span>';
     submitBtnYtb.classList.add('opacity-75');
-    submitBtnYtb.style.cursor = 'not-allowed'; // ← This will always work
+    submitBtnYtb.style.cursor = 'not-allowed'; 
   } else {
     submitBtnYtb.disabled = false;
     submitBtnYtb.innerHTML = '<i class="ph ph-download-simple text-lg"></i><span>Download</span>';
