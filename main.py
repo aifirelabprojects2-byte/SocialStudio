@@ -1,6 +1,7 @@
 import asyncio
 from functools import lru_cache
 import hashlib
+import random
 import re
 import subprocess
 import time
@@ -599,55 +600,124 @@ def slugify_filename(text: str, max_length: int = 100) -> str:
     
     return text
 
+
+USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:131.0) Gecko/20100101 Firefox/131.0",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.6 Safari/605.1.15",
+]
+
+REFERERS = [
+    "https://www.youtube.com/",
+    "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "https://www.youtube.com/results?search_query=music",
+    "https://www.youtube.com/feed/trending",
+]
+
+LANGUAGES = [
+    "en-US,en;q=0.9",
+    "en-GB,en;q=0.9",
+    "en-US,en;q=0.8",
+    "de-DE,de;q=0.9,en;q=0.8",
+    "fr-FR,fr;q=0.9,en;q=0.8",
+]
+
+
+def get_random_headers():
+    return {
+        "User-Agent": random.choice(USER_AGENTS),
+        "Referer": random.choice(REFERERS),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "Accept-Language": random.choice(LANGUAGES),
+        "Accept-Encoding": "gzip, deflate, br",
+        "DNT": "1",
+        "Connection": "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+        "Sec-Fetch-Dest": "document",
+        "Sec-Fetch-Mode": "navigate",
+        "Sec-Fetch-Site": "none",
+        "Pragma": "no-cache",
+        "Cache-Control": "no-cache",
+    }
+
+
 async def download_video(url: str, quality: str, audio_only: bool) -> tuple[str, str, str]:
     loop = asyncio.get_event_loop()
 
-    # Step 1: Extract info first
-    with yt_dlp.YoutubeDL({"quiet": True, "no_warnings": True, "noplaylist": True}) as ydl:
+    base_opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+        "retries": 10,
+        "fragment_retries": 10,
+        "extractor_retries": 10,
+        "concurrent_fragment_downloads": 5,
+        "http_headers": get_random_headers(),
+    }
+
+    cookies_path = Path("cookies.txt")
+    if cookies_path.exists():
+        base_opts["cookiefile"] = str(cookies_path)
+    else:
+        try:
+            base_opts["cookiefile"] = yt_dlp.utils.browser_cookie_file()
+        except:
+            pass  # no cookies = okay for public videos
+
+    # Step 1: Extract info
+    with yt_dlp.YoutubeDL(base_opts) as ydl:
         info = await loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
 
+    if not info:
+        raise HTTPException(status_code=400, detail="Failed to extract video info")
+
     raw_title = info.get("title", "video")
-    vid_id = info.get("id", "unknown")[:11] 
-
-    # This is the safe name we will actually use
+    vid_id = info.get("id", "unknown")[:11]
     safe_title = slugify_filename(raw_title, max_length=90)
-    final_base = f"{safe_title}_{vid_id}"       
+    final_base = f"{safe_title}_{vid_id}"
 
-    # Determine final extension
-    if audio_only:
-        ext = "mp3" if FFMPEG_AVAILABLE else "m4a"
-    else:
-        ext = "mp4"
-
+    ext = "mp3" if audio_only and FFMPEG_AVAILABLE else "m4a" if audio_only else "mp4"
     final_filename = f"{final_base}.{ext}"
     filepath = DOWNLOADS_DIR / final_filename
 
-    # Only now do the real download with exact known filename
-    opts = {
+    # Final download options
+    download_opts = base_opts.copy()
+    download_opts.update({
         "format": get_ydl_format(quality, audio_only)["format"],
-        "outtmpl": str(filepath.as_posix().replace(f".{ext}", ".%(ext)s")),  # forces exact name
+        "outtmpl": str(filepath.with_suffix(".%(ext)s")),
         "merge_output_format": "mp4" if not audio_only and FFMPEG_AVAILABLE else None,
         "postprocessors": [{
             "key": "FFmpegExtractAudio",
             "preferredcodec": "mp3",
             "preferredquality": "192",
         }] if audio_only and FFMPEG_AVAILABLE else [],
-        "retries": 10,
-        "fragment_retries": 10,
-        "noplaylist": True,
-    }
+        # Keep fresh random headers for the actual download too
+        "http_headers": get_random_headers(),
+    })
 
     try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
+        with yt_dlp.YoutubeDL(download_opts) as ydl:
             await loop.run_in_executor(None, lambda: ydl.download([url]))
-
         if not filepath.exists():
-            raise FileNotFoundError(f"File was not created: {filepath}")
+            matches = list(DOWNLOADS_DIR.glob(f"{final_base}.*"))
+            if matches:
+                matches[0].rename(filepath)
 
         return "success", str(filepath), final_filename
 
+    except yt_dlp.utils.DownloadError as e:
+        error_msg = str(e)
+        if "Sign in to confirm you’re not a bot" in error_msg:
+            raise HTTPException(status_code=429, detail="Bot detection triggered. Update your cookies.txt")
+        if "Private video" in error_msg or "unavailable" in error_msg.lower():
+            raise HTTPException(status_code=400, detail="Video is private or region-locked")
+        raise HTTPException(status_code=500, detail=f"Download failed: {error_msg}")
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/download", response_model=dict)

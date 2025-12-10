@@ -12,14 +12,15 @@ const setDwnLoading = (isLoading) => {
   if (isLoading) {
     submitBtnYtb.disabled = true;
     submitBtnYtb.innerHTML = '<i class="ph ph-spinner animate-spin text-lg"></i><span>Processing...</span>';
-    submitBtnYtb.classList.add('opacity-75', 'cursor-not-allowed');
+    submitBtnYtb.classList.add('opacity-75');
+    submitBtnYtb.style.cursor = 'not-allowed'; // ← This will always work
   } else {
     submitBtnYtb.disabled = false;
     submitBtnYtb.innerHTML = '<i class="ph ph-download-simple text-lg"></i><span>Download</span>';
-    submitBtnYtb.classList.remove('opacity-75', 'cursor-not-allowed');
+    submitBtnYtb.classList.remove('opacity-75');
+    submitBtnYtb.style.cursor = '';
   }
 };
-
 formYtb.addEventListener('submit', async (e) => {
   e.preventDefault();
 
