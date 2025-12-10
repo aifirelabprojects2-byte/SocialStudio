@@ -126,10 +126,10 @@ function renderTable(tasks) {
 function setLoading(bool) {
     if(bool) {
         skeletonDraft.classList.remove('hidden')
-        els.tbody.classList.add('opacity-50', 'pointer-events-none'); 
+        els.tbody.classList.add('hidden'); 
     } else {
         skeletonDraft.classList.add('hidden')
-        els.tbody.classList.remove('opacity-50', 'pointer-events-none');
+        els.tbody.classList.remove('hidden');
     }
 }
 
