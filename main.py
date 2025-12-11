@@ -649,18 +649,34 @@ async def download_video(url: str, quality: str, audio_only: bool) -> tuple[str,
     loop = asyncio.get_event_loop()
 
     base_opts = {
-        "quiet": True,
-        "no_warnings": True,
-        "noplaylist": True,
-        "retries": 10,
-        "fragment_retries": 10,
-        "extractor_retries": 10,
-        "concurrent_fragment_downloads": 5,
-        "http_headers": get_random_headers(),
-    }
+    "quiet": True,
+    "no_warnings": True,
+    "noplaylist": True,
+    "retries": 20,
+    "fragment_retries": 20,
+    "extractor_retries": 10,
+    "sleep_interval": 3,
+    "max_sleep_interval": 15,
+    "http_headers": get_random_headers(),
+    "geo_bypass": True,
+    "concurrent_fragment_downloads": 3,
+    "continuedl": True,
+    "retries_sleep": 5,
+
+    "extractor_args": {
+        "youtube": {
+            "player_client": "android",         
+            "player_skip": ["webpage", "configs"],
+            "skip": ["dash"]                     
+        }
+    },
+
+    "cookiefile": "cookies.txt" if Path("cookies.txt").exists() else None,
+}
 
     cookies_path = Path("cookies.txt")
     if cookies_path.exists():
+        print("bruh cookie exist..")
         base_opts["cookiefile"] = str(cookies_path)
     else:
         try:
