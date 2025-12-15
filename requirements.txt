@@ -43,3 +43,5 @@ beautifulsoup4
 pillow
 twitter-scraper
 werkzeug
+oauth2
+tweepy

@@ -13,6 +13,12 @@ const customFilterToggle = document.getElementById('customFilterToggle');
 const customFilterContainer = document.getElementById('customFilterContainer');
 const customFilterInput = document.getElementById('customFilterInput');
 
+// Clarification Elements
+const clarificationContainer = document.getElementById('clarificationContainer');
+const clarificationQuestion = document.getElementById('clarificationQuestion');
+const clarificationInput = document.getElementById('clarificationInput');
+const clarificationSubmit = document.getElementById('clarificationSubmit');
+
 // Toggle Custom Filter Visibility
 customFilterToggle.addEventListener('click', () => {
     customFilterContainer.classList.toggle('hidden');
@@ -21,24 +27,28 @@ customFilterToggle.addEventListener('click', () => {
     }
 });
 
-
 marked.use({
     breaks: true, 
     gfm: true    
 });
 
-async function handleSubmitRes(event) {
-    event.preventDefault();
+let currentPayload = null; // To store ongoing request payload for clarification
+
+async function handleSubmitRes(event, isClarification = false) {
+    event?.preventDefault();
     const productCompanyRes = inputRes.value.trim();
 
     const isDeepResearch = deepSearchToggle.checked;
     const customFilter = customFilterInput.value.trim() || null;
+    const clarification = isClarification ? clarificationInput.value.trim() : null;
 
     if (!productCompanyRes) return;
 
+    // Reset UI
     reviewsDisplayRes.innerHTML = '';
     resultsContainer.classList.add('hidden');
     errorMessageRes.classList.add('hidden');
+    clarificationContainer.classList.add('hidden');
     loadingIndicatorRes.classList.remove('hidden');
 
     const originalBtnContent = submitButtonRes.innerHTML;
@@ -47,19 +57,40 @@ async function handleSubmitRes(event) {
     submitButtonRes.style.cursor = 'not-allowed'; 
     let fullTextBuffer = '';
 
+    const payload = { 
+        product_company: productCompanyRes,
+        is_deepresearch_needed: isDeepResearch,
+        custom_filter: customFilter,
+        clarification: clarification // New field
+    };
+    currentPayload = payload; // Store for potential resubmission
+
     try {
-
-        const payload = { 
-            product_company: productCompanyRes,
-            is_deepresearch_needed: isDeepResearch,
-            custom_filter: customFilter
-        };
-
         const responseRes = await fetch('/reviews', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         });
+
+        console.log(responseRes);
+
+        const contentType = responseRes.headers.get('content-type');
+
+        if (contentType && contentType.includes('application/json')) {
+            // Handle clarification response
+            const clarificationData = await responseRes.json();
+            if (clarificationData.needs_clarification) {
+                loadingIndicatorRes.classList.add('hidden');
+                clarificationQuestion.textContent = clarificationData.question;
+                clarificationInput.value = '';
+                clarificationContainer.classList.remove('hidden');
+                clarificationInput.focus();
+                return; // Stop here, wait for user input
+            } else {
+                // Fallback to error if unexpected JSON
+                throw new Error('Unexpected JSON response');
+            }
+        }
 
         if (!responseRes.ok) {
             const errorDataRes = await responseRes.json();
@@ -101,7 +132,21 @@ async function handleSubmitRes(event) {
     }
 }
 
-formRes.addEventListener('submit', handleSubmitRes);
+// Clarification submit handler
+clarificationSubmit.addEventListener('click', (e) => {
+    if (clarificationInput.value.trim()) {
+        handleSubmitRes(e, true); // Pass isClarification flag
+    }
+});
+
+// Allow Enter key in clarification input
+clarificationInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && clarificationInput.value.trim()) {
+        handleSubmitRes(e, true);
+    }
+});
+
+formRes.addEventListener('submit', (e) => handleSubmitRes(e, false));
 
 function copyToClipboard() {
     const text = reviewsDisplayRes.innerText;

@@ -134,8 +134,8 @@
                   <li class="pill-nav-item active" data-index="0">Leads</li>
                   <li class="pill-nav-item" data-index="1">MediaSnag</li>
                   <li class="pill-nav-item" data-index="2">Research</li>
-                  <li class="pill-nav-item" data-index="3">Engagement</li>
-                  <li class="pill-nav-item" data-index="4">Campaigns</li>
+                  <li class="pill-nav-item" data-index="3">Logs</li>
+                  <li class="pill-nav-item" data-index="4">Settings</li>
               </ul>
           </div>
           
@@ -155,7 +155,7 @@
               
                 <main class="flex-grow w-full max-w-7xl  mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
                   
-                  <section class="max-w-3xl mx-auto" id="Section1">
+                  <section class="max-w-4xl mx-auto" id="Section1">
                     <div class="text-center mb-8">
                         <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900 dark:text-white mb-3">
                             What would you like to post today?
@@ -185,8 +185,22 @@
                                                       peer-checked:translate-x-5 shadow"></div>
                                         </div>
                                     </label>
+
+                                    <div id="imageStyleContainer" class="hidden peer-checked:flex items-center">
+                                      <select name="image_style" id="imageStyle" class="flex items-center min-w-[110px]  hover:ring-0 rounded-full dark:bg-slate-700 border border-slate-200 dark:border-slate-600  py-2 text-sm font-medium transition duration-150">
+                                          <option value="realistic">Realistic</option>
+                                          <option value="cinematic">Cinematic</option>
+                                          <option value="cartoon">Cartoon</option>
+                                          <option value="illustration">Illustration</option>
+                                          <option value="digital_art">Digital Art</option>
+                                          <option value="anime">Anime</option>
+                                          <option value="minimalist">Minimalist</option>
+                                          <option value="vintage">Vintage</option>
+                                      </select>
+                                  </div>
+                              
                 
-                                    <div id="useCaseCarouselDrf" class="flex items-center space-x-2 rounded-2xl dark:bg-slate-700 border border-slate-200 dark:border-slate-600 p-[6px] text-sm font-medium transition duration-150">
+                                    <div id="useCaseCarouselDrf" class="flex items-center space-x-2 rounded-full dark:bg-slate-700 border border-slate-200 dark:border-slate-600 p-[6px] text-sm font-medium transition duration-150">
                 
                                         <button type="button" id="prevCaseBtnDrf" title="Previous Use Case"
                                             class="text-slate-700 dark:text-slate-200 hover:text-gray-900 dark:hover:text-white disabled:opacity-50 transition p-1">
@@ -233,6 +247,7 @@
                     <div id="preview" class="hidden mt-8 w-full bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
                     </div>
                 </section>
+                
 
                   <section class="min-h-[20rem] ">
                     <div class="flex mb-6 px-1">
@@ -444,305 +459,7 @@
               
                   </section>
 
-
-                  <section id="Platform">
-
-                    <div class="min-h-full">
-                      <header class="bg-white shadow-sm border-b">
-                        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                          <div class="flex justify-between items-center">
-                            <div class="flex-1">
-                              <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Platforms</h1>
-                              <p class="text-sm text-neutral-500 mt-2 max-w-md">Manage platforms</p>
-                            </div>
-                            <div class="flex gap-3">
-                              <button id="refreshBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
-                                Refresh
-                              </button>
-                              <button id="openModalBtn" class="flex items-center gap-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                  <path d="M12 5L12 19"/>
-                                  <path d="M5 12L19 12"/>
-                                </svg>
-                                  New Platform
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </header>
                   
-                      <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                      <div id="skeletonPlatform" class="space-y-6">
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                          <div class="h-14 bg-gray-50 skeletonPlatform-loader"></div>
-                          <div class="p-6 space-y-4">
-                            <div class="h-5 w-48 bg-gray-200 rounded skeletonPlatform-loader"></div>
-                            <div class="h-4 w-64 bg-gray-200 rounded skeletonPlatform-loader"></div>
-                            <div class="flex items-center gap-8">
-                              <div class="h-8 w-32 bg-gray-200 rounded-full skeletonPlatform-loader"></div>
-                              <div class="h-4 w-24 bg-gray-200 rounded skeletonPlatform-loader"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                  
-                      <div id="PlatformEmptyState" class="hidden flex-col items-center justify-center py-2 text-center">
-                        <div class="rounded-full bg-gray-50 p-4 mb-3 inline-block">
-                            <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
-                        </div>
-                        <h3 class="mt-2 text-sm font-semibold text-gray-900">No platforms yet</h3>
-                        <p class="mt-1 text-sm text-gray-500">Add your first social platform to get started.</p>
-                        <button id="openModalBtn2" class="mt-6 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-                          Create Platform
-                        </button>
-                    </div>
-
-                      <div id="table" class="hidden bg-white shadow overflow-hidden sm:rounded-lg">
-                        <table class="min-w-full divide-y divide-gray-200">
-                          <thead class="bg-gray-50">
-                            <tr>
-                              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API</th>
-                              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Token</th>
-                              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                            </tr>
-                          </thead>
-                          <tbody id="tbody" class="bg-white divide-y divide-gray-200"></tbody>
-                        </table>
-                      </div>
-                    </main>
-                  </div>
-
-                  <dialog id="createModal" class="p-8 rounded-2xl shadow-2xl max-w-lg w-full bg-white">
-                    <h2 class="text-2xl font-bold mb-6">Add New Platform</h2>
-
-                    <form id="createForm" class="space-y-5">
-                      <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Platform Name *</label>
-                        <input name="name" required placeholder="e.g. Facebook" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
-                      </div>
-                      <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">API Name (optional)</label>
-                        <input name="api_name" placeholder="e.g. facebook_graph" class="w-full px-4 py-2 border border-gray-300 rounded-lg"/>
-                      </div>
-                      <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Access Token *</label>
-                        <textarea name="access_token" required placeholder="Paste your access token here" class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm"></textarea>
-                      </div>
-                      <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Refresh Token (optional)</label>
-                        <textarea name="refresh_token" rows="2" placeholder="Optional" class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm"></textarea>
-                      </div>
-                
-                      <div class="flex justify-end gap-3 mt-8">
-                        <button type="button" id="cancelBtn" class="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                          Cancel
-                        </button>
-                        <button type="submit" id="saveBtn" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-                          Save Platform
-                        </button>
-                      </div>
-                    </form>
-                  </dialog>
-                
-
-
-                  </section>
-
-
-                  <section>
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        
-                      <!-- Dashboard Header -->
-                      <div class="mb-8 flex flex-col lg:flex-row lg:items-end justify-between gap-6 slide-up">
-                          <div class="flex-1">
-                              <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Task Operations</h1>
-                              <p class="text-sm text-neutral-500 mt-2 max-w-md">Monitor scheduled automation, delivery status, and error logs with precision.</p>
-                          </div>
-                          <!-- Status Filter -->
-                          <div class="w-full lg:w-44">
-                              <label for="statusFilterShd" class="sr-only">Filter by Status</label>
-                              <div class="relative">
-                                  <select id="statusFilterShd" class="appearance-none block w-full pl-4 pr-10 py-3 text-sm border border-neutral-200 rounded-xl  bg-white focus:outline-none   transition-all duration-200 ease-in-out cursor-pointer hover:border-neutral-300">
-                                      <option value="">All Statuses</option>
-                                      <option value="scheduled">Scheduled</option>
-                                      <option value="posted">Posted</option>
-                                      <option value="failed">Failed</option>
-                                      <option value="cancelled">Cancelled</option>
-                                  </select>
-                              </div>
-                          </div>
-                      </div>
-
-                      <div class="bg-white rounded-2xl border border-neutral-200 overflow-hidden fade-in">
-
-                          <div class="overflow-x-auto custom-scrollbar">
-                              <table id="tasksTableShd" class="min-w-full divide-y divide-neutral-100 hidden">
-                                  <thead class="bg-neutral-50">
-                                      <tr>
-                                          <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Task Title</th>
-                                          <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</th>
-                                          <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Created</th>
-                                          <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Scheduled For</th>
-                                          <th scope="col" class="px-6 py-5 text-right text-xs font-semibold text-neutral-500 uppercase tracking-wider">Actions</th>
-                                      </tr>
-                                  </thead>
-                                  <tbody id="tasksTableBodyShd" class="bg-white divide-y divide-neutral-100">
-                                      
-                                  </tbody>
-                              </table>
-                          </div>
-              
-                          <!-- Loading State -->
-                          <div id="tableLoadingShd" class="hidden flex flex-col justify-center items-center py-20 fade-in">
-                              <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
-                                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                          </div>
-              
-                          <!-- Empty State -->
-                          <div id="noTasksShd" class="hidden flex flex-col justify-center items-center py-5 text-center fade-in">
-                              <div class="bg-neutral-100 rounded-full p-4 mb-4 inline-flex items-center justify-center">
-                                  <svg class="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-                              </div>
-                              <h3 class="text-lg font-semibold text-neutral-900 mb-1">No tasks found</h3>
-                              <p class="text-sm text-neutral-500">Adjust filters or create a new task to see results.</p>
-                          </div>
-              
-                          <!-- Pagination Footer -->
-                          <div class="bg-neutral-50 px-6 py-5 border-t border-neutral-100 flex items-center justify-between">
-                              <span id="pageInfoShd" class="text-sm text-neutral-600 font-medium">Loading...</span>
-                              <div class="flex gap-2">
-                                  <button id="prevPageShd" class="inline-flex items-center gap-2 px-4 py-2 border border-neutral-300 text-sm font-medium rounded-xl text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none  disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200  hover:shadow-medium" disabled>
-                                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-                                      Previous
-                                  </button>
-                                  <button id="nextPageShd" class="inline-flex items-center gap-2 px-4 py-2 border border-neutral-300 text-sm font-medium rounded-xl text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none  disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200  hover:shadow-medium" disabled>
-                                      Next
-                                      <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                                  </button>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-              
-                  </section>
-
-
-
-
-                  <section>
-
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                      <div class="flex-1 mb-5">
-                        <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Error logs</h1>
-                        <p class="text-sm text-neutral-500 mt-2 max-w-md">Manage and monitor system error logs</p>
-                      </div>
-
-                      <div class="flex justify-between items-center mb-6">
-                        <button id="toggleFiltersBtnErr" class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 focus:outline-none  ">
-                          Filters
-                          <i id="filterIcon" class="fas fa-chevron-down text-gray-400"></i>
-                        </button>
-                        <button id="refreshBtnErr" class="group text-gray-600 hover:text-gray-500">
-                          <svg class="w-6 h-6 transition-transform duration-500 ease-out group-hover:rotate-360"  viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M13.5 4.5H12.5C8.08172 4.5 4.5 8.08172 4.5 12.5C4.5 15.6631 6.33576 18.3975 9 19.6958M11.5 20.5H12.5C16.9183 20.5 20.5 16.9183 20.5 12.5C20.5 9.33688 18.6642 6.60253 16 5.30423" stroke="currentColor" stroke-width="2"/>
-                            <path d="M14 17.5619L11.5 20.5L14.5 23.0619M11 7.43811L13.5 4.50001L10.5 1.93811" stroke="currentColor" stroke-width="2"/>
-                            </svg>
-                        </button>
-                      </div>
-                  
-                      <!-- Filters Bar (Hidden by Default) -->
-                      <div id="filtersBar" class="rounded-2xl shadow-sm border border-gray-200 p-5 mb-6 hidden transition-all duration-300 ease-in-out">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <div class="md:col-span-2">
-                            <label for="searchInputErr" class="block text-sm font-medium text-gray-700 mb-1.5">Search logs</label>
-                            <div class="relative">
-                              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-search text-gray-400 text-sm"></i>
-                              </div>
-                              <input 
-                                type="text" 
-                                id="searchInputErr"
-                                placeholder="Search by task ID, platform, error type, message..."
-                                class="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-gray-700 text-sm transition-all duration-200 shadow-sm"
-                              />
-                            </div>
-                          </div>
-                  
-                          <div>
-                            <label for="fromDateErr" class="block text-sm font-medium text-gray-700 mb-1.5">From Date</label>
-                            <input 
-                              type="datetime-local" 
-                              id="fromDateErr"
-                              class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-gray-700 text-sm transition-all duration-200 shadow-sm"
-                            />
-                          </div>
-                  
-                          <div>
-                            <label for="toDateErr" class="block text-sm font-medium text-gray-700 mb-1.5">To Date</label>
-                            <input 
-                              type="datetime-local" 
-                              id="toDateErr"
-                              class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-gray-700 text-sm transition-all duration-200 shadow-sm"
-                            />
-                          </div>
-                        </div>
-                  
-                        <div class="mt-5 flex justify-end gap-3">
-                          <button id="clearFiltersBtnErr" class="px-5 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 focus:outline-none ">
-                            Clear filters
-                          </button>
-                        </div>
-                      </div>
-                  
-                      <!-- Table Card -->
-                      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                        <div class="overflow-x-auto">
-                          <table id="errorLogsTableErr" class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                              <tr>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Error ID</th>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Task ID</th>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Platform</th>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Code</th>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Message</th>
-                                <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</th>
-                              </tr>
-                            </thead>
-                            <tbody id="errorLogsTbodyErr" class="bg-white divide-y divide-gray-200">
-                              <!-- Dynamic rows will be injected here -->
-                            </tbody>
-                          </table>
-                        </div>
-                  
-                        <!-- Pagination & Info -->
-                        <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
-                          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                            <div class="text-sm text-gray-700 opacity-0">
-                              Showing <span class="font-medium" id="pageInfoErr">1</span> to <span class="font-medium" id="limitInfoErr">20</span> of 
-                              <span class="font-medium" id="totalCountErr">127</span> results
-                            </div>
-                            <div class="mt-4 sm:mt-0 flex justify-center">
-                              <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                <button id="prevPageBtnErr" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 hover:border-gray-700 rounded-l-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 focus:outline-none ">
-                                  Previous
-                                </button>
-                                <button id="nextPageBtnErr" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-700 rounded-r-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 focus:outline-none ">
-                                  Next
-                                </button>
-                              </nav>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                  </section>
-
                 </main>
             </div>
             <div class="tab-content">
@@ -848,114 +565,432 @@
             </div>
 
             <div class="tab-content">
-            <main class="flex-grow w-full max-w-7xl  mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
-              <section class="max-w-3xl mx-auto" >
-                <div class="text-center mb-8">
-                    <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900 dark:text-white mb-3">
-                      Product Intelligence
-                    </h1>
-                    <p class="text-gray-600 dark:text-slate-400 text-lg">
-                      Instant market feedback. Enter a product and company to stream real-time sentiment analysis and review summaries.
-                    </p>
-                </div>
-                
-
-              <div class="bg-white rounded-3xl border border-slate-200 p-5 transition-shadow duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
-                  <form id="reviewFormRes" class="relative">
-                      <div class="relative group">
-                          <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                              <svg class="w-5 h-5 text-slate-300 group-focus-within:text-blue-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                              </svg>
-                          </div>
-                          <input
-                              type="text"
-                              id="productCompanyInputRes"
-                              placeholder="e.g., iPhone 15 Apple"
-                              class="w-full pl-12 pr-4 py-6 bg-transparent text-xl text-slate-800 placeholder-slate-300 outline-none rounded-2xl"
-                              autocomplete="off"
-                              required
-                          >
-                      </div>
-      
-                      <div id="customFilterContainer" class="hidden p-4">
-                          <input 
-                              type="text" 
-                              id="customFilterInput" 
-                              placeholder="Filter criteria (e.g., 'Focus on battery life', 'Ignore shipping complaints')" 
-                              class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all text-slate-700 placeholder-slate-400"
-                          >
-                      </div>
-      
-                      <!-- Controls Bar -->
-                      <div class="flex items-center justify-between px-4 pb-4 pt-2 border-t border-slate-50 mt-2">
-                          <div class="flex items-center space-x-4">
-                              <label class="flex items-center cursor-pointer group">
-                                  <div class="relative">
-                                      <input type="checkbox" id="deepSearchToggle" class="sr-only peer">
-                                      <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
-                                  </div>
-                                  <span class="ml-2 text-sm font-medium text-slate-500 group-hover:text-slate-700 transition-colors">Deep Search</span>
-                              </label>
-                              
-                              <div class="h-4 w-px bg-slate-200"></div>
-      
-                              <button type="button" id="customFilterToggle" class="flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
-                                  <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                  Custom Filters
-                              </button>
-                          </div>
-      
-                          <button
-                              type="submit"
-                              id="submitButtonRes"
-                              class="flex items-center px-6 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 focus:ring-4 focus:ring-slate-200 transition-all transform active:scale-95 shadow-lg shadow-slate-900/10"
-                          >
-                              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                              Generate Report
-                          </button>
-                      </div>
-                  </form>
-              </div>
-
-              <div id="loadingIndicatorRes" class="hidden mt-8 text-center fade-in">
-                  <div class="flex items-center justify-center space-x-2">
-                      <div class="w-2 h-2 bg-gray-800 rounded-full animate-bounce" style="animation-delay: 0s"></div>
-                      <div class="w-2 h-2 bg-gray-800 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-                      <div class="w-2 h-2 bg-gray-800 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+              <main class="flex-grow w-full max-w-7xl  mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
+                <section class="max-w-3xl mx-auto" >
+                  <div class="text-center mb-8">
+                      <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900 dark:text-white mb-3">
+                        Product Intelligence
+                      </h1>
+                      <p class="text-gray-600 dark:text-slate-400 text-lg">
+                        Instant market feedback. Enter a product and company to stream real-time sentiment analysis and review summaries.
+                      </p>
                   </div>
-                  <p class="mt-3 text-sm text-slate-400 font-medium tracking-wide uppercase">Analysing Sentiment</p>
-              </div>
-      
-              <div id="errorMessageRes" class="hidden mt-6 mx-auto max-w-lg bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm text-center fade-in"></div>
-
-              </section>
-
-              <div id="resultsContainer" class="hidden mt-10">
-                <div class="flex items-center justify-between mb-4 px-2">
-                    <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Analysis Results</h2>
-                    <button onclick="copyToClipboard()" class="text-sm text-slate-400 hover:text-blue-600 transition-colors flex items-center">
-                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-                        Copy Report
+                  
+  
+                <div class="bg-white rounded-3xl border border-slate-200 p-5 transition-shadow duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+                    <form id="reviewFormRes" class="relative">
+                        <div class="relative group">
+                            <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                <svg class="w-5 h-5 text-slate-300 group-focus-within:text-gray-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                            </div>
+                            <input
+                                type="text"
+                                id="productCompanyInputRes"
+                                placeholder="e.g., Whatai developed by AI Firelab"
+                                class="w-full pl-12 pr-4 py-6 bg-transparent text-xl text-slate-800 placeholder-slate-300 outline-none rounded-2xl"
+                                autocomplete="off"
+                                required
+                            >
+                        </div>
+        
+                        <div id="customFilterContainer" class="hidden p-4">
+                            <input 
+                                type="text" 
+                                id="customFilterInput" 
+                                placeholder="Filter criteria (e.g., 'Focus on battery life', 'Ignore shipping complaints')" 
+                                class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all text-slate-700 placeholder-slate-400"
+                            >
+                        </div>
+  
+                        <div class="flex items-center justify-between px-4 pb-4 pt-2 border-t border-slate-50 mt-2">
+                            <div class="flex items-center space-x-4">
+                                <label class="flex items-center cursor-pointer group">
+                                    <div class="relative">
+                                        <input type="checkbox" id="deepSearchToggle" class="sr-only peer">
+                                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-slate-900"></div>
+                                    </div>
+                                    <span class="ml-2 text-sm font-medium text-slate-500 group-hover:text-slate-700 transition-colors">Deep Search</span>
+                                </label>
+                                
+                                <div class="h-4 w-px bg-slate-200"></div>
+        
+                                <button type="button" id="customFilterToggle" class="flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                    Custom Filters
+                                </button>
+                            </div>
+        
+                            <button
+                                type="submit"
+                                id="submitButtonRes"
+                                class="flex items-center px-6 py-2.5 bg-slate-900 text-white text-sm font-medium rounded-xl hover:bg-slate-800 focus:ring-4 focus:ring-slate-200 transition-all transform active:scale-95 shadow-lg shadow-slate-900/10"
+                            >
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                Generate Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+  
+                <div id="loadingIndicatorRes" class="hidden mt-8 text-center fade-in">
+                    <div class="flex items-center justify-center space-x-2">
+                        <div class="w-2 h-2 bg-gray-800 rounded-full animate-bounce" style="animation-delay: 0s"></div>
+                        <div class="w-2 h-2 bg-gray-800 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        <div class="w-2 h-2 bg-gray-800 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+                    </div>
+                    <p class="mt-3 text-sm text-slate-400 font-medium tracking-wide uppercase">Analysing Sentiment</p>
+                </div>
+        
+                <div id="errorMessageRes" class="hidden mt-6 mx-auto max-w-lg bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-xl text-sm text-center fade-in"></div>
+  
+                <div id="clarificationContainer" class="hidden mt-6 mx-auto max-w-lg bg-gray-50 border border-gray-100 text-gray-800 px-4 py-3 rounded-2xl fade-in">
+                    <p id="clarificationQuestion" class="mb-3 text-sm font-medium"></p>
+                    <input 
+                        type="text" 
+                        id="clarificationInput" 
+                        placeholder="e.g., 'Whtai is a Whatsapp group automation tool'" 
+                        class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-200 mb-2 text-gray-700 placeholder-gray-400"
+                    >
+                    <button 
+                        id="clarificationSubmit" 
+                        class="w-full px-4 py-2 bg-gray-800 text-white text-sm font-medium rounded-full hover:bg-gray-700 focus:ring-2 focus:ring-gray-200 transition-all"
+                    >
+                        Provide Context & Continue
                     </button>
                 </div>
-                
-                <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 fade-in relative overflow-hidden">
-                    <div id="reviewsDisplayRes" class="markdown-body font-sans text-base text-slate-700 leading-relaxed overflow-y-auto custom-scrollbar pr-2"></div>
-    
-                    <div id="Rescursor" class="hidden w-2 h-5 bg-slate-900 inline-block align-middle ml-1 animate-pulse"></div>
+  
+                </section>
+  
+                <div id="resultsContainer" class="hidden mt-10">
+                  <div class="flex items-center justify-between mb-4 px-2">
+                      <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Analysis Results</h2>
+                      <button onclick="copyToClipboard()" class="text-sm text-slate-400 hover:text-gray-600 transition-colors flex items-center">
+                          <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                          Copy Report
+                      </button>
+                  </div>
+                  
+                  <div class="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 fade-in relative overflow-hidden">
+                      <div id="reviewsDisplayRes" class="markdown-body font-sans text-base text-slate-700 leading-relaxed overflow-y-auto custom-scrollbar pr-2"></div>
+      
+                      <div id="Rescursor" class="hidden w-2 h-5 bg-slate-900 inline-block align-middle ml-1 animate-pulse"></div>
+                  </div>
                 </div>
-              </div>
+              </main>
+            </div>
+
+            <div class="tab-content">
+                
+              <main>
+
+                <section>
+                  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+      
+                    <!-- Dashboard Header -->
+                    <div class="mb-8 flex flex-col lg:flex-row lg:items-end justify-between gap-6 slide-up">
+                        <div class="flex-1">
+                            <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Task Operations</h1>
+                            <p class="text-sm text-neutral-500 mt-2 max-w-md">Monitor scheduled automation, delivery status, and error logs with precision.</p>
+                        </div>
+                        <!-- Status Filter -->
+                        <div class="w-full lg:w-44">
+                            <label for="statusFilterShd" class="sr-only">Filter by Status</label>
+                            <div class="relative">
+                                <select id="statusFilterShd" class="appearance-none block w-full pl-4 pr-10 py-3 text-sm border border-neutral-200 rounded-xl  bg-white focus:outline-none   transition-all duration-200 ease-in-out cursor-pointer hover:border-neutral-300">
+                                    <option value="">All Statuses</option>
+                                    <option value="scheduled">Scheduled</option>
+                                    <option value="posted">Posted</option>
+                                    <option value="failed">Failed</option>
+                                    <option value="cancelled">Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-neutral-200 overflow-hidden fade-in">
+
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table id="tasksTableShd" class="min-w-full divide-y divide-neutral-100 hidden">
+                                <thead class="bg-neutral-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Task Title</th>
+                                        <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</th>
+                                        <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Created</th>
+                                        <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Scheduled For</th>
+                                        <th scope="col" class="px-6 py-5 text-right text-xs font-semibold text-neutral-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tasksTableBodyShd" class="bg-white divide-y divide-neutral-100">
+                                    
+                                </tbody>
+                            </table>
+                        </div>
+            
+                        <!-- Loading State -->
+                        <div id="tableLoadingShd" class="hidden flex flex-col justify-center items-center py-20 fade-in">
+                            <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                        </div>
+            
+                        <!-- Empty State -->
+                        <div id="noTasksShd" class="hidden flex flex-col justify-center items-center py-5 text-center fade-in">
+                            <div class="bg-neutral-100 rounded-full p-4 mb-4 inline-flex items-center justify-center">
+                                <svg class="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                            </div>
+                            <h3 class="text-lg font-semibold text-neutral-900 mb-1">No tasks found</h3>
+                            <p class="text-sm text-neutral-500">Adjust filters or create a new task to see results.</p>
+                        </div>
+            
+                        <!-- Pagination Footer -->
+                        <div class="bg-neutral-50 px-6 py-5 border-t border-neutral-100 flex items-center justify-between">
+                            <span id="pageInfoShd" class="text-sm text-neutral-600 font-medium">Loading...</span>
+                            <div class="flex gap-2">
+                                <button id="prevPageShd" class="inline-flex items-center gap-2 px-4 py-2 border border-neutral-300 text-sm font-medium rounded-xl text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none  disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200  hover:shadow-medium" disabled>
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                                    Previous
+                                </button>
+                                <button id="nextPageShd" class="inline-flex items-center gap-2 px-4 py-2 border border-neutral-300 text-sm font-medium rounded-xl text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none  disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200  hover:shadow-medium" disabled>
+                                    Next
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            
+                </section>
+
+
+
+
+                <section>
+
+                  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div class="flex-1 mb-5">
+                      <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Error logs</h1>
+                      <p class="text-sm text-neutral-500 mt-2 max-w-md">Manage and monitor system error logs</p>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-6">
+                      <button id="toggleFiltersBtnErr" class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 focus:outline-none  ">
+                        Filters
+                        <i id="filterIcon" class="fas fa-chevron-down text-gray-400"></i>
+                      </button>
+                      <button id="refreshBtnErr" class="group text-gray-600 hover:text-gray-500">
+                        <svg class="w-6 h-6 transition-transform duration-500 ease-out group-hover:rotate-360"  viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M13.5 4.5H12.5C8.08172 4.5 4.5 8.08172 4.5 12.5C4.5 15.6631 6.33576 18.3975 9 19.6958M11.5 20.5H12.5C16.9183 20.5 20.5 16.9183 20.5 12.5C20.5 9.33688 18.6642 6.60253 16 5.30423" stroke="currentColor" stroke-width="2"/>
+                          <path d="M14 17.5619L11.5 20.5L14.5 23.0619M11 7.43811L13.5 4.50001L10.5 1.93811" stroke="currentColor" stroke-width="2"/>
+                          </svg>
+                      </button>
+                    </div>
+                
+                    <!-- Filters Bar (Hidden by Default) -->
+                    <div id="filtersBar" class="rounded-2xl shadow-sm border border-gray-200 p-5 mb-6 hidden transition-all duration-300 ease-in-out">
+                      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="md:col-span-2">
+                          <label for="searchInputErr" class="block text-sm font-medium text-gray-700 mb-1.5">Search logs</label>
+                          <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <i class="fas fa-search text-gray-400 text-sm"></i>
+                            </div>
+                            <input 
+                              type="text" 
+                              id="searchInputErr"
+                              placeholder="Search by task ID, platform, error type, message..."
+                              class="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-gray-700 text-sm transition-all duration-200 shadow-sm"
+                            />
+                          </div>
+                        </div>
+                
+                        <div>
+                          <label for="fromDateErr" class="block text-sm font-medium text-gray-700 mb-1.5">From Date</label>
+                          <input 
+                            type="datetime-local" 
+                            id="fromDateErr"
+                            class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-gray-700 text-sm transition-all duration-200 shadow-sm"
+                          />
+                        </div>
+                
+                        <div>
+                          <label for="toDateErr" class="block text-sm font-medium text-gray-700 mb-1.5">To Date</label>
+                          <input 
+                            type="datetime-local" 
+                            id="toDateErr"
+                            class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-gray-700 text-sm transition-all duration-200 shadow-sm"
+                          />
+                        </div>
+                      </div>
+                
+                      <div class="mt-5 flex justify-end gap-3">
+                        <button id="clearFiltersBtnErr" class="px-5 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 focus:outline-none ">
+                          Clear filters
+                        </button>
+                      </div>
+                    </div>
+                
+                    <!-- Table Card -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                      <div class="overflow-x-auto">
+                        <table id="errorLogsTableErr" class="min-w-full divide-y divide-gray-200">
+                          <thead class="bg-gray-50">
+                            <tr>
+                              <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Error ID</th>
+                              <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Task ID</th>
+                              <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Platform</th>
+                              <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
+                              <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Code</th>
+                              <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Message</th>
+                              <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</th>
+                            </tr>
+                          </thead>
+                          <tbody id="errorLogsTbodyErr" class="bg-white divide-y divide-gray-200">
+                            <!-- Dynamic rows will be injected here -->
+                          </tbody>
+                        </table>
+                      </div>
+                
+                      <!-- Pagination & Info -->
+                      <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                          <div class="text-sm text-gray-700 opacity-0">
+                            Showing <span class="font-medium" id="pageInfoErr">1</span> to <span class="font-medium" id="limitInfoErr">20</span> of 
+                            <span class="font-medium" id="totalCountErr">127</span> results
+                          </div>
+                          <div class="mt-4 sm:mt-0 flex justify-center">
+                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                              <button id="prevPageBtnErr" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 hover:border-gray-700 rounded-l-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 focus:outline-none ">
+                                Previous
+                              </button>
+                              <button id="nextPageBtnErr" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-700 rounded-r-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 focus:outline-none ">
+                                Next
+                              </button>
+                            </nav>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </section>
+              </main>
+
+            </div>
+
+            <div class="tab-content">
+              
+              <main>
+
+                <section id="Platform">
+
+                  <div class="min-h-full">
+                    <header class="bg-white shadow-sm border-b">
+                      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                        <div class="flex justify-between items-center">
+                          <div class="flex-1">
+                            <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Platforms</h1>
+                            <p class="text-sm text-neutral-500 mt-2 max-w-md">Manage platforms</p>
+                          </div>
+                          <div class="flex gap-3">
+                            <button id="refreshBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                              Refresh
+                            </button>
+                            <button id="openModalBtn" class="flex items-center gap-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 5L12 19"/>
+                                <path d="M5 12L19 12"/>
+                              </svg>
+                                New Platform
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </header>
+                
+                    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                    <div id="skeletonPlatform" class="space-y-6">
+                      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                        <div class="h-14 bg-gray-50 skeletonPlatform-loader"></div>
+                        <div class="p-6 space-y-4">
+                          <div class="h-5 w-48 bg-gray-200 rounded skeletonPlatform-loader"></div>
+                          <div class="h-4 w-64 bg-gray-200 rounded skeletonPlatform-loader"></div>
+                          <div class="flex items-center gap-8">
+                            <div class="h-8 w-32 bg-gray-200 rounded-full skeletonPlatform-loader"></div>
+                            <div class="h-4 w-24 bg-gray-200 rounded skeletonPlatform-loader"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                
+                    <div id="PlatformEmptyState" class="hidden flex-col items-center justify-center py-2 text-center">
+                      <div class="rounded-full bg-gray-50 p-4 mb-3 inline-block">
+                          <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+                      </div>
+                      <h3 class="mt-2 text-sm font-semibold text-gray-900">No platforms yet</h3>
+                      <p class="mt-1 text-sm text-gray-500">Add your first social platform to get started.</p>
+                      <button id="openModalBtn2" class="mt-6 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                        Create Platform
+                      </button>
+                  </div>
+
+                    <div id="table" class="hidden bg-white shadow overflow-hidden sm:rounded-lg">
+                      <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                          <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Token</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody id="tbody" class="bg-white divide-y divide-gray-200"></tbody>
+                      </table>
+                    </div>
+                  </main>
+                </div>
+
+                <dialog id="createModal" class="p-8 rounded-2xl shadow-2xl max-w-lg w-full bg-white">
+                  <h2 class="text-2xl font-bold mb-6">Add New Platform</h2>
+
+                  <form id="createForm" class="space-y-5">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Platform Name *</label>
+                      <input name="name" required placeholder="e.g. Facebook" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">API Name (optional)</label>
+                      <input name="api_name" placeholder="e.g. facebook_graph" class="w-full px-4 py-2 border border-gray-300 rounded-lg"/>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Access Token *</label>
+                      <textarea name="access_token" required placeholder="Paste your access token here" class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm"></textarea>
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Refresh Token (optional)</label>
+                      <textarea name="refresh_token" rows="2" placeholder="Optional" class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm"></textarea>
+                    </div>
+              
+                    <div class="flex justify-end gap-3 mt-8">
+                      <button type="button" id="cancelBtn" class="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                        Cancel
+                      </button>
+                      <button type="submit" id="saveBtn" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                        Save Platform
+                      </button>
+                    </div>
+                  </form>
+                </dialog>
+              
+              </section>
+
+
             </main>
-            </div>
 
-            <div class="tab-content">
-                <div class="placeholder-screen">?</div>
-            </div>
-
-            <div class="tab-content">
-                <div class="placeholder-screen">?</div>
-            </div>
+          </div>
 
         </div>
     </div>
@@ -1209,10 +1244,8 @@
 
                       </div>
 
-                      <!-- RIGHT COLUMN: History & Logs (Total 8/12 cols) -->
                       <div class="lg:col-span-8 flex flex-col gap-6">
-                          
-                          <!-- Attempts Section -->
+
                           <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-auto overflow-hidden">
                               <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
                                   <h4 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
@@ -1314,7 +1347,7 @@
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-0 flex-1 overflow-hidden">
-          <div class="lg:col-span-8 p-6 sm:p-7 space-y-6 overflow-y-auto no-scrollbar border-r border-slate-200 dark:border-slate-700">
+          <div class="lg:col-span-8 p-6 h-[650px] sm:p-7 space-y-6 overflow-y-auto no-scrollbar border-r border-slate-200 dark:border-slate-700">
               <div class="space-y-1 text-left relative">
                   <label id="postCaption" class="block text-lg font-semibold text-gray-600 ml-2 mb-1 tracking-wider">Post Caption</label>
                   <textarea id="captionGfr" rows="13" class="w-full p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl text-md  focus:border-slate-200 transition shadow-sm outline-none ring-0 focus:ring-0 focus-visible:ring-0 focus:outline-none"></textarea>
@@ -1342,7 +1375,7 @@
                                 </svg>
                         </button>
                         
-                        <button title="Custom Formating" onclick="activateInputMode()" class="p-3 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
+                        <button title="Custom Formating" onclick="activateInputMode()" class="p-3 text-gray-500 hover:text-gray-600 hover:bg-gray-50 rounded-full transition-colors">
                         <svg fill="currentColor" width="18px" height="18px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.764,2A4.2,4.2,0,0,0,14.77,3.241L3.155,14.855a1,1,0,0,0-.28.55l-.863,5.438a1,1,0,0,0,1.145,1.145L8.6,21.125a1,1,0,0,0,.55-.28L20.759,9.23a4.236,4.236,0,0,0-3-7.23ZM7.96,19.2,4.2,19.8l.6-3.757,8.39-8.391,3.162,3.162ZM19.345,7.816,17.765,9.4,14.6,6.235l1.581-1.58a2.289,2.289,0,0,1,3.161,0,2.234,2.234,0,0,1,0,3.161Z"/></svg>
                         </button>
                     </div>

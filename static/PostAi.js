@@ -607,3 +607,19 @@ function closePostUiModalGfr() {
         }
     }
   }
+
+
+const imgToggle = document.getElementById('imgToggle');
+const imageStyleContainer = document.getElementById('imageStyleContainer');
+
+function updateImageStyleVisibility() {
+    if (imgToggle.checked) {
+        imageStyleContainer.classList.remove('hidden');
+        imageStyleContainer.classList.add('flex');
+    } else {
+        imageStyleContainer.classList.add('hidden');
+        imageStyleContainer.classList.remove('flex');
+    }
+}
+updateImageStyleVisibility();
+imgToggle.addEventListener('change', updateImageStyleVisibility);

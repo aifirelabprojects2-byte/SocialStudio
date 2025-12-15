@@ -23,7 +23,7 @@ from datetime import datetime
 from typing import List, AsyncGenerator, Dict, Any, Annotated, Optional, Literal
 from pathlib import Path
 from enum import Enum
-from fastapi import Body, FastAPI, Form, Query, Request, Depends, HTTPException, status, UploadFile, File
+from fastapi import Body, FastAPI, Form, Query, Request, Depends, HTTPException, logger, status, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 import json
 from Database import AttemptStatus, ErrorLog, OAuthToken, Platform, PostAttempt, PublishStatus, TaskStatus, gen_uuid_str, get_db, init_db, Task, GeneratedContent, Media, PlatformSelection
@@ -747,8 +747,7 @@ async def download_endpoint(request: DownloadRequest = Body(...)):
     try:
         status, filepath, filename = await download_video(request.url, request.quality, request.audio_only)
 
-        base_url = "http://127.0.0.1:8000"  
-        download_url = f"{base_url}/downloads/{filename}"
+        download_url = f"/downloads/{filename}"
         
         return {
             "status": status,
@@ -764,6 +763,10 @@ async def download_endpoint(request: DownloadRequest = Body(...)):
     
 
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 DEFAULT_CONCURRENT_LIMIT = 5
 DEFAULT_RPM = 60
 CACHE_TTL_SECONDS = 86400
@@ -774,6 +777,11 @@ MAX_DELAY = 10.0
 SEARCH_IMAGE_LIMIT = 3
 SEARCH_NUM_RESULTS = 5
 DEEP_RESEARCH_NUM_RESULTS = 10
+
+perplexity_client = AsyncOpenAI(
+    api_key=os.getenv("PERPLEXITY_API_KEY"),
+    base_url="https://api.perplexity.ai"
+)
 
 class AsyncRateLimiter:
     def __init__(self, concurrent_limit: int = DEFAULT_CONCURRENT_LIMIT, rpm: int = DEFAULT_RPM):
@@ -807,6 +815,7 @@ class AsyncRateLimiter:
                 self.tokens -= 1
 
 
+from functools import lru_cache
 @lru_cache(maxsize=1)
 def get_rate_limiter() -> AsyncRateLimiter:
     concurrent = int(os.getenv("RATE_LIMIT_CONCURRENT", DEFAULT_CONCURRENT_LIMIT))
@@ -819,13 +828,6 @@ def get_openai_client():
     if not api_key:
         raise HTTPException(status_code=500, detail="OPENAI_API_KEY not configured")
     return AsyncOpenAI(api_key=api_key)
-
-
-def get_search_api_key():
-    key = os.getenv("SEARCH_API_KEY")
-    if not key:
-        raise HTTPException(status_code=500, detail="SEARCH_API_KEY not configured")
-    return key
 
 
 async def retry_on_failure(coro_func, max_retries: int = MAX_RETRIES, base_delay: float = BASE_DELAY, max_delay: float = MAX_DELAY):
@@ -845,257 +847,268 @@ async def retry_on_failure(coro_func, max_retries: int = MAX_RETRIES, base_delay
     raise last_exception
 
 
-async def search_web(query: str, num: int, search_key: str) -> List[Dict[str, str]]:
-    params = {
-        "engine": "google",
-        "q": query,
-        "api_key": search_key,
-        "num": num,
-    }
+conversation_memory: Dict[str, List[str]] = {}
 
+def _normalize_key(product_company: str) -> str:
+    return "".join(c.lower() for c in product_company if c.isalnum())
+
+async def validate_and_extract(
+    product_company: str,
+    clarification: Optional[str] = None,
+    client: AsyncOpenAI = Depends(get_openai_client)
+) -> Dict[str, Any]:
+
+    key = _normalize_key(product_company)
+    print(product_company,clarification)
+    if key not in conversation_memory:
+        conversation_memory[key] = []
+    accumulated_clarifications = " ".join(conversation_memory[key])
+    context_part = f"\nPrevious clarifications provided: \"{accumulated_clarifications}\"" if accumulated_clarifications else ""
+    clarif_part = f"\nUser clarification: '{clarification}'." if clarification else ""
+    system_prompt = (
+        "You are a precise input validator and extractor for product reviews. Your task is to identify the main product and its company from user input, "
+        "handling natural language, variations, models (e.g., 'iPhone 16'), comparisons, and contextual descriptions.\n\n"
+
+        "Key Rules:\n"
+        "- Be flexible but decisive: Infer company confidently for well-known products (e.g., iPhone/Galaxy/ChatGPT → Apple/Samsung/OpenAI).\n"
+        "- Common inferences (high confidence): iPhone/Mac/Book → Apple; Galaxy/Pixel → Samsung/Google; Maggi → Nestle; Yippee → ITC; ChatGPT/GPT → OpenAI.\n"
+        "- For comparisons (e.g., 'compare Maggi and Yippee'), extract the primary/obvious product-company (usually the first mentioned) with high confidence.\n"
+        "- Ignore case, fillers ('the', 'from', 'by'), and minor typos.\n"
+        "- Always prefer extraction with high confidence if a reasonable product reference exists, even if company is inferred or loosely mentioned.\n"
+        "- Only use low confidence + clarification for: greetings/chit-chat ('hi', 'hello'), completely vague inputs ('some gadget'), or truly unknown/niche products without clear context.\n"
+        "- Never clarify if a plausible extraction is possible—err strongly toward high confidence for any product-like reference.\n\n"
+
+        "Self-Evaluation Step (think internally first):\n"
+        "1. Does the input mention or describe a recognizable product? → If yes, extract + high confidence.\n"
+        "2. Can company be reasonably inferred? → If yes, do so.\n"
+        "3. Is it purely social/non-product? → If yes, low confidence + clarify.\n"
+        "Rate your extraction certainty: high if plausible, low only if impossible.\n\n"
+
+        "Output Format (strict JSON only, no extra text; always include ALL fields):\n"
+        "{\n"
+        "  \"is_valid\": true,\n"
+        "  \"product\": \"extracted product name (or null)\",\n"
+        "  \"company\": \"extracted/inferred company (or null)\",\n"
+        "  \"confidence\": \"high\" or \"low\",\n"
+        "  \"needs_clarification\": true or false,\n"
+        "  \"question\": \"helpful clarification question if needs_clarification=true (friendly, specific; else null)\",\n"
+        "  \"reason\": \"brief explanation of extraction or why clarification needed\"\n"
+        "}\n\n"
+
+        "Examples:\n"
+        "- Input: 'iPhone' → {\"is_valid\": true, \"product\": \"iPhone\", \"company\": \"Apple\", \"confidence\": \"high\", \"needs_clarification\": false, \"question\": null, \"reason\": \"Direct product reference with inferred company\"}\n"
+        "- Input: 'compare maggi and yippee' → {\"is_valid\": true, \"product\": \"Maggi\", \"company\": \"Nestle\", \"confidence\": \"high\", \"needs_clarification\": false, \"question\": null, \"reason\": \"Primary product extracted from comparison\"}\n"
+        "- Input: 'latest smartphone from Apple' → {\"is_valid\": true, \"product\": \"iPhone\", \"company\": \"Apple\", \"confidence\": \"high\", \"needs_clarification\": false, \"question\": null, \"reason\": \"Inferred product from description\"}\n"
+        "- Input: 'hi there' → {\"is_valid\": true, \"product\": null, \"company\": null, \"confidence\": \"low\", \"needs_clarification\": true, \"question\": \"Hi! What product and company would you like reviewed?\", \"reason\": \"No product reference; greeting only\"}\n"
+        "- Input: 'some random thing from unknown corp' → {\"is_valid\": true, \"product\": null, \"company\": null, \"confidence\": \"low\", \"needs_clarification\": true, \"question\": \"What specific product and company are you referring to?\", \"reason\": \"Vague input without identifiable product/company\"}\n"
+    )
+
+    # FIX 3: Include context_part in user_prompt (now feeds memory to LLM)
+    user_prompt = f"""Input: "{product_company}"{context_part}{clarif_part}
+        Extract the primary product name and company name if identifiable. Assess confidence (high/low). If low, unclear, or no product/company (e.g., greetings, chit-chat), set needs_clarification: true and provide a helpful, model-generated clarifying question tailored to the input (keep it friendly and specific).
+        Respond with JSON (always include all fields as in system prompt):
+        {{"is_valid": true, "product": "extracted product name or null", "company": "extracted company name or null", "confidence": "high", "needs_clarification": false, "question": null, "reason": "brief explanation"}}"""
+
+    response_format = {"type": "json_object"}
+
+    try:
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            temperature=0.2,  
+            max_tokens=300,
+            response_format=response_format,
+        )
+
+        content = response.choices[0].message.content.strip()
+        data = json.loads(content)
+
+        # Expected fields (no change, but now more reliable due to prompt alignment)
+        result = {
+            "is_valid": True,
+            "product": data.get("product"),
+            "company": data.get("company"),
+            "confidence": data.get("confidence", "low"),
+            "needs_clarification": data.get("needs_clarification", True),
+            "question": data.get("question"),
+            "reason": data.get("reason", "")
+        }
+
+        # FIX 4: Force defaults for high confidence to avoid missing-field bugs
+        if result["confidence"] == "high":
+            result["needs_clarification"] = False
+            result["question"] = None
+
+        # FIX 5: Append current clarification to memory ONLY if still needs more (after API call)
+        # This builds the temporary session progressively
+        if clarification and clarification.strip() and result["needs_clarification"]:
+            conversation_memory[key].append(clarification.strip())
+
+        # Clear on high confidence (unchanged; temporary session ends)
+        if result["confidence"] == "high" and result["needs_clarification"] is False:
+            conversation_memory.pop(key, None)
+
+        return result
+
+    except Exception as e:
+
+        if result["confidence"] == "high":  
+            conversation_memory.pop(key, None)
+        return {
+            "is_valid": True,
+            "product": None,
+            "company": None,
+            "confidence": "low",
+            "needs_clarification": True,
+            "question": "I'm still having trouble identifying the product. Can you tell me the exact name and company behind it?",
+            "reason": f"Error: {str(e)}"
+        }
+
+async def create_perplexity_review_stream(
+    product: str,
+    company: str,
+    clarification: Optional[str],
+    custom_filter: Optional[str],
+    is_deepresearch_needed: bool,
+    perplexity_client: AsyncOpenAI,
+) -> AsyncGenerator:
     limiter = get_rate_limiter()
     await limiter.acquire()
 
-    async def fetch_coro():
-        connector = aiohttp.TCPConnector(limit=10)
-        timeout = aiohttp.ClientTimeout(total=API_TIMEOUT)
-        async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
-            async with session.get("https://www.searchapi.io/api/v1/search", params=params) as resp:
-                resp.raise_for_status()
-                data = await resp.json(content_type=None)
-                return data.get("organic_results", [])
+    if is_deepresearch_needed:
+        additional_params ={"search_results": 10}
+    else:
+        additional_params = {"search_results": 5}
 
-    try:
-        results = await retry_on_failure(fetch_coro, max_retries=MAX_RETRIES)
-        return [
-            {
-                "title": result.get("title", ""),
-                "url": result.get("link", ""),
-                "snippet": result.get("snippet", ""),
-            }
-            for result in results
-        ]
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=f"Search failed for query '{query}'")
-
-
-async def validate_and_extract(product_company: str, client: Annotated[AsyncOpenAI, Depends(get_openai_client)]) -> Optional[Dict[str, str]]:
     system_prompt = (
-        "You are an input validator and extractor. Analyze the input to determine if it refers to a product and its company, "
-        "handling natural language variations, casual phrasing, and comparisons. Always be flexible and recognize common products. "
-        "Key guidelines:\n"
-        "- Product names can include numbers/models (e.g., 'iPhone 15', 'iPhone 14', 'Maggi 2 Minute').\n"
-        "- Ignore case, extra words like 'from', 'by', 'of', 'the', 'a'.\n"
-        "- For comparisons (e.g., 'compare maggi and yippee'), extract the primary product-company pair (e.g., Maggi-Nestle), and note it's for single review focus.\n"
-        "- Common products: iPhone (Apple), Maggi (Nestle), Yippee (ITC), Galaxy (Samsung), etc.\n"
-        "Examples of valid inputs:\n"
-        "- 'iPhone Apple' -> product: 'iPhone', company: 'Apple'\n"
-        "- 'iphone 15 apple' -> product: 'iPhone 15', company: 'Apple'\n"
-        "- 'iPhone 14 from apple' -> product: 'iPhone 14', company: 'Apple'\n"
-        "- 'Maggi Nestle' -> product: 'Maggi', company: 'Nestle'\n"
-        "- 'Nestle Maggi' -> product: 'Maggi', company: 'Nestle'\n"
-        "- 'compare maggi and yippee' -> product: 'Maggi', company: 'Nestle' (primary focus)\n"
-        "- 'can you compare maggi and yippee noodles' -> product: 'Maggi', company: 'Nestle'\n"
-        "If it clearly references a product and company (even loosely), validate as true. Only invalid if no product/company identifiable."
-    )
-    user_prompt = f"""Input: "{product_company}".
-Extract the primary product name and company name if valid. Respond with JSON:
-{{"is_valid": true, "product": "extracted product name", "company": "extracted company name", "reason": "brief explanation"}}
-If invalid, respond with JSON:
-{{"is_valid": false, "reason": "brief explanation"}}"""
-
-    try:
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0,
-            response_format={"type": "json_object"},
-            max_tokens=150,
-        )
-        content = response.choices[0].message.content
-        data = json.loads(content)
-        if data.get("is_valid"):
-            return {
-                "product": data["product"].strip(),
-                "company": data["company"].strip(),
-                "reason": data.get("reason", "")
-            }
-        else:
-            return None
-    except json.JSONDecodeError as e:
-        return None
-    except Exception as e:
-        raise HTTPException(status_code=503, detail="Validation service unavailable")
-
-
-async def generate_search_queries(product_company: str, custom_filter: Optional[str], client: Annotated[AsyncOpenAI, Depends(get_openai_client)]) -> List[str]:
-    system_prompt = "You are a search query expert. Generate diverse, effective Google search queries focused on finding customer reviews (good and bad) for the given product-company pair."
-    filter_part = f" Include focus on: {custom_filter}" if custom_filter else ""
-    user_prompt = f'Product-Company: "{product_company}".{filter_part} Generate exactly 5 queries. Respond with JSON: {{"queries": ["query1", "query2", "query3", "query4", "query5"]}}'
-
-    try:
-        response = await client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.5,
-            response_format={"type": "json_object"},
-            max_tokens=300,
-        )
-        content = response.choices[0].message.content
-        data = json.loads(content)
-        queries = data.get("queries", [])
-        if custom_filter:
-            queries = [q + " " + custom_filter for q in queries]
-        return queries
-    except json.JSONDecodeError as e:
-        raise HTTPException(status_code=503, detail="Query generation failed")
-    except Exception as e:
-        raise HTTPException(status_code=503, detail="Query generation failed")
-
-
-async def validate_and_prepare(
-    product_company: str,
-    is_deepresearch_needed: bool,
-    custom_filter: Optional[str],
-    client: Annotated[AsyncOpenAI, Depends(get_openai_client)],
-    search_key: Annotated[str, Depends(get_search_api_key)]
-) -> tuple[str, str, List[Dict[str, Any]]]:
-    # Step 1: Validate and extract
-    extract = await validate_and_extract(product_company, client)
-    if extract is None:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Invalid input: '{product_company}'. Please provide a product and company reference (e.g., 'iPhone 15 Apple', 'iPhone 14 from Apple', 'compare Maggi and Yippee')."
-        )
-
-    product = extract['product']
-    company = extract['company']
-    normalized_product_company = f"{product} {company}"
-
-    # Step 2: Generate queries
-    queries = await generate_search_queries(normalized_product_company, custom_filter, client)
-    if not queries:
-        raise HTTPException(status_code=503, detail="Failed to generate search queries.")
-
-    # Step 3: Search
-    num_results = DEEP_RESEARCH_NUM_RESULTS if is_deepresearch_needed else SEARCH_NUM_RESULTS
-    all_sources: List[Dict[str, Any]] = []
-    source_counter = 1
-    for query in queries:
-        results = await search_web(query, num_results, search_key)
-        for result in results:
-            all_sources.append(
-                {
-                    "id": source_counter,
-                    "title": result["title"],
-                    "url": result["url"],
-                    "content": result["snippet"],
-                }
-            )
-            source_counter += 1
-
-    if not all_sources:
-        raise HTTPException(status_code=404, detail="No search results found for the product.")
-
-    # Step 4: Format context
-    formatted_context = "\n\n".join(
-        [
-            f"Source [{s['id']}]: {s['title']}\nURL: {s['url']}\nContent: {s['content']}"
-            for s in all_sources
-        ]
-    )
-
-    return formatted_context, product, all_sources
-
-
-async def generate_review_stream(
-    context: str, product: str, client: Annotated[AsyncOpenAI, Depends(get_openai_client)]
-) -> AsyncGenerator[str, None]:
-    system_prompt = (
-        "You are an expert reviewer analyzer. Extract and summarize key good and bad customer "
-        "reviews from the sources. Use inline citations like [1] after relevant points. "
+        "You are an expert product analyst. Provide a comprehensive, deep analysis of the product based on web searches. "
+        "Always deliver in-depth insights on features, market position, strengths, weaknesses, and incorporate user reviews where available. "
+        "Base your analysis on recent, relevant web data WITHOUT EVER citing, mentioning, marking, or listing any sources, references, URLs, or citations in the output. "
         "Structure your output exactly as:\n"
-        "# Good Reviews for {product}\n"
-        "- Bullet point summarizing a positive aspect [citation]\n"
+        "# Product Overview\n"
+        "A detailed summary of the product, its purpose, and market context.\n\n"
+        "# Key Features\n"
+        "- Bullet points of main features with descriptions.\n"
         "...\n\n"
-        "# Bad Reviews for {product}\n"
-        "- Bullet point summarizing a negative aspect [citation]\n"
+        "# Strengths / Pros\n"
+        "- In-depth positive aspects, backed by data or examples.\n"
         "...\n\n"
-        "## Sources\n"
-        "1. Title - URL\n"
-        "2. Title - URL\n"
-        "...\n"
-        "Output ONLY this formatted text—no introductions, explanations, markdown beyond bullets, "
-        "or extra content. Aim for 3-5 bullets per section. Ensure citations are used."
-    ).format(product=product)
+        "# Weaknesses / Cons\n"
+        "- In-depth negative aspects, risks, or limitations.\n"
+        "...\n\n"
+        "# User Sentiment & Reviews\n"
+        "Overall sentiment score (e.g., 4.2/5). Summarize key themes from reviews. Include 2-3 notable user quotes or summaries if available.\n\n"
+        "Output ONLY this formatted text—no introductions, extra content, citations, sources, or any markings. Use markdown for structure. Aim for depth: 4-6 bullets per section where possible."
+    )
 
-    user_prompt = f"Context from searches:\n{context}\n\nProvide the review analysis."
+    filter_part = f"Focus on: {custom_filter}." if custom_filter else ""
+    clarif_part = f"User clarification: {clarification}." if clarification else ""
+    user_prompt = f"{filter_part} {clarif_part} Analyze the product '{product}' from '{company}'. Provide the comprehensive product analysis."
 
-    try:
-        stream = await client.chat.completions.create(
-            model="gpt-4o-mini",
+    async def create_coro():
+        return await perplexity_client.chat.completions.create(
+            model="sonar",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            temperature=0.7,  
+            temperature=0.7,
             stream=True,
-            max_tokens=1500,
+            max_tokens=2000,
+            extra_body=additional_params
+
         )
-        async for chunk in stream:
-            if chunk.choices and chunk.choices[0].delta.content is not None:
-                content = chunk.choices[0].delta.content
-                yield content
-    except Exception as e:
-        raise HTTPException(status_code=503, detail="Review generation failed")
+
+    stream = await retry_on_failure(create_coro)
+    return stream
+
 
 class ProductCompanyRequest(BaseModel):
     product_company: str
     is_deepresearch_needed: bool = False
     custom_filter: Optional[str] = None
+    clarification: Optional[str] = None  # New field
 
-@app.post("/reviews", response_class=StreamingResponse)
+@app.post("/reviews")
 async def get_reviews(
     request: ProductCompanyRequest, 
-    client: Annotated[AsyncOpenAI, Depends(get_openai_client)], 
-    search_key: Annotated[str, Depends(get_search_api_key)]
+    client: Annotated[AsyncOpenAI, Depends(get_openai_client)]
 ):
     if not request.product_company.strip():
         raise HTTPException(status_code=400, detail="product_company is required")
 
     try:
-        formatted_context, product, _ = await validate_and_prepare(
+        # Validate and extract
+        extract = await validate_and_extract(
             request.product_company,
-            request.is_deepresearch_needed,
-            request.custom_filter,
-            client,
-            search_key
+            request.clarification,
+            client
         )
-    except HTTPException:
-        raise
+        print("extract: ", extract)
+        
+        # Since we never return is_valid: false now, always check for needs_clarification first
+        if extract.get("needs_clarification"):
+            return JSONResponse(
+                status_code=200,  # Use 200 to avoid error handling in JS
+                content={
+                    "needs_clarification": True,
+                    "question": extract["question"],
+                    "partial": {
+                        "product": extract.get("product"),
+                        "company": extract.get("company")
+                    }
+                },
+                media_type="application/json"
+            )
+
+        if not extract.get("product") or not extract.get("company"):
+            # Fallback if extraction failed to get both
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "needs_clarification": True,
+                    "question": "I couldn't quite identify the product and company. Can you provide more details?",
+                    "partial": {
+                        "product": extract.get("product"),
+                        "company": extract.get("company")
+                    }
+                },
+                media_type="application/json"
+            )
+
+        product = extract['product']
+        company = extract['company']
+    except HTTPException as he:
+        raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
+    try:
+        perplexity_stream = await create_perplexity_review_stream(
+            product, company, request.clarification, request.custom_filter, 
+            request.is_deepresearch_needed, perplexity_client
+        )
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"Analysis generation failed: {str(e)}")
 
-    async def event_generator():
+    async def event_generator(perplexity_stream):
         try:
-            async for chunk in generate_review_stream(formatted_context, product, client):
-                yield chunk
+            async for chunk in perplexity_stream:
+                if chunk.choices and chunk.choices[0].delta.content is not None:
+                    content = chunk.choices[0].delta.content
+                    yield content
         except Exception as e:
-            raise HTTPException(status_code=500, detail="Internal server error")
+            # Log the error if needed, but don't raise to avoid response started issue
+            logger.error(f"Stream error: {e}")
+            pass  # Stream ends gracefully
 
     return StreamingResponse(
-        event_generator(),
+        event_generator(perplexity_stream),
         media_type="text/plain",
         headers={"X-Accel-Buffering": "no"}  
     )
-    
-    
 
 @app.post("/manual-tasks", response_model=dict)
 async def create_manual_task(

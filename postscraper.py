@@ -3,16 +3,15 @@ import os
 import asyncio
 import random
 import json
-import time
 import sys
 from datetime import datetime
 from urllib.parse import urlparse
 from typing import Dict, List, Optional, Any
-from openai import AsyncOpenAI
-import instaloader  # Only this import—no internals!
+import instaloader  
 from dotenv import load_dotenv
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 import itertools
+
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -21,15 +20,10 @@ load_dotenv()
 
 
 class Config:
-    OPENAI_API_KEY: str = os.getenv('OPENAI_API_KEY')
     INSTAGRAM_RATE_LIMIT_DELAY_MIN: float = float('1.0')
     INSTAGRAM_RATE_LIMIT_DELAY_MAX: float = float('3.0')
     INSTAGRAM_RETRY_ATTEMPTS: int = int('3')
-    OPENAI_MODEL: str = 'gpt-4o-mini'
-    OPENAI_TEMPERATURE: float = float('0.7')
-    OPENAI_MAX_TOKENS: int = int('500')
-    
-client = AsyncOpenAI(api_key=Config.OPENAI_API_KEY)
+
 
 HEADERS_CYCLE = itertools.cycle([
     {
@@ -90,54 +84,6 @@ async def fetch_instagram_post(shortcode: str) -> Optional[instaloader.Post]:
     except Exception as e:
         raise
 
-async def rephrase_with_gpt4o_mini(plain_caption: str, company_name: str = "TechFlow", tone: str = "professional yet friendly") -> Dict[str, Any]:
-    if not plain_caption:
-        return {
-            "rephrased_caption": "Exciting content ahead! 🚀",
-            "suggested_hashtags": [f"#{company_name.replace(' ', '')}", "#Innovation"]
-        }
-   
-    system_prompt = f"""You are a social media expert for {company_name}.
-    Rephrase the following plain caption (hashtags already removed) in a {tone} tone: engaging, branded, and optimized for shares.
-    Preserve length and excitement. Do not include any hashtags in the rephrased caption.
-   
-    Then, suggest exactly 1-2 relevant hashtags for {company_name}, including the branded one (e.g., #{company_name.replace(' ', '')}).
-   
-    Respond ONLY with a valid JSON object in this exact format, no other text:
-    {{
-        "rephrased_caption": "your rephrased caption here",
-        "suggested_hashtags": ["#hashtag1", "#hashtag2"]
-    }}"""
-   
-    try:
-        stream = await client.chat.completions.create(
-            model=Config.OPENAI_MODEL,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": plain_caption},
-            ],
-            temperature=Config.OPENAI_TEMPERATURE,
-            stream=True,
-            max_tokens=Config.OPENAI_MAX_TOKENS,
-        )
-       
-        new_response = ""
-        async for chunk in stream:
-            if chunk.choices[0].delta.content:
-                new_response += chunk.choices[0].delta.content
-        parsed = json.loads(new_response.strip())
-        return parsed
-    except json.JSONDecodeError as e:
-        return {
-            "rephrased_caption": plain_caption or "Great share",
-            "suggested_hashtags": [f"#{company_name.replace(' ', '')}", "#Innovation"]
-        }
-    except Exception as e:
-        return {
-            "rephrased_caption": plain_caption or "Great share",
-            "suggested_hashtags": [f"#{company_name.replace(' ', '')}", "#Innovation"]
-        }
-
 def extract_shortcode(post_url: str) -> str:
     post_url = post_url.split('?')[0].rstrip('/')
     match = re.search(r'/p/([A-Za-z0-9_-]{11})', post_url)
@@ -158,12 +104,11 @@ def fetch_media_urls(post: instaloader.Post) -> List[str]:
             else:
                 media_urls.append(node.display_url)
     else:
-        media_urls.append(post.url)  # Fallback
+        media_urls.append(post.url)  
     return media_urls
 
-async def fetch_and_rephrase_post(post_url: str, company_name: str = "TechFlow", tone: str = "professional yet friendly") -> Dict[str, Any]:
+async def fetch_post_data(post_url: str) -> Dict[str, Any]:
     caption = ""
-    original_hashtags = []
     media_urls = []
    
     domain = urlparse(post_url).netloc.lower()
@@ -175,47 +120,27 @@ async def fetch_and_rephrase_post(post_url: str, company_name: str = "TechFlow",
         post = await fetch_instagram_post(shortcode)
        
         caption = post.caption or ""
-        original_hashtags = list(post.caption_hashtags) if hasattr(post, 'caption_hashtags') and post.caption_hashtags else []
-
-        plain_caption = re.sub(r'#\w+', '', caption).strip()
-       
         media_urls = fetch_media_urls(post)
 
     except ValueError as e:
         return {"error": str(e)}
     except instaloader.exceptions.LoginRequiredException:
-        return {"error": "Post requires login. Set login_username or use --load-cookies chrome in CLI."}
+        return {"error": "Post requires login. Try logging in via instaloader or use cookies."}
     except Exception as e:
         return {"error": f"Fetch failed: {str(e)}"}
     
-    try:
-        gpt_response = await rephrase_with_gpt4o_mini(plain_caption, company_name, tone)
-        rephrased_caption = gpt_response.get("rephrased_caption", plain_caption or "Exciting content ahead! 🚀")
-        suggested_hashtags = gpt_response.get("suggested_hashtags", [])
-       
-        # Combine original + suggested (dedupe)
-        all_hashtags = list(set(original_hashtags + suggested_hashtags))
-       
-    except Exception as e:
-        rephrased_caption = plain_caption or "Great share"
-        all_hashtags = original_hashtags + [f"#{company_name.replace(' ', '')}", "#Innovation"]
-    
     result = {
-        "caption": rephrased_caption,
-        "hashtags": all_hashtags,
+        "caption": caption.strip(),
         "media_urls": media_urls,
-        "source_url": post_url
     }
+    
     await asyncio.sleep(random.uniform(Config.INSTAGRAM_RATE_LIMIT_DELAY_MIN, Config.INSTAGRAM_RATE_LIMIT_DELAY_MAX))
    
     return result
 
 async def main():
     url = input("Enter post URL: ").strip()
-    company = input("Enter company name [default: TechFlow]: ").strip() or "TechFlow"
-    tone = input("Enter rephrase tone [default: professional yet friendly]: ").strip() or "professional yet friendly"
-   
-    result = await fetch_and_rephrase_post(url, company, tone)
+    result = await fetch_post_data(url)
     print("\nFinal Result:")
     print(json.dumps(result, indent=2, default=str))
 

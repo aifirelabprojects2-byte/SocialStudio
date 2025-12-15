@@ -107,16 +107,30 @@ def init(app):
     async def generate_preview(
         prompt: str = Form(...),
         generate_image: Literal["yes", "no"] = Form("no"),
+        image_style: Optional[str] = Form("realistic"),  
         db: AsyncSession = Depends(get_db),
     ):
         want_image = generate_image == "yes"
+
+        # Map friendly names to better prompt phrasing
+        style_mapping = {
+            "realistic": "realistic photo",
+            "cinematic": "cinematic scene with dramatic lighting",
+            "cartoon": "cartoon style",
+            "illustration": "beautiful digital illustration",
+            "digital_art": "stunning digital art",
+            "anime": "anime style",
+            "minimalist": "clean minimalist design",
+            "vintage": "vintage retro style",
+        }
+        style_prompt = style_mapping.get(image_style, "realistic photo")
 
         try:
             completion = await client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
                 messages=[
                     {
-                        "role": "system", 
+                        "role": "system",
                         "content": """You are a professional social media manager. 
 
     Generate engaging social media content for the given topic. 
@@ -125,44 +139,48 @@ def init(app):
 
     {
     "caption": "The full post caption text (1-3 sentences, engaging, with emojis if appropriate). Max 2000 chars.",
-    "hashtags": ["tag1", "tag2", "tag3"],  // 3-10 relevant hashtags WITHOUT the # symbol, lowercase, no duplicates.
-    "image_prompt": "Detailed description for AI image generation (if requested). Max 1000 chars."  // Only include if image is requested, else omit or null.
+    "hashtags": ["tag1", "tag2", "tag3"],
+    "image_prompt": "Detailed description for AI image generation (if requested). Max 1000 chars.",
     "suggested_posting_time": "Best time to post: e.g., 'Weekdays 8-10 AM EST' or 'Weekends 6-8 PM PST' based on typical engagement for this content type."
     }
 
-    For hashtags: Always exclude the # symbol. Use relevant, concise terms (e.g., "aiart" not "#AIArt").
-    For suggested_posting_time: Always provide a specific, actionable suggestion with timezone if relevant."""
+    Rules:
+    - For image_prompt: Start with the chosen style (e.g., 'A realistic photo of...') and make it highly detailed and vivid.
+    - Only include image_prompt if requested.
+    - Hashtags: 3-10 relevant, lowercase, no # symbol."""
                     },
                     {
-                        "role": "user", 
-                        "content": f"Topic: {prompt}\n\nInclude image prompt: {want_image}\n\nGenerate the JSON now."
+                        "role": "user",
+                        "content": f"""Topic: {prompt}
+
+    Include image prompt: {want_image}
+    Image style: {style_prompt if want_image else "N/A"}
+
+    Generate the JSON now."""
                     },
                 ],
                 temperature=0.8,
                 response_format=GeneratedContentResponse,
             )
 
-            result = completion.choices[0].message.parsed.dict()
+            result = completion.choices[0].message.parsed.model_dump()
 
-            # Post-process hashtags to ensure no # and normalize
             result["hashtags"] = [
                 tag.strip().lstrip("#").lower() for tag in result["hashtags"] 
                 if tag.strip() and not tag.strip().startswith("#")
             ]
-            result["hashtags"] = list(dict.fromkeys(result["hashtags"]))[:10]  # Remove dups, limit
+            result["hashtags"] = list(dict.fromkeys(result["hashtags"]))[:10] 
 
-            # Ensure suggested_posting_time is formatted consistently
             if not result["suggested_posting_time"]:
                 result["suggested_posting_time"] = "Weekdays 9-11 AM local time (high engagement for most audiences)"
 
-            # ───── Save draft task ─────
             task = Task(
                 title=prompt[:40] + "..." if len(prompt) > 40 else prompt,
                 status="draft",
                 time_zone="UTC",
             )
             db.add(task)
-            await db.flush()  # gets task.task_id
+            await db.flush()  
 
             gen = GeneratedContent(
                 task_id=task.task_id,
@@ -172,12 +190,15 @@ def init(app):
                 image_prompt=result["image_prompt"] if want_image else None,
                 suggested_posting_time=result["suggested_posting_time"],
                 image_generated=False,
-                meta={"model": "gpt-4o-mini", "structured": True},
+                meta={
+                "model": "gpt-4o-mini",
+                "structured": True,
+                "image_style": image_style if want_image else None  
+            },
             )
             db.add(gen)
             await db.commit()
 
-            # Return JSON with task_id and result
             return JSONResponse({
                 "success": True,
                 "task_id": task.task_id,
@@ -185,6 +206,7 @@ def init(app):
                 "result": result,
                 "prompt": prompt,
                 "generate_image": want_image,
+                "image_style": image_style if want_image else None,
             })
 
         except Exception as e:

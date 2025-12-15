@@ -6,7 +6,7 @@ const submitBtnYtb = document.getElementById('submitBtnYtb');
 const statusDivYtb = document.getElementById('statusYtb');
 const downloadLinkDivYtb = document.getElementById('downloadLinkYtb');
 
-const API_URL_Ytb = '/download'; 
+
 
 const setDwnLoading = (isLoading) => {
   if (isLoading) {
@@ -21,6 +21,8 @@ const setDwnLoading = (isLoading) => {
     submitBtnYtb.style.cursor = '';
   }
 };
+
+const API_URL_Ytb = '/download'; 
 formYtb.addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -30,7 +32,6 @@ formYtb.addEventListener('submit', async (e) => {
 
   if (!urlYtb) return;
 
-  // UI: Loading state
   setDwnLoading(true);
   statusDivYtb.className = 'bg-blue-50 text-blue-700 border border-blue-100 p-4 rounded-xl text-center text-sm font-medium';
   statusDivYtb.textContent = 'Fetching video information...';
@@ -49,6 +50,7 @@ formYtb.addEventListener('submit', async (e) => {
     });
 
     const dataYtb = await responseYtb.json();
+    console.log(dataYtb);
 
     if (responseYtb.ok) {
       statusDivYtb.className = 'bg-emerald-50 text-emerald-700 border border-emerald-100 p-4 rounded-xl text-center text-sm font-medium';
