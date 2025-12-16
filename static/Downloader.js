@@ -54,10 +54,12 @@ formYtb.addEventListener('submit', async (e) => {
 
     if (responseYtb.ok) {
       statusDivYtb.className = 'bg-emerald-50 text-emerald-700 border border-emerald-100 p-4 rounded-xl text-center text-sm font-medium';
-      statusDivYtb.textContent = `Success! Video found on ${dataYtb.platform || 'Platform'}`;
-      
+      statusDivYtb.textContent = `Success! Media found on ${dataYtb.platform || 'Platform'}`;
+      const fullDownloadUrl = new URL(dataYtb.download_url, window.location.origin).href;
+
+
       downloadLinkDivYtb.innerHTML = `
-      <a href="${dataYtb.download_url}" download
+      <a href="${fullDownloadUrl}" download
         class="group relative flex items-center justify-center gap-4 px-5 py-2 
                 font-semibold text-sm text-white
                 bg-neutral-900 border border-neutral-800
@@ -71,7 +73,7 @@ formYtb.addEventListener('submit', async (e) => {
         </span>
 
         <span class="tracking-tight">
-          Save ${audioOnlyYtb ? 'Audio' : 'Video'} to Device
+          Save ${audioOnlyYtb ? 'Audio' : 'Media'} to Device
         </span>
 
         <!-- Subtle shine -->

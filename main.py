@@ -15,12 +15,9 @@ import requests
 import yt_dlp
 from ImgGen import ImageGenClient
 import PostGen,ManagePlatform
-from celery_app import Capp
 import os
-import base64
-import io
 from datetime import datetime
-from typing import List, AsyncGenerator, Dict, Any, Annotated, Optional, Literal
+from typing import List, AsyncGenerator, Dict, Any, Annotated, Optional, Literal, Tuple
 from pathlib import Path
 from enum import Enum
 from fastapi import Body, FastAPI, Form, Query, Request, Depends, HTTPException, logger, status, UploadFile, File
@@ -36,7 +33,12 @@ from werkzeug.utils import secure_filename
 from PIL import Image
 import unicodedata
 import pytz
-from tasks import execute_posting 
+from urllib.parse import urlparse
+import itertools
+from gallery_dl import config, job
+import instaloader
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
 
 load_dotenv()
 
@@ -60,8 +62,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# Mount media folder for serving images
 media_dir = Path("static/media")
 media_dir.mkdir(exist_ok=True)
 app.mount("/media", StaticFiles(directory="static/media"), name="media")
@@ -86,11 +86,8 @@ PostGen.init(app)
 ManagePlatform.init(app)
 
 
-
-
-
-execute_posting = Capp.tasks["tasks.execute_posting"]
-execute_posting = Capp.task(name="tasks.execute_posting")(execute_posting)
+from tasks import execute_posting 
+from celery_app import celery_app
 
 ist = pytz.timezone("Asia/Kolkata")
 
@@ -105,43 +102,34 @@ async def schedule_task(
     request: ScheduleTaskRequest,
     db: AsyncSession = Depends(get_db)
 ) -> dict:
-
     if request.scheduled_at.tzinfo is None:
         request.scheduled_at = ist.localize(request.scheduled_at)
     else:
-        # Ensure it's IST
         request.scheduled_at = request.scheduled_at.astimezone(ist)
-
-    # Get and validate task
     stmt = select(Task).options(selectinload(Task.generated_contents)).where(Task.task_id == request.task_id)
     result = await db.execute(stmt)
     task = result.scalar_one_or_none()
-
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     if task.status not in (TaskStatus.draft, TaskStatus.draft_approved):
         raise HTTPException(status_code=400, detail="Task must be in draft or draft_approved status")
     if not task.generated_contents:
         raise HTTPException(status_code=400, detail="Task must have generated content")
-
     # Update task
     task.status = TaskStatus.scheduled
     task.scheduled_at = request.scheduled_at
     task.time_zone = "Asia/Kolkata"
     task.notes = request.notes
-    task.updated_at = datetime.now(ist) 
-
+    task.updated_at = datetime.now(ist)
     # Validate and create platform selections
     existing_platforms = set()
     for platform_id in request.platform_ids:
         if platform_id in existing_platforms:
             raise HTTPException(status_code=400, detail="Duplicate platform selected")
         existing_platforms.add(platform_id)
-
         platform = await db.get(Platform, platform_id)
         if not platform:
             raise HTTPException(status_code=404, detail=f"Platform {platform_id} not found")
-
         # Check unique constraint (optional, DB will enforce)
         existing_sel = await db.execute(
             select(PlatformSelection).where(
@@ -151,7 +139,6 @@ async def schedule_task(
         )
         if existing_sel.scalar_one_or_none():
             raise HTTPException(status_code=400, detail=f"Platform {platform_id} already selected for task")
-
         sel = PlatformSelection(
             task_id=task.task_id,
             platform_id=platform_id,
@@ -159,21 +146,17 @@ async def schedule_task(
             scheduled_at=request.scheduled_at,
         )
         db.add(sel)
-
     await db.commit()
-    await db.refresh(task) 
-
+    await db.refresh(task)
     scheduled_utc = request.scheduled_at.astimezone(pytz.UTC)
-    execute_posting.apply_async(args=(task.task_id,), eta=scheduled_utc)
-
+    execute_posting.apply_async(args=(task.task_id,), eta=scheduled_utc)  # Use directly
     return {
         "message": "Task scheduled successfully",
         "task_id": task.task_id,
         "scheduled_at": request.scheduled_at.isoformat(),
         "platforms": len(request.platform_ids),
     }
-
-
+    
 
 class TaskStatusFilter(str, Enum):
     scheduled = "scheduled"
@@ -196,8 +179,6 @@ class ErrorLogListResponse(BaseModel):
     total: int
     limit: int
     offset: int
-
-
 
 
 class PlatformOut(BaseModel):
@@ -515,30 +496,35 @@ async def format_text(request: FormatRequest):
 
 DOWNLOADS_DIR = Path("./downloads")
 DOWNLOADS_DIR.mkdir(exist_ok=True)
-
-
+INSTALOADER_AVAILABLE = True
 FFMPEG_AVAILABLE = False
+
 try:
     subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
     FFMPEG_AVAILABLE = True
 except (subprocess.CalledProcessError, FileNotFoundError):
-    print("error")
+    print("FFmpeg not available")
 
 class DownloadRequest(BaseModel):
     url: str
     quality: Optional[str] = "best"
     audio_only: Optional[bool] = False
 
-def sanitize_filename(name: str, max_length: int = 80) -> str:
-    if not name:
-        name = "video"
-    name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', name)
-    name = name.replace(' ', '_')
-    name = re.sub(r'_+', '_', name)
-    name = name.strip('_')
-    if len(name) > max_length:
-        name = name[:max_length]
-    return name
+class ImageConfig:
+    INSTAGRAM_RATE_LIMIT_DELAY_MIN = 1.0
+    INSTAGRAM_RATE_LIMIT_DELAY_MAX = 3.0
+    INSTAGRAM_RETRY_ATTEMPTS = 5
+    AIOHTTP_TIMEOUT = 60
+    CHUNK_SIZE = 1024 * 1024
+
+HEADERS_CYCLE = itertools.cycle([
+    {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.9", "Referer": "https://www.instagram.com/"},
+    {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1", "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.9", "Referer": "https://www.instagram.com/"},
+    {"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"},
+])
+
+def get_headers() -> dict:
+    return next(HEADERS_CYCLE)
 
 def detect_platform(url: str) -> str:
     if "youtube.com" in url or "youtu.be" in url:
@@ -558,48 +544,167 @@ def detect_platform(url: str) -> str:
     elif "twitch.tv" in url:
         return "Twitch"
     else:
-        return "Unknown (yt-dlp will handle if supported)"
+        return "Unknown"
 
-def get_ydl_format(quality: str, audio_only: bool) -> dict:
-    base_formats = {
-        "best": "best",
-        "720p": "best[height<=720]",
-        "1080p": "best[height<=1080]",
-        "4k": "best[height<=2160]"
-    }
-    
-    if audio_only:
-        if FFMPEG_AVAILABLE:
-            return {"format": "bestaudio/best", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3"}]}
-        else:
-            
-            return {"format": "bestaudio[ext=m4a]/bestaudio"}
-    
-   
-    fmt = base_formats.get(quality, "best")
-    if FFMPEG_AVAILABLE:
-        return {"format": f"{fmt}+bestaudio/best" if not audio_only else "bestaudio/best"}
-    else:
-        return {"format": f"{fmt}[ext=mp4]/{fmt}"}  
+def is_x_url(url: str) -> bool:
+    domain = urlparse(url).netloc.lower()
+    return "x.com" in domain or "twitter.com" in domain
+
+def is_instagram_url(url: str) -> bool:
+    domain = urlparse(url).netloc.lower()
+    return "instagram.com" in domain
 
 def slugify_filename(text: str, max_length: int = 100) -> str:
     text = unicodedata.normalize('NFKC', text)
-
-    text = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '', text)      
-    text = re.sub(r'[\[\](){}]', '', text)                
-    text = re.sub(r'[^\w\s\-.£€$!&+]', '', text)           
-    text = re.sub(r'\s+', '_', text)                      
-    text = re.sub(r'_+', '_', text)                        
+    text = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '', text)
+    text = re.sub(r'[\[\](){}]', '', text)
+    text = re.sub(r'[^\w\s\-.£€$!&+]', '', text)
+    text = re.sub(r'\s+', '_', text)
+    text = re.sub(r'_+', '_', text)
     text = text.strip('_.- ')
     
     if not text:
-        text = "video"
+        text = "media"
     
     if len(text) > max_length:
         text = text[:max_length]
     
     return text
 
+async def download_x_images(url: str) -> Tuple[str, list]:
+
+    loop = asyncio.get_event_loop()
+    
+    def _sync_download():
+        old_files = set(str(f) for f in DOWNLOADS_DIR.rglob("*"))
+        config.set(("extractor", "twitter"), "videos", False)
+        config.set((), "base-directory", str(DOWNLOADS_DIR))
+        download_job = job.DownloadJob(url)
+        download_job.run()
+        new_files = [f for f in DOWNLOADS_DIR.rglob("*") if f.is_file() and str(f) not in old_files]
+        
+        moved_files = []
+        for f in new_files:
+            dest_name = f.name
+            dest = DOWNLOADS_DIR / dest_name
+            counter = 1
+            while dest.exists():
+                if '.' in dest_name:
+                    name, ext = dest_name.rsplit('.', 1)
+                    dest_name = f"{name}_{counter}.{ext}"
+                else:
+                    dest_name = f"{dest_name}_{counter}"
+                dest = DOWNLOADS_DIR / dest_name
+                counter += 1
+            f.rename(dest)
+            moved_files.append(dest)
+        
+        return moved_files
+    
+    downloaded_files = await loop.run_in_executor(None, _sync_download)
+    
+    return "success", downloaded_files
+
+# Instagram image downloader
+def extract_instagram_shortcode(url: str) -> str:
+    url = url.split('?')[0].rstrip('/')
+    match = re.search(r'/p/([A-Za-z0-9_-]{11})', url) or re.search(r'/reel/([A-Za-z0-9_-]{11})', url)
+    if match:
+        return match.group(1)
+    raise ValueError("Invalid Instagram URL")
+
+if INSTALOADER_AVAILABLE:
+    @retry(
+        stop=stop_after_attempt(ImageConfig.INSTAGRAM_RETRY_ATTEMPTS),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+        retry=retry_if_exception_type((
+            instaloader.exceptions.ConnectionException,
+            instaloader.exceptions.QueryReturnedNotFoundException
+        ))
+    )
+    async def fetch_instagram_post(shortcode: str) -> Optional[instaloader.Post]:
+        loop = asyncio.get_event_loop()
+        
+        def _sync_fetch():
+            L = instaloader.Instaloader(
+                dirname_pattern=str(DOWNLOADS_DIR),
+                filename_pattern="{shortcode}_{date_utc}",
+                download_video_thumbnails=False,
+                download_geotags=False,
+                download_comments=False,
+                save_metadata=False,
+                compress_json=False,
+                post_metadata_txt_pattern="",
+                request_timeout=30,
+            )
+            session = L.context._session
+            session.headers.update(get_headers())
+            return instaloader.Post.from_shortcode(L.context, shortcode)
+        
+        return await loop.run_in_executor(None, _sync_fetch)
+
+async def download_single_image(image_url: str, filename: str):
+    timeout = aiohttp.ClientTimeout(total=ImageConfig.AIOHTTP_TIMEOUT)
+    async with aiohttp.ClientSession(headers=get_headers(), timeout=timeout) as session:
+        async with session.get(image_url) as resp:
+            if resp.status == 200:
+                ext = image_url.split('?')[0].split('.')[-1]
+                if len(ext) > 4:
+                    ext = "jpg"
+                filepath = DOWNLOADS_DIR / f"{filename}.{ext}"
+                counter = 1
+                while filepath.exists():
+                    if '.' in str(filepath.name):
+                        name, e = str(filepath.name).rsplit('.', 1)
+                        new_name = f"{name}_{counter}.{e}"
+                    else:
+                        new_name = f"{str(filepath.name)}_{counter}"
+                    filepath = DOWNLOADS_DIR / new_name
+                    counter += 1
+                with open(filepath, "wb") as f:
+                    async for chunk in resp.content.iter_chunked(ImageConfig.CHUNK_SIZE):
+                        f.write(chunk)
+                return str(filepath)
+    return None
+
+async def download_instagram_images(url: str) -> Tuple[str, list]:
+
+    try:
+        shortcode = extract_instagram_shortcode(url)
+        post = await fetch_instagram_post(shortcode)
+        
+        if not post:
+            raise HTTPException(status_code=400, detail="Failed to fetch Instagram post")
+        
+        downloaded_files = []
+        tasks = []
+        
+        if post.typename == 'GraphSidecar':
+            for idx, node in enumerate(post.get_sidecar_nodes()):
+                if not node.is_video:
+                    tasks.append(download_single_image(
+                        node.display_url,
+                        f"{shortcode}_{idx}"
+                    ))
+        elif post.typename == 'GraphImage':
+            tasks.append(download_single_image(
+                post.url,
+                f"{shortcode}_0"
+            ))
+        
+        if tasks:
+            results = await asyncio.gather(*tasks)
+            downloaded_files = [f for f in results if f]
+        
+        await asyncio.sleep(random.uniform(
+            ImageConfig.INSTAGRAM_RATE_LIMIT_DELAY_MIN,
+            ImageConfig.INSTAGRAM_RATE_LIMIT_DELAY_MAX
+        ))
+        
+        return "success", downloaded_files
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Instagram image download failed: {str(e)}")
 
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
@@ -626,7 +731,6 @@ LANGUAGES = [
     "fr-FR,fr;q=0.9,en;q=0.8",
 ]
 
-
 def get_random_headers():
     return {
         "User-Agent": random.choice(USER_AGENTS),
@@ -644,47 +748,61 @@ def get_random_headers():
         "Cache-Control": "no-cache",
     }
 
+def get_ydl_format(quality: str, audio_only: bool) -> dict:
+    base_formats = {
+        "best": "best",
+        "720p": "best[height<=720]",
+        "1080p": "best[height<=1080]",
+        "4k": "best[height<=2160]"
+    }
+    
+    if audio_only:
+        if FFMPEG_AVAILABLE:
+            return {"format": "bestaudio/best", "postprocessors": [{"key": "FFmpegExtractAudio", "preferredcodec": "mp3"}]}
+        else:
+            return {"format": "bestaudio[ext=m4a]/bestaudio"}
+    
+    fmt = base_formats.get(quality, "best")
+    if FFMPEG_AVAILABLE:
+        return {"format": f"{fmt}+bestaudio/best" if not audio_only else "bestaudio/best"}
+    else:
+        return {"format": f"{fmt}[ext=mp4]/{fmt}"}
 
-async def download_video(url: str, quality: str, audio_only: bool) -> tuple[str, str, str]:
+async def download_video(url: str, quality: str, audio_only: bool) -> Tuple[str, list, list]:
     loop = asyncio.get_event_loop()
 
     base_opts = {
-    "quiet": True,
-    "no_warnings": True,
-    "noplaylist": True,
-    "retries": 20,
-    "fragment_retries": 20,
-    "extractor_retries": 10,
-    "sleep_interval": 3,
-    "max_sleep_interval": 15,
-    "http_headers": get_random_headers(),
-    "geo_bypass": True,
-    "concurrent_fragment_downloads": 3,
-    "continuedl": True,
-    "retries_sleep": 5,
-
-    "extractor_args": {
-        "youtube": {
-            "player_client": "android",         
-            "player_skip": ["webpage", "configs"],
-            "skip": ["dash"]                     
-        }
-    },
-
-    "cookiefile": "cookies.txt" if Path("cookies.txt").exists() else None,
-}
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+        "retries": 20,
+        "fragment_retries": 20,
+        "extractor_retries": 10,
+        "sleep_interval": 3,
+        "max_sleep_interval": 15,
+        "http_headers": get_random_headers(),
+        "geo_bypass": True,
+        "concurrent_fragment_downloads": 3,
+        "continuedl": True,
+        "retries_sleep": 5,
+        "extractor_args": {
+            "youtube": {
+                "player_client": "android",
+                "player_skip": ["webpage", "configs"],
+                "skip": ["dash"]
+            }
+        },
+    }
 
     cookies_path = Path("cookies.txt")
     if cookies_path.exists():
-        print("bruh cookie exist..")
         base_opts["cookiefile"] = str(cookies_path)
     else:
         try:
             base_opts["cookiefile"] = yt_dlp.utils.browser_cookie_file()
         except:
-            pass  # no cookies = okay for public videos
+            pass
 
-    # Step 1: Extract info
     with yt_dlp.YoutubeDL(base_opts) as ydl:
         info = await loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
 
@@ -700,7 +818,6 @@ async def download_video(url: str, quality: str, audio_only: bool) -> tuple[str,
     final_filename = f"{final_base}.{ext}"
     filepath = DOWNLOADS_DIR / final_filename
 
-    # Final download options
     download_opts = base_opts.copy()
     download_opts.update({
         "format": get_ydl_format(quality, audio_only)["format"],
@@ -711,23 +828,25 @@ async def download_video(url: str, quality: str, audio_only: bool) -> tuple[str,
             "preferredcodec": "mp3",
             "preferredquality": "192",
         }] if audio_only and FFMPEG_AVAILABLE else [],
-        # Keep fresh random headers for the actual download too
         "http_headers": get_random_headers(),
     })
 
     try:
         with yt_dlp.YoutubeDL(download_opts) as ydl:
             await loop.run_in_executor(None, lambda: ydl.download([url]))
+        
         if not filepath.exists():
             matches = list(DOWNLOADS_DIR.glob(f"{final_base}.*"))
             if matches:
                 matches[0].rename(filepath)
 
-        return "success", str(filepath), final_filename
+        file_paths = [str(filepath)]
+        file_names = [final_filename]
+        return "success", file_paths, file_names
 
     except yt_dlp.utils.DownloadError as e:
         error_msg = str(e)
-        if "Sign in to confirm you’re not a bot" in error_msg:
+        if "Sign in to confirm you're not a bot" in error_msg:
             raise HTTPException(status_code=429, detail="Bot detection triggered. Update your cookies.txt")
         if "Private video" in error_msg or "unavailable" in error_msg.lower():
             raise HTTPException(status_code=400, detail="Video is private or region-locked")
@@ -735,34 +854,86 @@ async def download_video(url: str, quality: str, audio_only: bool) -> tuple[str,
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.post("/download", response_model=dict)
 async def download_endpoint(request: DownloadRequest = Body(...)):
     platform = detect_platform(request.url)
 
+    if is_x_url(request.url):
+        try:
+            status, file_paths, file_names = await download_video(request.url, request.quality, request.audio_only)
+            download_urls = [f"/downloads/{name}" for name in file_names]
+            
+            return {
+                "status": status,
+                "platform": "Twitter/X (Video)",
+                "download_method": "yt-dlp",
+                "download_url": download_urls,
+                "file_paths": file_paths,
+                "files": file_names,
+                "file_count": len(file_paths),
+                "message": f"Downloaded to {file_paths[0]} ({'MP3' if request.audio_only and FFMPEG_AVAILABLE else 'M4A/MP4'})"
+            }
+        except Exception as e:
+            print(f"X video download failed, trying images: {e}")
+            try:
+                status, files = await download_x_images(request.url)
+                file_paths = [str(f) for f in files]
+                file_names = [f.name for f in files]
+                download_urls = [f"/downloads/{name}" for name in file_names]
+                return {
+                    "status": status,
+                    "platform": "Twitter/X (Images)",
+                    "download_method": "gallery-dl",
+                    "download_url": download_urls,
+                    "file_paths": file_paths,
+                    "files": file_names,
+                    "file_count": len(files),
+                    "message": f"Downloaded {len(files)} image(s) from X/Twitter"
+                }
+            except Exception as img_error:
+                raise HTTPException(status_code=500, detail=f"Failed to download from X: Video error: {str(e)}, Image error: {str(img_error)}")
     
-    if platform == "Unknown":
-        raise HTTPException(status_code=400, detail="Unsupported platform. yt-dlp supports 1000+ sites—try anyway!")
-    
-    try:
-        status, filepath, filename = await download_video(request.url, request.quality, request.audio_only)
 
-        download_url = f"/downloads/{filename}"
+    if is_instagram_url(request.url):
+        try:
+            status, files = await download_instagram_images(request.url)
+            file_paths = [f for f in files if f]  # already str
+            file_names = [Path(f).name for f in file_paths]
+            download_urls = [f"/downloads/{name}" for name in file_names]
+            return {
+                "status": status,
+                "platform": "Instagram (Images)",
+                "download_method": "instaloader",
+                "download_url": download_urls,
+                "file_paths": file_paths,
+                "files": file_names,
+                "file_count": len(file_paths),
+                "message": f"Downloaded {len(file_paths)} image(s) from Instagram"
+            }
+        except Exception as e:
+            # Fall back to yt-dlp if image download failed
+            print(f"Instagram image fallback failed, trying yt-dlp: {e}")
+    
+    # Use yt-dlp for other platforms or as fallback
+    try:
+        status, file_paths, file_names = await download_video(request.url, request.quality, request.audio_only)
+        download_urls = [f"/downloads/{name}" for name in file_names]
         
         return {
             "status": status,
             "platform": platform,
-            "download_url": download_url,  
-            "file_path": filepath,
-            "message": f"Downloaded to {filepath} ({'MP3' if request.audio_only and FFMPEG_AVAILABLE else 'M4A/MP4'})"
+            "download_method": "yt-dlp",
+            "download_url": download_urls,
+            "file_paths": file_paths,
+            "files": file_names,
+            "file_count": len(file_paths),
+            "message": f"Downloaded to {file_paths[0]} ({'MP3' if request.audio_only and FFMPEG_AVAILABLE else 'M4A/MP4'})"
         }
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
     
-
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -859,12 +1030,13 @@ async def validate_and_extract(
 ) -> Dict[str, Any]:
 
     key = _normalize_key(product_company)
-    print(product_company,clarification)
+    print(product_company, clarification)
     if key not in conversation_memory:
         conversation_memory[key] = []
     accumulated_clarifications = " ".join(conversation_memory[key])
     context_part = f"\nPrevious clarifications provided: \"{accumulated_clarifications}\"" if accumulated_clarifications else ""
     clarif_part = f"\nUser clarification: '{clarification}'." if clarification else ""
+    
     system_prompt = (
         "You are a precise input validator and extractor for product reviews. Your task is to identify the main product and its company from user input, "
         "handling natural language, variations, models (e.g., 'iPhone 16'), comparisons, and contextual descriptions.\n\n"
@@ -903,7 +1075,6 @@ async def validate_and_extract(
         "- Input: 'some random thing from unknown corp' → {\"is_valid\": true, \"product\": null, \"company\": null, \"confidence\": \"low\", \"needs_clarification\": true, \"question\": \"What specific product and company are you referring to?\", \"reason\": \"Vague input without identifiable product/company\"}\n"
     )
 
-    # FIX 3: Include context_part in user_prompt (now feeds memory to LLM)
     user_prompt = f"""Input: "{product_company}"{context_part}{clarif_part}
         Extract the primary product name and company name if identifiable. Assess confidence (high/low). If low, unclear, or no product/company (e.g., greetings, chit-chat), set needs_clarification: true and provide a helpful, model-generated clarifying question tailored to the input (keep it friendly and specific).
         Respond with JSON (always include all fields as in system prompt):
@@ -926,9 +1097,8 @@ async def validate_and_extract(
         content = response.choices[0].message.content.strip()
         data = json.loads(content)
 
-        # Expected fields (no change, but now more reliable due to prompt alignment)
         result = {
-            "is_valid": True,
+            "is_valid": data.get("is_valid", True),
             "product": data.get("product"),
             "company": data.get("company"),
             "confidence": data.get("confidence", "low"),
@@ -937,33 +1107,38 @@ async def validate_and_extract(
             "reason": data.get("reason", "")
         }
 
-        # FIX 4: Force defaults for high confidence to avoid missing-field bugs
         if result["confidence"] == "high":
             result["needs_clarification"] = False
             result["question"] = None
 
-        # FIX 5: Append current clarification to memory ONLY if still needs more (after API call)
-        # This builds the temporary session progressively
         if clarification and clarification.strip() and result["needs_clarification"]:
             conversation_memory[key].append(clarification.strip())
 
-        # Clear on high confidence (unchanged; temporary session ends)
-        if result["confidence"] == "high" and result["needs_clarification"] is False:
+        if result["confidence"] == "high" and not result["needs_clarification"]:
             conversation_memory.pop(key, None)
 
         return result
 
-    except Exception as e:
-
-        if result["confidence"] == "high":  
-            conversation_memory.pop(key, None)
+    except json.JSONDecodeError as je:
+        logger.error(f"JSON decode error in validate_and_extract: {je}")
         return {
             "is_valid": True,
             "product": None,
             "company": None,
             "confidence": "low",
             "needs_clarification": True,
-            "question": "I'm still having trouble identifying the product. Can you tell me the exact name and company behind it?",
+            "question": "I'm having trouble understanding that. Could you specify the product name and company more clearly?",
+            "reason": f"JSON parse error: {str(je)}"
+        }
+    except Exception as e:
+        logger.error(f"Error in validate_and_extract: {e}")
+        return {
+            "is_valid": True,
+            "product": None,
+            "company": None,
+            "confidence": "low",
+            "needs_clarification": True,
+            "question": "I'm having trouble identifying the product. Can you tell me the exact product name and company?",
             "reason": f"Error: {str(e)}"
         }
 
@@ -1038,7 +1213,10 @@ async def get_reviews(
     client: Annotated[AsyncOpenAI, Depends(get_openai_client)]
 ):
     if not request.product_company.strip():
-        raise HTTPException(status_code=400, detail="product_company is required")
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "product_company is required"}
+        )
 
     try:
         # Validate and extract
@@ -1049,48 +1227,58 @@ async def get_reviews(
         )
         print("extract: ", extract)
         
-        # Since we never return is_valid: false now, always check for needs_clarification first
+        # Check for needs_clarification first
         if extract.get("needs_clarification"):
-            return JSONResponse(
-                status_code=200,  # Use 200 to avoid error handling in JS
-                content={
-                    "needs_clarification": True,
-                    "question": extract["question"],
-                    "partial": {
-                        "product": extract.get("product"),
-                        "company": extract.get("company")
-                    }
-                },
-                media_type="application/json"
-            )
-
-        if not extract.get("product") or not extract.get("company"):
-            # Fallback if extraction failed to get both
             return JSONResponse(
                 status_code=200,
                 content={
                     "needs_clarification": True,
-                    "question": "I couldn't quite identify the product and company. Can you provide more details?",
+                    "question": extract.get("question", "Could you provide more details?"),
                     "partial": {
                         "product": extract.get("product"),
                         "company": extract.get("company")
                     }
-                },
-                media_type="application/json"
+                }
+            )
+
+        # Ensure we have both product and company
+        if not extract.get("product") or not extract.get("company"):
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "needs_clarification": True,
+                    "question": "I couldn't identify the product and company. Can you provide more details?",
+                    "partial": {
+                        "product": extract.get("product"),
+                        "company": extract.get("company")
+                    }
+                }
             )
 
         product = extract['product']
         company = extract['company']
+        
     except HTTPException as he:
         raise he
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Error in get_reviews extraction: {e}")
+        return JSONResponse(
+            status_code=200,
+            content={
+                "needs_clarification": True,
+                "question": "I encountered an error processing your request. Could you rephrase your query?",
+                "partial": {"product": None, "company": None}
+            }
+        )
+
+    # Generate streaming response
     try:
         perplexity_stream = await create_perplexity_review_stream(
             product, company, request.clarification, request.custom_filter, 
             request.is_deepresearch_needed, perplexity_client
         )
     except Exception as e:
+        logger.error(f"Error creating perplexity stream: {e}")
         raise HTTPException(status_code=503, detail=f"Analysis generation failed: {str(e)}")
 
     async def event_generator(perplexity_stream):
@@ -1100,16 +1288,15 @@ async def get_reviews(
                     content = chunk.choices[0].delta.content
                     yield content
         except Exception as e:
-            # Log the error if needed, but don't raise to avoid response started issue
             logger.error(f"Stream error: {e}")
-            pass  # Stream ends gracefully
+            pass
 
     return StreamingResponse(
         event_generator(perplexity_stream),
         media_type="text/plain",
-        headers={"X-Accel-Buffering": "no"}  
+        headers={"X-Accel-Buffering": "no"}
     )
-
+    
 @app.post("/manual-tasks", response_model=dict)
 async def create_manual_task(
     title: str = Form(..., description="Task title"),
