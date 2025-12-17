@@ -6,7 +6,7 @@ uvicorn main:app --reload
 ```
 ## Run Celery Worker:
 ```bash
-celery -A celery_app worker --loglevel=info --pool=solo
+celery -A celery_app worker --loglevel=info --pool=eventlet
 ``` 
 
 # Generate Thread User ID 

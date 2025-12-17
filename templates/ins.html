@@ -1,253 +1,219 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manual Post Creator</title>
-    <script src="/static/tailwind.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Themes Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .skeleton-loaderThx { animation: pulseThx 1.5s ease-in-out infinite; }
+    @keyframes pulseThx { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  </style>
 </head>
-<body class="bg-gray-50 min-h-screen font-sans">
+<body class="bg-gray-50 min-h-screen">
 
-    <div class="min-h-screen flex items-center justify-center p-6">
-        <button id="createBtnMnl" class="group relative flex items-center gap-3 bg-white hover:bg-gray-50 text-gray-800 px-4 py-3 rounded-full border border-gray-100 shadow-sm transition-all duration-300 hover:shadow-md">
-            <div class="bg-gray-50 text-gray-400 p-2 rounded-full group-hover:bg-gray-700 group-hover:text-white transition-colors duration-300">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+  <section id="ThemeThx" class="py-8">
+    <div class="min-h-full">
+      <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div class="flex justify-between items-center">
+            <div class="flex-1">
+              <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Image Themes</h1>
+              <p class="text-sm text-neutral-500 mt-2 max-w-md">Manage your image generation themes</p>
             </div>
-            <div class="text-left">
-                <h3 class="text-sm font-semibold text-gray-800">Create Post Manually</h3>
-                <p class="text-xs text-gray-500">Draft a new post from scratch</p>
+            <div class="flex gap-3">
+              <button id="refreshBtnThx" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                Refresh
+              </button>
+              <button id="openModalBtnThx" class="flex items-center gap-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 5L12 19"/>
+                  <path d="M5 12L19 12"/>
+                </svg>
+                New Theme
+              </button>
             </div>
-        </button>
-    </div>
-
-    <div id="modalOverlayMnl" class="fixed inset-0 bg-black/60 hidden z-50 transition-opacity duration-300 opacity-0 flex items-center justify-center p-4">
-
-        <div id="modalContentMnl" class="bg-white w-full max-w-lg rounded-2xl transform scale-90 transition-all duration-300 max-h-[90vh] flex flex-col overflow-hidden border border-gray-100">
-
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
-                <div>
-                    <h2 class="text-xl font-semibold text-gray-800 tracking-tight">New Post</h2>
-                </div>
-                <button id="closeBtnMnl" class="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-
-            <div class="overflow-y-auto px-7 py-4">
-                <form id="manualFormMnl" class="space-y-4">
-                    
-                    <!-- Title Input -->
-                    <div class="space-y-1.5">
-                        <label for="titleMnl" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Task Title</label>
-                        <input type="text" id="titleMnl" name="title" required 
-                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200" 
-                            placeholder="e.g., Product Launch Announcement">
-                    </div>
-
-                    <div class="space-y-1.5">
-                        <label for="captionMnl" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Caption</label>
-                        <textarea id="captionMnl" name="caption" rows="4" required 
-                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200 resize-none" 
-                            placeholder="Write your engaging caption here..."></textarea>
-                    </div>
-
-                    <div class="space-y-1.5">
-                        <label for="hashtagsMnl" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Hashtags</label>
-                        <input type="text" id="hashtagsMnl" name="hashtags" required 
-                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200" 
-                            placeholder="#tech, #news (comma separated)">
-                    </div>
-
-                    <div class="space-y-1">
-                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Image Asset</label>
-                        <div class="relative">
-                            <label for="imageMnl" class="flex flex-row items-center justify-between w-full px-4 py-2.5 bg-white border border-gray-300 border-dashed rounded-xl cursor-pointer hover:bg-gray-50 hover:border-gray-400 transition-all group">
-                                <div class="flex items-center gap-3">
-                                    <div class="bg-gray-100 p-1.5 rounded-md group-hover:bg-white transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                    </div>
-                                    <span class="text-sm text-gray-600 font-medium truncate max-w-[200px]" id="fileNameMnl">Select image file...</span>
-                                </div>
-                                <span class="text-xs text-blue-600 font-semibold group-hover:underline">Browse</span>
-                                <input id="imageMnl" name="image" type="file" accept="image/*" required class="hidden" />
-                            </label>
-                        </div>
-                    </div>
-
-                    <div id="progressContainerMnl" class="hidden pt-2">
-                        <div class="flex justify-between mb-1">
-                            <span class="text-xs font-medium text-gray-600">Uploading media...</span>
-                            <span id="progressTextMnl" class="text-xs font-medium text-gray-800">0%</span>
-                        </div>
-                        <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                            <div id="progressBarMnl" class="bg-gray-900 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    <div class="space-y-1.5">
-                        <label for="notesMnl" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Internal Notes</label>
-                        <textarea id="notesMnl" name="notes" rows="2" 
-                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-800 text-sm placeholder-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-gray-900 focus:border-gray-900 transition-all duration-200 resize-none" 
-                            placeholder="Optional..."></textarea>
-                    </div>
-
-                    <div class="pt-4">
-                        <button type="submit" id="submitBtnMnl" class="w-full bg-[#0f172a] hover:bg-[#1e293b] text-white py-3 px-6 rounded-2xl text-sm font-semibold shadow-sm hover:shadow-md transform active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2">
-                            <span>Create Post</span>
-                        </button>
-                    </div>
-                </form>
-
-
-            </div>
+          </div>
         </div>
+      </header>
+      <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+        <!-- Skeleton Loader -->
+        <div id="skeletonThx" class="space-y-6">
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="h-14 bg-gray-50 skeleton-loaderThx"></div>
+            <div class="p-6 space-y-4">
+              <div class="h-5 w-48 bg-gray-200 rounded skeleton-loaderThx"></div>
+              <div class="h-4 w-64 bg-gray-200 rounded skeleton-loaderThx"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyStateThx" class="hidden flex flex-col items-center justify-center py-12 text-center">
+          <div class="rounded-full bg-gray-50 p-4 mb-3 inline-block">
+            <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+            </svg>
+          </div>
+          <h3 class="mt-2 text-sm font-semibold text-gray-900">No themes yet</h3>
+          <p class="mt-1 text-sm text-gray-500">Create your first image theme to get started.</p>
+          <button id="openModalBtn2Thx" class="mt-6 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+            Create Theme
+          </button>
+        </div>
+
+        <div id="tableThx" class="hidden bg-white shadow overflow-hidden sm:rounded-lg">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyThx" class="bg-white divide-y divide-gray-200">
+            </tbody>
+          </table>
+        </div>
+      </main>
     </div>
 
-    <script>
-        const createBtnMnl = document.getElementById('createBtnMnl');
-        const modalOverlayMnl = document.getElementById('modalOverlayMnl');
-        const modalContentMnl = document.getElementById('modalContentMnl');
-        const closeBtnMnl = document.getElementById('closeBtnMnl');
-        const manualFormMnl = document.getElementById('manualFormMnl');
-        const submitBtnMnl = document.getElementById('submitBtnMnl');
-        const progressContainerMnl = document.getElementById('progressContainerMnl');
-        const progressBarMnl = document.getElementById('progressBarMnl');
-        const progressTextMnl = document.getElementById('progressTextMnl');
-        const imageInputMnl = document.getElementById('imageMnl');
-        const fileNameMnl = document.getElementById('fileNameMnl');
+    <dialog id="themeModalThx" class="p-8 rounded-2xl shadow-2xl max-w-lg w-full bg-white">
+      <h2 class="text-2xl font-bold mb-6">Add New Theme</h2>
+      <form id="themeFormThx" class="space-y-5">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Theme Name *</label>
+          <input name="name" required placeholder="e.g. Cyberpunk Night" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+          <textarea name="description" rows="4" placeholder="Describe the visual style, colors, mood, etc." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+        </div>
 
-        // File input styling helper
-        imageInputMnl.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                fileNameMnl.textContent = e.target.files[0].name;
-                fileNameMnl.classList.add('text-gray-800');
-                fileNameMnl.classList.remove('text-gray-600');
-            } else {
-                fileNameMnl.textContent = "Select image file...";
-                fileNameMnl.classList.remove('text-gray-800');
-                fileNameMnl.classList.add('text-gray-600');
-            }
-        });
+        <div class="flex justify-end gap-3 mt-8">
+          <button type="button" id="cancelBtnThx" class="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+            Save Theme
+          </button>
+        </div>
+      </form>
+    </dialog>
+  </section>
 
-        // Open modal
-        createBtnMnl.addEventListener('click', () => {
-            modalOverlayMnl.classList.remove('hidden');
-            setTimeout(() => {
-                modalOverlayMnl.classList.remove('opacity-0');
-                modalContentMnl.classList.remove('scale-95');
-                modalContentMnl.classList.add('scale-100');
-            }, 10);
-            document.body.style.overflow = 'hidden';
-        });
+  <script>
+    const elementsThx = {
+      skeletonThx: document.getElementById('skeletonThx'),
+      emptyStateThx: document.getElementById('emptyStateThx'),
+      tableThx: document.getElementById('tableThx'),
+      tbodyThx: document.getElementById('tbodyThx'),
+      modalThx: document.getElementById('themeModalThx'),
+      formThx: document.getElementById('themeFormThx'),
+      refreshBtnThx: document.getElementById('refreshBtnThx'),
+      openModalBtnThx: document.getElementById('openModalBtnThx'),
+      openModalBtn2Thx: document.getElementById('openModalBtn2Thx'),
+      cancelBtnThx: document.getElementById('cancelBtnThx')
+    };
 
-        // Close modal function
-        function closeModalMnl() {
-            modalOverlayMnl.classList.add('opacity-0');
-            modalContentMnl.classList.remove('scale-100');
-            modalContentMnl.classList.add('scale-95');
-            
-            setTimeout(() => {
-                modalOverlayMnl.classList.add('hidden');
-                document.body.style.overflow = 'auto';
-                resetFormMnl();
-            }, 300); 
+    // Load themes
+    async function loadThemesThx() {
+      try {
+        const res = await fetch(`/api/themes`);
+        const themes = await res.json();
+
+        elementsThx.tbodyThx.innerHTML = '';
+
+        if (themes.length === 0) {
+          elementsThx.emptyStateThx.classList.remove('hidden');
+          elementsThx.tableThx.classList.add('hidden');
+          elementsThx.skeletonThx.classList.add('hidden');
+          return;
         }
 
-        closeBtnMnl.addEventListener('click', closeModalMnl);
-        modalOverlayMnl.addEventListener('click', (e) => {
-            if (e.target === modalOverlayMnl) closeModalMnl();
+        themes.forEach(theme => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${theme.name}</td>
+            <td class="px-6 py-4 text-sm text-gray-500">${theme.description || '<em class="text-gray-400">No description</em>'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(theme.created_at).toLocaleString()}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <button onclick="deleteThemeThx('${theme.theme_id}')" class="text-red-600 hover:text-red-900 font-medium">
+                Delete
+              </button>
+            </td>
+          `;
+          elementsThx.tbodyThx.appendChild(row);
         });
 
-        function resetFormMnl() {
-            manualFormMnl.reset();
-            fileNameMnl.textContent = "Select image file...";
-            fileNameMnl.classList.remove('text-gray-800');
-            fileNameMnl.classList.add('text-gray-600');
-            
-            progressContainerMnl.classList.add('hidden');
-            progressBarMnl.style.width = '0%';
-            progressTextMnl.textContent = '0%';
+        elementsThx.tableThx.classList.remove('hidden');
+        elementsThx.emptyStateThx.classList.add('hidden');
+      } catch (err) {
+        console.error('Failed to load themes:', err);
+        alert('Failed to load themes. Check console.');
+      } finally {
+        elementsThx.skeletonThx.classList.add('hidden');
+      }
+    }
 
-            submitBtnMnl.disabled = false;
-            submitBtnMnl.innerHTML = `<span>Create Post</span>`;
-            submitBtnMnl.classList.remove('opacity-50', 'cursor-not-allowed');
+    // Create theme
+    elementsThx.formThx.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(elementsThx.formThx);
+      const data = {
+        name: formData.get('name'),
+        description: formData.get('description') || null
+      };
+
+      try {
+        const res = await fetch(`/api/themes/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.detail || 'Failed to create theme');
         }
 
-        manualFormMnl.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formDataMnl = new FormData(manualFormMnl);
-            const scheduledAtElMnl = document.getElementById('scheduled_atMnl');
-            if (scheduledAtElMnl) {
-                const scheduledAtValMnl = scheduledAtElMnl.value;
-                if (scheduledAtValMnl) {
-                    const dateMnl = new Date(scheduledAtValMnl);
-                    formDataMnl.set('scheduled_at', dateMnl.toISOString());
-                }
-            }
+        elementsThx.modalThx.close();
+        elementsThx.formThx.reset();
+        loadThemesThx();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
 
-            const xhrMnl = new XMLHttpRequest();
-            xhrMnl.open('POST', '/manual-tasks', true);
+    // Delete theme
+    async function deleteThemeThx(theme_id) {
+      if (!confirm('Are you sure you want to delete this theme?')) return;
 
-            // Track progress
-            xhrMnl.upload.addEventListener('progress', (e) => {
-                if (e.lengthComputable) {
-                    const percentCompleteMnl = (e.loaded / e.total) * 100;
-                    progressBarMnl.style.width = percentCompleteMnl + '%';
-                    progressTextMnl.textContent = Math.round(percentCompleteMnl) + '%';
-                }
-            });
-
-            xhrMnl.addEventListener('load', () => {
-                if (xhrMnl.status === 200) {
-                    let responseMnl;
-                    try {
-                        responseMnl = JSON.parse(xhrMnl.responseText);
-                    } catch(err) {
-                        responseMnl = { task_id: 'Unknown', img_url: 'Unknown' };
-                    }
-                    
-                    submitBtnMnl.textContent = 'Post Created!';
-                    submitBtnMnl.disabled = true;
-                    submitBtnMnl.classList.add('opacity-50', 'cursor-not-allowed');
-                } else {
-                    submitBtnMnl.disabled = false;
-                    submitBtnMnl.innerHTML = `<span>Try Again</span>`;
-                }
-                progressContainerMnl.classList.add('hidden');
-            });
-
-            xhrMnl.addEventListener('error', () => {
-                progressContainerMnl.classList.add('hidden');
-                submitBtnMnl.disabled = false;
-                submitBtnMnl.textContent = 'Try Again';
-            });
-
-            // Show progress and update UI
-            progressContainerMnl.classList.remove('hidden');
-            progressBarMnl.style.width = '0%';
-            progressTextMnl.textContent = '0%';
-            submitBtnMnl.disabled = true;
-            submitBtnMnl.innerHTML = `<span>Uploading...</span>`;
-
-            xhrMnl.send(formDataMnl);
+      try {
+        const res = await fetch(`/api/themes/${theme_id}`, {
+          method: 'DELETE'
         });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && !modalOverlayMnl.classList.contains('hidden')) {
-                closeModalMnl();
-            }
-        });
-    </script>
+
+        if (!res.ok) throw new Error('Failed to delete');
+
+        loadThemesThx();
+      } catch (err) {
+        alert('Failed to delete theme');
+      }
+    }
+
+    // Button handlers
+    elementsThx.refreshBtnThx.addEventListener('click', loadThemesThx);
+    elementsThx.openModalBtnThx.addEventListener('click', () => elementsThx.modalThx.showModal());
+    elementsThx.openModalBtn2Thx.addEventListener('click', () => elementsThx.modalThx.showModal());
+    elementsThx.cancelBtnThx.addEventListener('click', () => {
+      elementsThx.modalThx.close();
+      elementsThx.formThx.reset();
+    });
+
+    loadThemesThx();
+  </script>
 </body>
 </html>

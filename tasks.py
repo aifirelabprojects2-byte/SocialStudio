@@ -5,7 +5,7 @@ from typing import Optional
 import os
 from dotenv import load_dotenv
 import pytz
-from celery import shared_task  # Back to shared_task—no app import needed
+from celery import shared_task 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
 from Database import (
@@ -20,7 +20,7 @@ from Database import (
     ErrorLog,
     SyncSessionLocal,
 )
-from ThreadPoster import post_thread
+from XPoster import post_to_x
 from meta_poster import InstagramPoster, ThreadsPoster, FacebookPoster
 
 load_dotenv()
@@ -128,17 +128,19 @@ def execute_posting(self, task_id: str) -> None:
                         )
                 elif platform.api_name.lower() == "x":
                     if imgUrl:
-                        post_thread(
+                        ttt = post_to_x(
                         captions= caption,
                         image_per_tweet=imgUrl,
                         hashtags= hashtags,
                         )
+                        print(ttt)
 
                     else:
-                        post_thread(
+                        sss=post_to_x(
                         captions=caption,
                         hashtags= hashtags,
                         )
+                        print(sss)
                 else:
                     raise ValueError(f"Unsupported platform: {platform.api_name}")
                 # Success

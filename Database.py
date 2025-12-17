@@ -84,6 +84,14 @@ class Platform(Base, SyncBase):
     meta = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+class ImageTheme(Base, SyncBase):
+    __tablename__ = "image_theme"
+
+    theme_id = Column(String(36), primary_key=True, default=gen_uuid_str)
+    name = Column(String(64), nullable=False, unique=True, index=True)
+    description = Column(Text, nullable=True) 
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
 class TaskStatus(enum.Enum):
     draft = "draft"
     draft_approved = "draft_approved"
@@ -229,7 +237,6 @@ SyncSessionLocal = sessionmaker(
 async def init_db() -> None:
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    # Also create sync tables if needed (idempotent)
     with sync_engine.begin() as conn:
         SyncBase.metadata.create_all(bind=conn)
 

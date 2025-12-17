@@ -5,6 +5,8 @@ import asyncio
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 
+from Database import init_db
+
 load_dotenv()
 
 perplexity_client = AsyncOpenAI(
@@ -78,4 +80,6 @@ async def enrich_company(question: str) -> dict:
            f"error occured {e}"
         }
 
-print(asyncio.run(enrich_company("whtai developed by aifirelab")))
+# print(asyncio.run(enrich_company("whtai developed by aifirelab")))
+
+# asyncio.run(init_db())

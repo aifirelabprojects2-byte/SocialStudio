@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field, field_validator, ValidationError
 import requests
 import yt_dlp
 from ImgGen import ImageGenClient
-import PostGen,ManagePlatform
+import PostGen,ManagePlatform,Referencer,ManageTheme
 import os
 from datetime import datetime
 from typing import List, AsyncGenerator, Dict, Any, Annotated, Optional, Literal, Tuple
@@ -84,6 +84,9 @@ async def home(request: Request):
 
 PostGen.init(app)    
 ManagePlatform.init(app)
+ManageTheme.init(app)
+Referencer.init(app)
+
 
 
 from tasks import execute_posting 
