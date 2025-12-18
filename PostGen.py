@@ -1,6 +1,8 @@
+import time
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
+from CostCalc import calculate_llm_cost
 from ImgGen import ImageGenClient
 import os
 import base64
@@ -11,7 +13,7 @@ from pathlib import Path
 from fastapi import Form, Query, Request, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse
 import json
-from Database import TaskStatus, get_db, Task, GeneratedContent, Media
+from Database import LLMUsage, TaskStatus, get_db, Task, GeneratedContent, Media
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select, update, delete
 from sqlalchemy.orm import selectinload
@@ -124,7 +126,7 @@ def init(app):
             "vintage": "vintage retro style",
         }
         style_prompt = style_mapping.get(image_style, "realistic photo")
-
+        start = time.time()
         try:
             completion = await client.beta.chat.completions.parse(
                 model="gpt-4o-mini",
@@ -162,6 +164,24 @@ def init(app):
                 temperature=0.8,
                 response_format=GeneratedContentResponse,
             )
+            
+            latency_ms = int((time.time() - start) * 1000)
+            usage = completion.usage
+            input_tokens = usage.prompt_tokens
+            output_tokens = usage.completion_tokens
+            total_tokens = usage.total_tokens
+            cost_usd = calculate_llm_cost(model="gpt-4o-mini",input_tokens=input_tokens,output_tokens=output_tokens)
+            usage_row = LLMUsage(
+                    feature="generate_post",
+                    model="gpt-4o-mini",
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    total_tokens=total_tokens,
+                    cost_usd=cost_usd,
+                    latency_ms=latency_ms,
+                    status="success"
+                )
+            db.add(usage_row)
 
             result = completion.choices[0].message.parsed.model_dump()
 
@@ -208,8 +228,22 @@ def init(app):
                 "generate_image": want_image,
                 "image_style": image_style if want_image else None,
             })
+            
+
 
         except Exception as e:
+            latency_ms = int((time.time() - start) * 1000)
+            db.add(LLMUsage(
+                feature="generate_post",
+                model="gpt-4o-mini",
+                input_tokens=0,
+                output_tokens=0,
+                total_tokens=0,
+                cost_usd=0,
+                latency_ms=latency_ms,
+                status="error",
+            ))
+            await db.commit()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Generation failed: {str(e)}"

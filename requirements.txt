@@ -47,3 +47,4 @@ oauth2
 tweepy
 gallery-dl
 eventlet
+tiktoken

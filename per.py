@@ -82,4 +82,4 @@ async def enrich_company(question: str) -> dict:
 
 # print(asyncio.run(enrich_company("whtai developed by aifirelab")))
 
-# asyncio.run(init_db())
+asyncio.run(init_db())

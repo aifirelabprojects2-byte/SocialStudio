@@ -1,4 +1,5 @@
 import asyncio
+from decimal import Decimal
 from functools import lru_cache
 import hashlib
 import random
@@ -13,17 +14,19 @@ from openai import AsyncOpenAI
 from pydantic import BaseModel, Field, field_validator, ValidationError
 import requests
 import yt_dlp
+from Auth import create_session, get_current_user_from_token, hash_password, invalidate_all_sessions, verify_password
+from CostCalc import calculate_llm_cost, count_tokens
 from ImgGen import ImageGenClient
-import PostGen,ManagePlatform,Referencer,ManageTheme
+import PostGen,ManagePlatform,Referencer,ManageTheme,UsageTracker
 import os
 from datetime import datetime
 from typing import List, AsyncGenerator, Dict, Any, Annotated, Optional, Literal, Tuple
 from pathlib import Path
 from enum import Enum
-from fastapi import Body, FastAPI, Form, Query, Request, Depends, HTTPException, logger, status, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi import Body, Cookie, FastAPI, Form, Query, Request, Depends, HTTPException, logger, status, UploadFile, File
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 import json
-from Database import AttemptStatus, ErrorLog, OAuthToken, Platform, PostAttempt, PublishStatus, TaskStatus, gen_uuid_str, get_db, init_db, Task, GeneratedContent, Media, PlatformSelection
+from Database import AsyncSessionLocal, AttemptStatus, ErrorLog, LLMUsage, LoginSession, OAuthToken, Platform, PostAttempt, PublishStatus, TaskStatus, User, gen_uuid_str, get_db, init_db, Task, GeneratedContent, Media, PlatformSelection
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select, update, delete,desc
 from sqlalchemy.orm import selectinload,joinedload
@@ -41,7 +44,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 
 load_dotenv()
-
+GPT_MODEL="gpt-4o-mini"
 image_client = ImageGenClient(api_key=os.getenv("IMG_API_KEY"))   
 IMG_BB_API_KEY = os.getenv('IMGBB_API')
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -77,16 +80,121 @@ async def health_check():
 async def startup():
     await init_db()
 
+@app.exception_handler(401)
+async def auth_exception_handler(request: Request, exc: HTTPException):
+    return RedirectResponse(url="/login")
+
+async def get_current_user(
+    db: AsyncSession = Depends(get_db),
+    session_token: Optional[str] = Cookie(None, alias="session_token")
+):
+    if not session_token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    user = await get_current_user_from_token(db, session_token)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
+    return user
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(
+    request: Request,
+    message: Optional[str] = None,
+    session_token: Optional[str] = Cookie(None, alias="session_token")
+):
+    if session_token:
+        async with AsyncSessionLocal() as db:
+            user = await get_current_user_from_token(db, session_token)
+            if user:
+                return RedirectResponse(url="/", status_code=303)
+    return templates.TemplateResponse(
+        "login.html",
+        {"request": request, "message": message}
+    )
+@app.post("/login")
+async def login_post(
+    request: Request,
+    password: str = Form(...),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(User).where(User.is_active == True))
+    user = result.scalar_one_or_none()
+    if not user or not verify_password(password, user.password_hash):
+        return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid password"}, status_code=400)
+
+    token = await create_session(
+        db=db,
+        user_id=user.user_id,
+        ip=request.client.host,
+        ua=str(request.headers.get("user-agent")),
+        days=30
+    )
+    response = RedirectResponse(url="/", status_code=303)
+    response.set_cookie(
+        key="session_token",
+        value=token,
+        httponly=True,
+        secure=True,         
+        samesite="lax",
+        max_age=30*24*60*60   # 30 days
+    )
+    return response
+
+@app.post("/logout")
+async def logout(
+    db: AsyncSession = Depends(get_db),
+    session_token: Optional[str] = Cookie(None, alias="session_token")
+):
+    if session_token:
+        await db.execute(delete(LoginSession).where(LoginSession.token == session_token))
+        await db.commit()
+    response = RedirectResponse(url="/login", status_code=303)
+    response.delete_cookie("session_token")
+    return response
+
+@app.post("/logout-all")
+async def logout_all_devices(user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await invalidate_all_sessions(db, user.user_id)
+    response = RedirectResponse(url="/login", status_code=303)
+    response.delete_cookie("session_token")
+    return response
+
+@app.post("/change-password")
+async def change_password(
+    old_password: str = Form(...),
+    new_password: str = Form(...),
+    new_password_confirm: str = Form(...),
+    user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    if not verify_password(old_password, user.password_hash):
+        raise HTTPException(status_code=400, detail="Old password incorrect")
+    if new_password != new_password_confirm:
+        raise HTTPException(status_code=400, detail="New passwords do not match")
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="New password too short")
+
+    user.password_hash = hash_password(new_password)
+    await invalidate_all_sessions(db, user.user_id)
+    await db.commit()
+
+    # Force re-login
+    response = JSONResponse({"detail": "Password changed successfully. Please log in again."})
+    response.delete_cookie("session_token")
+    return response
+
 @app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
+async def home(request: Request, user=Depends(get_current_user)):
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/setting", response_class=HTMLResponse)
+async def settings(request: Request):
+    return templates.TemplateResponse("settings.html", {"request": request})
 
 PostGen.init(app)    
 ManagePlatform.init(app)
 ManageTheme.init(app)
 Referencer.init(app)
-
+UsageTracker.init(app)
 
 
 from tasks import execute_posting 
@@ -440,7 +548,7 @@ PREDEFINED_STYLES = {
 }
 
 
-async def generate_formatted_text_stream(text: str, instruction: str):
+async def generate_formatted_text_stream(text: str, instruction: str,db: AsyncSession):
     system_prompt = (
         "You are an expert editor. "
         "Rewrite the given text exactly according to the user's instruction. "
@@ -449,10 +557,15 @@ async def generate_formatted_text_stream(text: str, instruction: str):
     )
 
     user_prompt = f"Instruction: {instruction}\n\nText to rewrite:\n{text}"
-
+    input_text = user_prompt+system_prompt
+    input_tokens = count_tokens(input_text,GPT_MODEL)
+    output_tokens = 0
+    generated_text = []
+    start = time.time()
+    strm_status = "success"
     try:
         stream = await client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=GPT_MODEL,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -464,15 +577,38 @@ async def generate_formatted_text_stream(text: str, instruction: str):
 
         async for chunk in stream:
             if chunk.choices and chunk.choices[0].delta.content is not None:
-                yield chunk.choices[0].delta.content
-
+                text = chunk.choices[0].delta.content
+                yield text
+                output_tokens += count_tokens(text,GPT_MODEL)
+                generated_text.append(text)
+                
     except Exception as e:
+        strm_status = "failed"
         error_msg = json.dumps({"error": "Generation failed", "details": str(e)})
         yield error_msg
+        
+    finally:
+        latency_ms = int((time.time() - start) * 1000)
+        total_cost = calculate_llm_cost(
+            model=GPT_MODEL,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        )
 
+        db.add(LLMUsage(
+            feature="text_formating",
+            model=GPT_MODEL,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=input_tokens + output_tokens,
+            cost_usd=total_cost,
+            latency_ms=latency_ms,
+            status=strm_status,
+        ))
+        await db.commit()
 
 @app.post("/format-text")
-async def format_text(request: FormatRequest):
+async def format_text(request: FormatRequest,db: AsyncSession = Depends(get_db)):
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Text cannot be empty")
 
@@ -485,7 +621,7 @@ async def format_text(request: FormatRequest):
         raise HTTPException(status_code=400, detail="Either 'style' or 'custom_instruction' is required")
 
     return StreamingResponse(
-        generate_formatted_text_stream(request.text, instruction),
+        generate_formatted_text_stream(request.text, instruction,db),
         media_type="text/plain; charset=utf-8",
         headers={
             "Cache-Control": "no-cache",
@@ -671,7 +807,6 @@ async def download_single_image(image_url: str, filename: str):
     return None
 
 async def download_instagram_images(url: str) -> Tuple[str, list]:
-
     try:
         shortcode = extract_instagram_shortcode(url)
         post = await fetch_instagram_post(shortcode)
@@ -679,12 +814,27 @@ async def download_instagram_images(url: str) -> Tuple[str, list]:
         if not post:
             raise HTTPException(status_code=400, detail="Failed to fetch Instagram post")
         
+        # NEW: Detect if this is a video post or has video content – fallback to yt-dlp if so
+        is_video_post = False
+        if post.typename == 'GraphVideo':
+            is_video_post = True
+        elif post.typename == 'GraphSidecar':
+            # Check nodes for any video
+            for node in post.get_sidecar_nodes():
+                if node.is_video:
+                    is_video_post = True
+                    break
+        
+        if is_video_post:
+            # Raise to trigger fallback to yt-dlp (videos/reels work better there)
+            raise ValueError("Instagram video/reel detected – routing to video downloader")
+        
         downloaded_files = []
         tasks = []
         
         if post.typename == 'GraphSidecar':
             for idx, node in enumerate(post.get_sidecar_nodes()):
-                if not node.is_video:
+                if not node.is_video:  # Already skips videos, but now we caught above
                     tasks.append(download_single_image(
                         node.display_url,
                         f"{shortcode}_{idx}"
@@ -704,8 +854,15 @@ async def download_instagram_images(url: str) -> Tuple[str, list]:
             ImageConfig.INSTAGRAM_RATE_LIMIT_DELAY_MAX
         ))
         
+        if not downloaded_files:
+            raise ValueError("No images found in post – may be video-only")
+        
         return "success", downloaded_files
         
+    except ValueError as ve:  # NEW: Re-raise ValueError for fallback (video or empty)
+        if "video" in str(ve).lower() or "no images" in str(ve).lower():
+            raise  # Triggers endpoint fallback to yt-dlp
+        raise HTTPException(status_code=500, detail=f"Instagram fetch failed: {str(ve)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Instagram image download failed: {str(e)}")
 
@@ -913,9 +1070,11 @@ async def download_endpoint(request: DownloadRequest = Body(...)):
                 "file_count": len(file_paths),
                 "message": f"Downloaded {len(file_paths)} image(s) from Instagram"
             }
+        except ValueError as ve:  # NEW: Catch video/empty cases explicitly
+            print(f"Instagram images skipped (video detected): {ve} – falling back to yt-dlp")
         except Exception as e:
-            # Fall back to yt-dlp if image download failed
-            print(f"Instagram image fallback failed, trying yt-dlp: {e}")
+            print(f"Instagram images failed, falling back to yt-dlp: {e}")
+        # Fall through to yt-dlp below
     
     # Use yt-dlp for other platforms or as fallback
     try:
@@ -1026,12 +1185,13 @@ conversation_memory: Dict[str, List[str]] = {}
 def _normalize_key(product_company: str) -> str:
     return "".join(c.lower() for c in product_company if c.isalnum())
 
+
 async def validate_and_extract(
     product_company: str,
     clarification: Optional[str] = None,
-    client: AsyncOpenAI = Depends(get_openai_client)
+    client: AsyncOpenAI = Depends(get_openai_client),
+    db: AsyncSession = Depends(get_db)
 ) -> Dict[str, Any]:
-
     key = _normalize_key(product_company)
     print(product_company, clarification)
     if key not in conversation_memory:
@@ -1039,11 +1199,10 @@ async def validate_and_extract(
     accumulated_clarifications = " ".join(conversation_memory[key])
     context_part = f"\nPrevious clarifications provided: \"{accumulated_clarifications}\"" if accumulated_clarifications else ""
     clarif_part = f"\nUser clarification: '{clarification}'." if clarification else ""
-    
+   
     system_prompt = (
         "You are a precise input validator and extractor for product reviews. Your task is to identify the main product and its company from user input, "
         "handling natural language, variations, models (e.g., 'iPhone 16'), comparisons, and contextual descriptions.\n\n"
-
         "Key Rules:\n"
         "- Be flexible but decisive: Infer company confidently for well-known products (e.g., iPhone/Galaxy/ChatGPT → Apple/Samsung/OpenAI).\n"
         "- Common inferences (high confidence): iPhone/Mac/Book → Apple; Galaxy/Pixel → Samsung/Google; Maggi → Nestle; Yippee → ITC; ChatGPT/GPT → OpenAI.\n"
@@ -1052,24 +1211,21 @@ async def validate_and_extract(
         "- Always prefer extraction with high confidence if a reasonable product reference exists, even if company is inferred or loosely mentioned.\n"
         "- Only use low confidence + clarification for: greetings/chit-chat ('hi', 'hello'), completely vague inputs ('some gadget'), or truly unknown/niche products without clear context.\n"
         "- Never clarify if a plausible extraction is possible—err strongly toward high confidence for any product-like reference.\n\n"
-
         "Self-Evaluation Step (think internally first):\n"
         "1. Does the input mention or describe a recognizable product? → If yes, extract + high confidence.\n"
         "2. Can company be reasonably inferred? → If yes, do so.\n"
         "3. Is it purely social/non-product? → If yes, low confidence + clarify.\n"
         "Rate your extraction certainty: high if plausible, low only if impossible.\n\n"
-
         "Output Format (strict JSON only, no extra text; always include ALL fields):\n"
         "{\n"
-        "  \"is_valid\": true,\n"
-        "  \"product\": \"extracted product name (or null)\",\n"
-        "  \"company\": \"extracted/inferred company (or null)\",\n"
-        "  \"confidence\": \"high\" or \"low\",\n"
-        "  \"needs_clarification\": true or false,\n"
-        "  \"question\": \"helpful clarification question if needs_clarification=true (friendly, specific; else null)\",\n"
-        "  \"reason\": \"brief explanation of extraction or why clarification needed\"\n"
+        " \"is_valid\": true,\n"
+        " \"product\": \"extracted product name (or null)\",\n"
+        " \"company\": \"extracted/inferred company (or null)\",\n"
+        " \"confidence\": \"high\" or \"low\",\n"
+        " \"needs_clarification\": true or false,\n"
+        " \"question\": \"helpful clarification question if needs_clarification=true (friendly, specific; else null)\",\n"
+        " \"reason\": \"brief explanation of extraction or why clarification needed\"\n"
         "}\n\n"
-
         "Examples:\n"
         "- Input: 'iPhone' → {\"is_valid\": true, \"product\": \"iPhone\", \"company\": \"Apple\", \"confidence\": \"high\", \"needs_clarification\": false, \"question\": null, \"reason\": \"Direct product reference with inferred company\"}\n"
         "- Input: 'compare maggi and yippee' → {\"is_valid\": true, \"product\": \"Maggi\", \"company\": \"Nestle\", \"confidence\": \"high\", \"needs_clarification\": false, \"question\": null, \"reason\": \"Primary product extracted from comparison\"}\n"
@@ -1077,14 +1233,18 @@ async def validate_and_extract(
         "- Input: 'hi there' → {\"is_valid\": true, \"product\": null, \"company\": null, \"confidence\": \"low\", \"needs_clarification\": true, \"question\": \"Hi! What product and company would you like reviewed?\", \"reason\": \"No product reference; greeting only\"}\n"
         "- Input: 'some random thing from unknown corp' → {\"is_valid\": true, \"product\": null, \"company\": null, \"confidence\": \"low\", \"needs_clarification\": true, \"question\": \"What specific product and company are you referring to?\", \"reason\": \"Vague input without identifiable product/company\"}\n"
     )
-
     user_prompt = f"""Input: "{product_company}"{context_part}{clarif_part}
         Extract the primary product name and company name if identifiable. Assess confidence (high/low). If low, unclear, or no product/company (e.g., greetings, chit-chat), set needs_clarification: true and provide a helpful, model-generated clarifying question tailored to the input (keep it friendly and specific).
         Respond with JSON (always include all fields as in system prompt):
         {{"is_valid": true, "product": "extracted product name or null", "company": "extracted company name or null", "confidence": "high", "needs_clarification": false, "question": null, "reason": "brief explanation"}}"""
-
+    
+    model = "gpt-4o-mini"
+    input_str = system_prompt + "\n\n" + user_prompt
+    input_tokens = count_tokens(input_str, model)
+    output_tokens = 0
+    usage_status = "success"
+    start = time.time()
     response_format = {"type": "json_object"}
-
     try:
         response = await client.chat.completions.create(
             model="gpt-4o-mini",
@@ -1092,14 +1252,13 @@ async def validate_and_extract(
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            temperature=0.2,  
+            temperature=0.2,
             max_tokens=300,
             response_format=response_format,
         )
-
         content = response.choices[0].message.content.strip()
+        output_tokens = count_tokens(content, model)
         data = json.loads(content)
-
         result = {
             "is_valid": data.get("is_valid", True),
             "product": data.get("product"),
@@ -1109,20 +1268,16 @@ async def validate_and_extract(
             "question": data.get("question"),
             "reason": data.get("reason", "")
         }
-
         if result["confidence"] == "high":
             result["needs_clarification"] = False
             result["question"] = None
-
         if clarification and clarification.strip() and result["needs_clarification"]:
             conversation_memory[key].append(clarification.strip())
-
         if result["confidence"] == "high" and not result["needs_clarification"]:
             conversation_memory.pop(key, None)
-
         return result
-
     except json.JSONDecodeError as je:
+        usage_status = "failed"
         logger.error(f"JSON decode error in validate_and_extract: {je}")
         return {
             "is_valid": True,
@@ -1134,6 +1289,7 @@ async def validate_and_extract(
             "reason": f"JSON parse error: {str(je)}"
         }
     except Exception as e:
+        usage_status = "failed"
         logger.error(f"Error in validate_and_extract: {e}")
         return {
             "is_valid": True,
@@ -1144,6 +1300,24 @@ async def validate_and_extract(
             "question": "I'm having trouble identifying the product. Can you tell me the exact product name and company?",
             "reason": f"Error: {str(e)}"
         }
+    finally:
+        latency_ms = int((time.time() - start) * 1000)
+        total_cost = calculate_llm_cost(
+            model=model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        )
+        db.add(LLMUsage(
+            feature="product_validation",
+            model=model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=input_tokens + output_tokens,
+            cost_usd=total_cost,
+            latency_ms=latency_ms,
+            status=usage_status,
+        ))
+        await db.commit()
 
 async def create_perplexity_review_stream(
     product: str,
@@ -1152,15 +1326,14 @@ async def create_perplexity_review_stream(
     custom_filter: Optional[str],
     is_deepresearch_needed: bool,
     perplexity_client: AsyncOpenAI,
-) -> AsyncGenerator:
+    db: AsyncSession,
+) -> AsyncGenerator[str, None]:
     limiter = get_rate_limiter()
     await limiter.acquire()
-
     if is_deepresearch_needed:
         additional_params ={"search_results": 10}
     else:
         additional_params = {"search_results": 5}
-
     system_prompt = (
         "You are an expert product analyst. Provide a comprehensive, deep analysis of the product based on web searches. "
         "Always deliver in-depth insights on features, market position, strengths, weaknesses, and incorporate user reviews where available. "
@@ -1181,11 +1354,17 @@ async def create_perplexity_review_stream(
         "Overall sentiment score (e.g., 4.2/5). Summarize key themes from reviews. Include 2-3 notable user quotes or summaries if available.\n\n"
         "Output ONLY this formatted text—no introductions, extra content, citations, sources, or any markings. Use markdown for structure. Aim for depth: 4-6 bullets per section where possible."
     )
-
     filter_part = f"Focus on: {custom_filter}." if custom_filter else ""
     clarif_part = f"User clarification: {clarification}." if clarification else ""
     user_prompt = f"{filter_part} {clarif_part} Analyze the product '{product}' from '{company}'. Provide the comprehensive product analysis."
-
+    
+    model = "sonar"
+    input_str = system_prompt + "\n\n" + user_prompt
+    input_tokens = count_tokens(input_str, model)
+    output_tokens = 0
+    usage_status = "success"
+    start = time.time()
+    
     async def create_coro():
         return await perplexity_client.chat.completions.create(
             model="sonar",
@@ -1197,39 +1376,66 @@ async def create_perplexity_review_stream(
             stream=True,
             max_tokens=2000,
             extra_body=additional_params
-
         )
-
-    stream = await retry_on_failure(create_coro)
-    return stream
-
+    
+    try:
+        stream = await retry_on_failure(create_coro)
+        async for chunk in stream:
+            if chunk.choices and chunk.choices[0].delta.content is not None:
+                text = chunk.choices[0].delta.content
+                yield text
+                output_tokens += count_tokens(text, model)
+    except Exception as e:
+        usage_status = "failed"
+        error_msg = json.dumps({"error": "Generation failed", "details": str(e)})
+        yield error_msg
+        output_tokens += count_tokens(error_msg, model)
+    finally:
+        latency_ms = int((time.time() - start) * 1000)
+        total_cost = calculate_llm_cost(
+            model=model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        )
+        db.add(LLMUsage(
+            feature="perplexity_review_stream",
+            model=model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=input_tokens + output_tokens,
+            cost_usd=total_cost,
+            latency_ms=latency_ms,
+            status=usage_status,
+        ))
+        await db.commit()
 
 class ProductCompanyRequest(BaseModel):
     product_company: str
     is_deepresearch_needed: bool = False
     custom_filter: Optional[str] = None
-    clarification: Optional[str] = None  # New field
+    clarification: Optional[str] = None # New field
 
 @app.post("/reviews")
 async def get_reviews(
-    request: ProductCompanyRequest, 
-    client: Annotated[AsyncOpenAI, Depends(get_openai_client)]
+    request: ProductCompanyRequest,
+    client: Annotated[AsyncOpenAI, Depends(get_openai_client)],
+    db: AsyncSession = Depends(get_db)
 ):
     if not request.product_company.strip():
         return JSONResponse(
             status_code=400,
             content={"detail": "product_company is required"}
         )
-
     try:
         # Validate and extract
         extract = await validate_and_extract(
             request.product_company,
             request.clarification,
-            client
+            client,
+            db
         )
         print("extract: ", extract)
-        
+       
         # Check for needs_clarification first
         if extract.get("needs_clarification"):
             return JSONResponse(
@@ -1243,7 +1449,6 @@ async def get_reviews(
                     }
                 }
             )
-
         # Ensure we have both product and company
         if not extract.get("product") or not extract.get("company"):
             return JSONResponse(
@@ -1257,10 +1462,9 @@ async def get_reviews(
                     }
                 }
             )
-
         product = extract['product']
         company = extract['company']
-        
+       
     except HTTPException as he:
         raise he
     except Exception as e:
@@ -1273,32 +1477,21 @@ async def get_reviews(
                 "partial": {"product": None, "company": None}
             }
         )
-
     # Generate streaming response
     try:
-        perplexity_stream = await create_perplexity_review_stream(
-            product, company, request.clarification, request.custom_filter, 
-            request.is_deepresearch_needed, perplexity_client
+        perplexity_stream = create_perplexity_review_stream(
+            product, company, request.clarification, request.custom_filter,
+            request.is_deepresearch_needed, perplexity_client, db
         )
     except Exception as e:
         logger.error(f"Error creating perplexity stream: {e}")
         raise HTTPException(status_code=503, detail=f"Analysis generation failed: {str(e)}")
-
-    async def event_generator(perplexity_stream):
-        try:
-            async for chunk in perplexity_stream:
-                if chunk.choices and chunk.choices[0].delta.content is not None:
-                    content = chunk.choices[0].delta.content
-                    yield content
-        except Exception as e:
-            logger.error(f"Stream error: {e}")
-            pass
-
     return StreamingResponse(
-        event_generator(perplexity_stream),
+        perplexity_stream,
         media_type="text/plain",
         headers={"X-Accel-Buffering": "no"}
     )
+
     
 @app.post("/manual-tasks", response_model=dict)
 async def create_manual_task(

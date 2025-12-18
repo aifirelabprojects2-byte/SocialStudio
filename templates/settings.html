@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>AI Social Studio</title>
+  <script src="/static/tailwind.js"></script>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/PostAi.css">
+  <link rel="stylesheet" href="/static/Nav.css">
+  <link rel="stylesheet" href="/static/Scheduled.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Inter", "system-ui", "sans-serif"],
+            display: ["Inter", "system-ui", "sans-serif"],
+          },
+          rotate: {
+            '360': '360deg', 
+          },
+          colors: {
+            slate: {
+                850: '#1e293b',
+            }
+          },
+          animation: {
+              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          }
+        },
+      },
+    }
+  </script>
+  <style>
+
+    .shimmer-text-rfx {
+      background: linear-gradient(to right, #1f2937 0%, #9ca3af 50%, #1f2937 100%);
+      background-size: 200% auto;
+      color: #000;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmerRfx 3s linear infinite;
+      font-weight: 500;
+  }
+
+  @keyframes shimmerRfx {
+      0% { background-position: 0% center; }
+      100% { background-position: 200% center; }
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+  .icon-input-wrapper { position: relative; }
+  .icon-input-wrapper svg {
+      position: absolute;
+      left: 13px;
+      top: 23px;
+      transform: translateY(-50%);
+      color: #6b7280;
+      pointer-events: none;
+  }
+  .icon-input-wrapper input, .icon-input-wrapper textarea, .icon-input-wrapper select {
+      padding-left: 40px; 
+  }
+
+  .collapse-content {
+      transition: all 0.3s ease-in-out;
+      overflow: hidden;
+  }
+  .chevron-icon {
+      transition: transform 0.3s ease;
+  }
+  .rotate-180 {
+      transform: rotate(180deg);
+  }
+    .ease-elastic {
+      transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .ease-smooth {
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .skeletonPlatform-loader {
+      background: linear-gradient(90deg,
+        rgba(240, 240, 240, 0) 0%,
+        rgba(240, 240, 240, 0.8) 50%,
+        rgba(240, 240, 240, 0) 100%
+      );
+      background-size: 200% 100%;
+      animation: skeletonPlatform-loading 1.8s ease-in-out infinite;
+    }
+
+    .fade-in { animation: fadeIn 0.5s ease-in; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  
+    @keyframes skeletonPlatform-loading {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  
+    .skeletonPlatform-line {
+      @apply h-4 bg-gray-200 rounded;
+    }
+  
+    dialog::backdrop {
+      @apply bg-black/50;
+    }
+  </style>
+  <style>
+    :root {
+  
+        --bg-body: #eef2f5; 
+        --bg-app: #ffffff;
+        --text-main: #1d1d1f; 
+        --text-muted: #86868b;
+        --accent: #0071e3; 
+        --pill-color: #dddddde5; 
+        --card-bg: #f2f2f7;
+        --shadow-soft: 0 10px 40px rgba(0,0,0,0.08); 
+    }
+
+    body, html {
+      font-family: "Plus Jakarta Sans", "system-ui", "sans-serif";
+      font-feature-settings: "cv11", "ss01";
+      font-weight: 400;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 50%, #ffffff 0%, #eef1f5 100%);
+      height: 100vh;
+      overflow: hidden;
+      color: var(--text-main);
+      width: 100%;
+    }
+</style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
+  <div class="app-container w-full">
+    <nav class="nav-header">
+      <div class="flex h-16 w-full items-center shadow-[0px_20px_20px_8px_white]">
+          
+          <div class="flex items-center gap-3 w-1/4">
+              <div class="bg-gray-600 text-white p-1.5 rounded-lg">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+              </div>
+              <span class="font-semibold text-lg tracking-tight text-slate-900 dark:text-white">AI Social Studio</span>
+          </div>
+          
+          <div class="flex-grow flex justify-center">
+              <ul class="nav-list">
+                  <div class="nav-pill"></div>
+                  <li class="pill-nav-item active" data-index="0">Logs</li>
+                  <li class="pill-nav-item" data-index="1">Tasks</li>
+                  <li class="pill-nav-item" data-index="2">Setup</li>
+                  <li class="pill-nav-item" data-index="3">Usage</li>
+                  <li class="pill-nav-item" data-index="4">_</li>
+              </ul>
+          </div>
+          
+          <div class="flex items-center justify-end gap-2 w-1/4">
+            <a href="/" title="Home">
+              <button class="p-2 text-gray-600 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2 12.2039C2 9.91549 2 8.77128 2.5192 7.82274C3.0384 6.87421 3.98695 6.28551 5.88403 5.10813L7.88403 3.86687C9.88939 2.62229 10.8921 2 12 2C13.1079 2 14.1106 2.62229 16.116 3.86687L18.116 5.10812C20.0131 6.28551 20.9616 6.87421 21.4808 7.82274C22 8.77128 22 9.91549 22 12.2039V13.725C22 17.6258 22 19.5763 20.8284 20.7881C19.6569 22 17.7712 22 14 22H10C6.22876 22 4.34315 22 3.17157 20.7881C2 19.5763 2 17.6258 2 13.725V12.2039Z" stroke="currentColor" stroke-width="2"/>
+                  <path d="M15 18H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+              </button>
+            </a>
+            <form action="/logout" method="POST" class="inline">
+              <button class="group flex items-center gap-0 hover:gap-2 p-2 rounded-lg text-gray-600 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-all duration-300 ease-in-out">
+                <span class="max-w-0 overflow-hidden whitespace-nowrap text-sm font-medium transition-all duration-300 ease-in-out group-hover:max-w-[80px]">
+                  Logout
+                </span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+              </button>
+            </form>
+          </div>
+          
+      </div>
+  </nav>
+
+    <div class="viewport">
+        <div class="content-track">
+            
+            <div class="tab-content">
+              <section>
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                  <div class="flex-1 mb-5">
+                    <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Error logs</h1>
+                    <p class="text-sm text-neutral-500 mt-2 max-w-md">Manage and monitor system error logs</p>
+                  </div>
+
+                  <div class="flex justify-between items-center mb-6">
+                    <button id="toggleFiltersBtnErr" class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 focus:outline-none  ">
+                      Filters
+                      <i id="filterIcon" class="fas fa-chevron-down text-gray-400"></i>
+                    </button>
+                    <button id="refreshBtnErr" class="group text-gray-600 hover:text-gray-500">
+                      <svg class="w-6 h-6 transition-transform duration-500 ease-out group-hover:rotate-360"  viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13.5 4.5H12.5C8.08172 4.5 4.5 8.08172 4.5 12.5C4.5 15.6631 6.33576 18.3975 9 19.6958M11.5 20.5H12.5C16.9183 20.5 20.5 16.9183 20.5 12.5C20.5 9.33688 18.6642 6.60253 16 5.30423" stroke="currentColor" stroke-width="2"/>
+                        <path d="M14 17.5619L11.5 20.5L14.5 23.0619M11 7.43811L13.5 4.50001L10.5 1.93811" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                  </div>
+              
+                  <!-- Filters Bar (Hidden by Default) -->
+                  <div id="filtersBar" class="rounded-2xl shadow-sm border border-gray-200 p-5 mb-6 hidden transition-all duration-300 ease-in-out">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div class="md:col-span-2">
+                        <label for="searchInputErr" class="block text-sm font-medium text-gray-700 mb-1.5">Search logs</label>
+                        <div class="relative">
+                          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400 text-sm"></i>
+                          </div>
+                          <input 
+                            type="text" 
+                            id="searchInputErr"
+                            placeholder="Search by task ID, platform, error type, message..."
+                            class="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-gray-700 text-sm transition-all duration-200 shadow-sm"
+                          />
+                        </div>
+                      </div>
+              
+                      <div>
+                        <label for="fromDateErr" class="block text-sm font-medium text-gray-700 mb-1.5">From Date</label>
+                        <input 
+                          type="datetime-local" 
+                          id="fromDateErr"
+                          class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-gray-700 text-sm transition-all duration-200 shadow-sm"
+                        />
+                      </div>
+              
+                      <div>
+                        <label for="toDateErr" class="block text-sm font-medium text-gray-700 mb-1.5">To Date</label>
+                        <input 
+                          type="datetime-local" 
+                          id="toDateErr"
+                          class="block w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-gray-700 text-sm transition-all duration-200 shadow-sm"
+                        />
+                      </div>
+                    </div>
+              
+                    <div class="mt-5 flex justify-end gap-3">
+                      <button id="clearFiltersBtnErr" class="px-5 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 transition-all duration-200 focus:outline-none ">
+                        Clear filters
+                      </button>
+                    </div>
+                  </div>
+              
+                  <!-- Table Card -->
+                  <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                      <table id="errorLogsTableErr" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                          <tr>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Error ID</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Task ID</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Platform</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Type</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Code</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Message</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</th>
+                          </tr>
+                        </thead>
+                        <tbody id="errorLogsTbodyErr" class="bg-white divide-y divide-gray-200">
+                          <!-- Dynamic rows will be injected here -->
+                        </tbody>
+                      </table>
+                    </div>
+              
+                    <!-- Pagination & Info -->
+                    <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
+                      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                        <div class="text-sm text-gray-700 opacity-0">
+                          Showing <span class="font-medium" id="pageInfoErr">1</span> to <span class="font-medium" id="limitInfoErr">20</span> of 
+                          <span class="font-medium" id="totalCountErr">127</span> results
+                        </div>
+                        <div class="mt-4 sm:mt-0 flex justify-center">
+                          <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button id="prevPageBtnErr" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 hover:border-gray-700 rounded-l-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 focus:outline-none ">
+                              Previous
+                            </button>
+                            <button id="nextPageBtnErr" class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-700 rounded-r-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white transition-all duration-200 focus:outline-none ">
+                              Next
+                            </button>
+                          </nav>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </section>
+            
+            </div>
+
+            <div class="tab-content">
+
+              <section>
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+
+                  <div class="mb-8 flex flex-col lg:flex-row lg:items-end justify-between gap-6 slide-up">
+                      <div class="flex-1">
+                          <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Task Operations</h1>
+                          <p class="text-sm text-neutral-500 mt-2 max-w-md">Monitor scheduled automation, delivery status, and error logs with precision.</p>
+                      </div>
+                      <!-- Status Filter -->
+                      <div class="w-full lg:w-44">
+                          <label for="statusFilterShd" class="sr-only">Filter by Status</label>
+                          <div class="relative">
+                              <select id="statusFilterShd" class="appearance-none block w-full pl-4 pr-10 py-3 text-sm border border-neutral-200 rounded-xl  bg-white focus:outline-none   transition-all duration-200 ease-in-out cursor-pointer hover:border-neutral-300">
+                                  <option value="">All Statuses</option>
+                                  <option value="scheduled">Scheduled</option>
+                                  <option value="posted">Posted</option>
+                                  <option value="failed">Failed</option>
+                                  <option value="cancelled">Cancelled</option>
+                              </select>
+                          </div>
+                      </div>
+                  </div>
+
+                  <div class="bg-white rounded-2xl border border-neutral-200 overflow-hidden fade-in">
+
+                      <div class="overflow-x-auto custom-scrollbar">
+                          <table id="tasksTableShd" class="min-w-full divide-y divide-neutral-100 hidden">
+                              <thead class="bg-neutral-50">
+                                  <tr>
+                                      <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Task Title</th>
+                                      <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Status</th>
+                                      <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Created</th>
+                                      <th scope="col" class="px-6 py-5 text-left text-xs font-semibold text-neutral-500 uppercase tracking-wider">Scheduled For</th>
+                                      <th scope="col" class="px-6 py-5 text-right text-xs font-semibold text-neutral-500 uppercase tracking-wider">Actions</th>
+                                  </tr>
+                              </thead>
+                              <tbody id="tasksTableBodyShd" class="bg-white divide-y divide-neutral-100">
+                                  
+                              </tbody>
+                          </table>
+                      </div>
+          
+                      <!-- Loading State -->
+                      <div id="tableLoadingShd" class="hidden flex flex-col justify-center items-center py-20 fade-in">
+                          <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                      </div>
+          
+                      <!-- Empty State -->
+                      <div id="noTasksShd" class="hidden flex flex-col justify-center items-center py-5 text-center fade-in">
+                          <div class="bg-neutral-100 rounded-full p-4 mb-4 inline-flex items-center justify-center">
+                              <svg class="w-8 h-8 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                          </div>
+                          <h3 class="text-lg font-semibold text-neutral-900 mb-1">No tasks found</h3>
+                          <p class="text-sm text-neutral-500">Adjust filters or create a new task to see results.</p>
+                      </div>
+          
+                      <!-- Pagination Footer -->
+                      <div class="bg-neutral-50 px-6 py-5 border-t border-neutral-100 flex items-center justify-between">
+                          <span id="pageInfoShd" class="text-sm text-neutral-600 font-medium">Loading...</span>
+                          <div class="flex gap-2">
+                              <button id="prevPageShd" class="inline-flex items-center gap-2 px-4 py-2 border border-neutral-300 text-sm font-medium rounded-xl text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none  disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200  hover:shadow-medium" disabled>
+                                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                                  Previous
+                              </button>
+                              <button id="nextPageShd" class="inline-flex items-center gap-2 px-4 py-2 border border-neutral-300 text-sm font-medium rounded-xl text-neutral-700 bg-white hover:bg-neutral-50 focus:outline-none  disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200  hover:shadow-medium" disabled>
+                                  Next
+                                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                              </button>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+              </section>
+
+            </div>
+
+            <div class="tab-content">
+              
+              <section id="Platform">
+                <div class="min-h-full">
+                  <header class="bg-white shadow-sm border-b">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                      <div class="flex justify-between items-center">
+                        <div class="flex-1">
+                          <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Platforms</h1>
+                          <p class="text-sm text-neutral-500 mt-2 max-w-md">Manage platforms</p>
+                        </div>
+                        <div class="flex gap-3">
+                          <button id="refreshBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Refresh
+                          </button>
+                          <button id="openModalBtn" class="flex items-center gap-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M12 5L12 19"/>
+                              <path d="M5 12L19 12"/>
+                            </svg>
+                              New Platform
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </header>
+              
+                  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                  <div id="skeletonPlatform" class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                      <div class="h-14 bg-gray-50 skeletonPlatform-loader"></div>
+                      <div class="p-6 space-y-4">
+                        <div class="h-5 w-48 bg-gray-200 rounded skeletonPlatform-loader"></div>
+                        <div class="h-4 w-64 bg-gray-200 rounded skeletonPlatform-loader"></div>
+                        <div class="flex items-center gap-8">
+                          <div class="h-8 w-32 bg-gray-200 rounded-full skeletonPlatform-loader"></div>
+                          <div class="h-4 w-24 bg-gray-200 rounded skeletonPlatform-loader"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+              
+                  <div id="PlatformEmptyState" class="hidden flex-col items-center justify-center py-2 text-center">
+                    <div class="rounded-full bg-gray-50 p-4 mb-3 inline-block">
+                        <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
+                    </div>
+                    <h3 class="mt-2 text-sm font-semibold text-gray-900">No platforms yet</h3>
+                    <p class="mt-1 text-sm text-gray-500">Add your first social platform to get started.</p>
+                    <button id="openModalBtn2" class="mt-6 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                      Create Platform
+                    </button>
+                </div>
+
+                  <div id="table" class="hidden bg-white shadow overflow-hidden sm:rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Token</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tbody" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                  </div>
+                </main>
+              </div>
+
+              <dialog id="createModal" class="p-8 rounded-2xl shadow-2xl max-w-lg w-full bg-white">
+                <h2 class="text-2xl font-bold mb-6">Add New Platform</h2>
+
+                <form id="createForm" class="space-y-5">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Platform Name *</label>
+                    <input name="name" required placeholder="e.g. Facebook" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">API Name (optional)</label>
+                    <input name="api_name" placeholder="e.g. facebook_graph" class="w-full px-4 py-2 border border-gray-300 rounded-lg"/>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Access Token *</label>
+                    <textarea name="access_token" required placeholder="Paste your access token here" class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm"></textarea>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Refresh Token (optional)</label>
+                    <textarea name="refresh_token" rows="2" placeholder="Optional" class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm"></textarea>
+                  </div>
+            
+                  <div class="flex justify-end gap-3 mt-8">
+                    <button type="button" id="cancelBtn" class="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                      Cancel
+                    </button>
+                    <button type="submit" id="saveBtn" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                      Save Platform
+                    </button>
+                  </div>
+                </form>
+              </dialog>
+            
+            </section>
+
+
+            <section id="ThemeThx">
+              <div class="min-h-full">
+                <header class="bg-white shadow-sm border-b">
+                  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div class="flex justify-between items-center">
+                      <div class="flex-1">
+                        <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Image Themes</h1>
+                        <p class="text-sm text-neutral-500 mt-2 max-w-md">Manage your image generation themes</p>
+                      </div>
+                      <div class="flex gap-3">
+                        <button id="refreshBtnThx" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                          Refresh
+                        </button>
+                        <button id="openModalBtnThx" class="flex items-center gap-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 5L12 19"/>
+                            <path d="M5 12L19 12"/>
+                          </svg>
+                          New Theme
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </header>
+                <main id="skeletonThxOuter" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                  
+                  <div id="skeletonThx" class="space-y-6">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                      <div class="h-14 bg-gray-50 skeleton-loaderThx"></div>
+                      <div class="p-6 space-y-4">
+                        <div class="h-5 w-48 bg-gray-200 rounded skeleton-loaderThx"></div>
+                        <div class="h-4 w-64 bg-gray-200 rounded skeleton-loaderThx"></div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div id="emptyStateThx" class="hidden flex flex-col items-center justify-center py-12 text-center">
+                    <div class="rounded-full bg-gray-50 p-4 mb-3 inline-block">
+                      <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                      </svg>
+                    </div>
+                    <h3 class="mt-2 text-sm font-semibold text-gray-900">No themes yet</h3>
+                    <p class="mt-1 text-sm text-gray-500">Create your first image theme to get started.</p>
+                    <button id="openModalBtn2Thx" class="mt-6 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                      Create Theme
+                    </button>
+                  </div>
+          
+                  <div id="tableThx" class="hidden bg-white shadow overflow-hidden sm:rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-200">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tbodyThx" class="bg-white divide-y divide-gray-200">
+                      </tbody>
+                    </table>
+                  </div>
+                </main>
+              </div>
+          
+              <dialog id="themeModalThx" class="p-8 rounded-2xl shadow-2xl max-w-lg w-full bg-white">
+                <h2 class="text-2xl font-bold mb-6">Add New Theme</h2>
+                <form id="themeFormThx" class="space-y-5">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Theme Name *</label>
+                    <input name="name" required placeholder="e.g. Cyberpunk Night" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                    <textarea name="description" rows="4" placeholder="Describe the visual style, colors, mood, etc." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                  </div>
+          
+                  <div class="flex justify-end gap-3 mt-8">
+                    <button type="button" id="cancelBtnThx" class="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                      Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                      Save Theme
+                    </button>
+                  </div>
+                </form>
+              </dialog>
+            </section>
+          
+            <script>
+              const elementsThx = {
+                skeletonThx: document.getElementById('skeletonThx'),
+                emptyStateThx: document.getElementById('emptyStateThx'),
+                tableThx: document.getElementById('tableThx'),
+                tbodyThx: document.getElementById('tbodyThx'),
+                modalThx: document.getElementById('themeModalThx'),
+                formThx: document.getElementById('themeFormThx'),
+                refreshBtnThx: document.getElementById('refreshBtnThx'),
+                openModalBtnThx: document.getElementById('openModalBtnThx'),
+                openModalBtn2Thx: document.getElementById('openModalBtn2Thx'),
+                cancelBtnThx: document.getElementById('cancelBtnThx'),
+                
+              };
+
+              async function loadThemesThx() {
+                elementsThx.tbodyThx.innerHTML=`
+                 <tr><td colspan="4"><div id="skeletonThx" class="space-y-4">
+                    <div class="bg-white border border-gray-100 overflow-hidden">
+                      
+                      <div class="p-6 space-y-4">
+                        <div class="h-5 w-48 bg-gray-200 rounded skeleton-loaderThx"></div>
+                        <div class="h-4 w-64 bg-gray-200 rounded skeleton-loaderThx"></div>
+                      </div>
+                    </div>
+                  </div></td></tr>
+                `;
+
+                try {
+                  const res = await fetch(`/api/themes`);
+                  const themes = await res.json();
+                  
+                  elementsThx.tbodyThx.innerHTML = '';
+          
+                  if (themes.length === 0) {
+                    elementsThx.emptyStateThx.classList.remove('hidden');
+                    elementsThx.tableThx.classList.add('hidden');
+                    elementsThx.skeletonThx.classList.add('hidden');
+                    return;
+                  }
+          
+                  themes.forEach(theme => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${theme.name}</td>
+                      <td class="px-6 py-4 text-sm text-gray-500">${theme.description || '<em class="text-gray-400">No description</em>'}</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(theme.created_at).toLocaleString()}</td>
+                      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="deleteThemeThx('${theme.theme_id}')" class="text-red-600 hover:text-red-900 font-medium">
+                          Delete
+                        </button>
+                      </td>
+                    `;
+                    elementsThx.tbodyThx.appendChild(row);
+                  });
+          
+                  elementsThx.tableThx.classList.remove('hidden');
+                  elementsThx.emptyStateThx.classList.add('hidden');
+                } catch (err) {
+                  console.error('Failed to load themes:', err);
+                  alert('Failed to load themes. Check console.');
+                } finally {
+                  elementsThx.skeletonThx.classList.add('hidden');
+                }
+              }
+          
+              // Create theme
+              elementsThx.formThx.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(elementsThx.formThx);
+                const data = {
+                  name: formData.get('name'),
+                  description: formData.get('description') || null
+                };
+          
+                try {
+                  const res = await fetch(`/api/themes/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                  });
+          
+                  if (!res.ok) {
+                    const error = await res.json();
+                    throw new Error(error.detail || 'Failed to create theme');
+                  }
+          
+                  elementsThx.modalThx.close();
+                  elementsThx.formThx.reset();
+                  loadThemesThx();
+                } catch (err) {
+                  alert(err.message);
+                }
+              });
+          
+              // Delete theme
+              async function deleteThemeThx(theme_id) {
+                if (!confirm('Are you sure you want to delete this theme?')) return;
+          
+                try {
+                  const res = await fetch(`/api/themes/${theme_id}`, {
+                    method: 'DELETE'
+                  });
+          
+                  if (!res.ok) throw new Error('Failed to delete');
+          
+                  loadThemesThx();
+                } catch (err) {
+                  alert('Failed to delete theme');
+                }
+              }
+          
+              // Button handlers
+              elementsThx.refreshBtnThx.addEventListener('click', loadThemesThx);
+              elementsThx.openModalBtnThx.addEventListener('click', () => elementsThx.modalThx.showModal());
+              elementsThx.openModalBtn2Thx.addEventListener('click', () => elementsThx.modalThx.showModal());
+              elementsThx.cancelBtnThx.addEventListener('click', () => {
+                elementsThx.modalThx.close();
+                elementsThx.formThx.reset();
+              });
+          
+              loadThemesThx();
+            </script>
+
+            </div>
+
+            <div class="tab-content">
+                
+        
+            <!-- Main Content -->
+            <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+                <!-- Header Controls -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">LLM Analytics</h1>
+                        <p class="text-sm text-gray-500 mt-1">Monitor real-time token usage, costs, and latency metrics.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="relative">
+                            <div class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700  focus:outline-none transition-colors ">
+                                <i data-lucide="calendar" class="w-4 h-4 mr-2 text-gray-500"></i>
+                                Last 30 Days
+                            </div>
+                        </div>
+                        <!-- <button  class="inline-flex items-center px-4 py-2 bg-black border border-transparent rounded-lg shadow-sm text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors">
+                            <i data-lucide="download" class="w-4 h-4 mr-2"></i>
+                            Export Report
+                        </button> -->
+                    </div>
+                </div>
+        
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="stats-container">
+                    <!-- Cards will be injected here by JS -->
+                    <div class="animate-pulse bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-32"></div>
+                    <div class="animate-pulse bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-32"></div>
+                    <div class="animate-pulse bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-32"></div>
+                    <div class="animate-pulse bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-32"></div>
+                </div>
+        
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Line Chart (Usage Trends) -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm lg:col-span-2">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 class="text-base font-semibold text-gray-900">Token Consumption</h3>
+                                <p class="text-xs text-gray-500">Daily input vs output token volume</p>
+                            </div>
+                        </div>
+                        <div class="relative h-72 w-full">
+                            <canvas id="usageChart"></canvas>
+                        </div>
+                    </div>
+        
+                    <!-- Bar Chart (Cost) -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 class="text-base font-semibold text-gray-900">Cost Analysis</h3>
+                                <p class="text-xs text-gray-500">Daily accumulated spend (USD)</p>
+                            </div>
+                        </div>
+                        <div class="relative h-72 w-full">
+                            <canvas id="costChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                    <div class="p-5 border-b border-gray-200 bg-gray-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">Request Logs</h3>
+                            <p class="text-sm text-gray-500">Detailed transaction history</p>
+                        </div>
+                        
+                        <div class="relative">
+                          <select id="filter-feature" onchange="refreshTable()" 
+                              class="appearance-none bg-white border border-gray-300 text-gray-700 py-2 pl-9 pr-3 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black focus:border-black shadow-sm w-full">
+                              <option value="">All Features</option>
+                              <option value="streamed_generation">Streamed Generation</option>
+                              <option value="product_validation">Product Validation</option>
+                              <option value="generate_post">Post Generate</option>
+                              <option value="perplexity_review_stream">Review System</option>
+                          </select>
+                          <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center px-3 text-gray-500">
+                              <i data-lucide="filter" class="w-4 h-4"></i>
+                          </div>
+                      </div>
+                      
+                      <div class="relative">
+                          <select id="filter-model" onchange="refreshTable()" 
+                              class="appearance-none bg-white border border-gray-300 text-gray-700 py-2 pl-9 pr-3 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-black focus:border-black shadow-sm w-full">
+                              <option value="">All Models</option>
+                              <option value="gpt-4o-mini">gpt-4o-mini</option>
+                              <option value="sonar">Sonar</option>
+                              <option value="claude-3-opus">claude-3-opus</option>
+                              <option value="llama-3-70b">llama-3-70b</option>
+                          </select>
+                          <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center px-3 text-gray-500">
+                              <i data-lucide="cpu" class="w-4 h-4"></i>
+                          </div>
+                      </div>
+                    </div>
+        
+                    <!-- Table -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timestamp</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Feature</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tokens (In/Out)</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latency</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+
+                                </tr>
+                            </thead>
+                            <tbody id="table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Rows injected by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+        
+                    <!-- Pagination -->
+                    <div class="bg-white px-4 py-3 border-t border-gray-200 flex items-center justify-between sm:px-6">
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm text-gray-700" id="pagination-info">
+                                    Showing <span class="font-medium">1</span> to <span class="font-medium">10</span> of <span class="font-medium">...</span> results
+                                </p>
+                            </div>
+                            <div>
+                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                    <button onclick="changePage(-1)" id="btn-prev" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                        <span class="sr-only">Previous</span>
+                                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                                    </button>
+                                    <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                                        Page <span id="current-page-display" class="mx-1">1</span>
+                                    </span>
+                                    <button onclick="changePage(1)" id="btn-next" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                        <span class="sr-only">Next</span>
+                                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                                    </button>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        
+            </main>
+        
+            <script>
+                // --- CONFIGURATION ---
+                // Set to FALSE to try connecting to your actual localhost Python backend
+                const USE_MOCK_DATA = false; 
+                const API_BASE_URL = 'http://localhost:8000'; 
+        
+                // --- STATE MANAGEMENT ---
+                let currentPage = 1;
+                const limit = 10;
+                let totalItems = 0;
+                let usageChartInstance = null;
+                let costChartInstance = null;
+        
+                // --- API CLIENT ---
+                async function fetchData(endpoint, params = {}) {
+                    if (USE_MOCK_DATA) {
+                        return null; // Mock removed, not used
+                    }
+        
+                    const url = new URL(`${API_BASE_URL}${endpoint}`);
+                    Object.keys(params).forEach(key => {
+                        if(params[key]) url.searchParams.append(key, params[key]);
+                    });
+                    
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                }
+
+                function renderStatsCards(statsData) {
+                    const totalCost = statsData.reduce((acc, curr) => acc + parseFloat(curr.total_cost || 0), 0);
+                    const totalTokens = statsData.reduce((acc, curr) => acc + curr.total_tokens, 0);
+                    const totalRequests = statsData.reduce((acc, curr) => acc + curr.request_count, 0);
+                    
+                    // Weighted average for latency, handling nulls
+                    const weightedLatencySum = statsData.reduce((acc, curr) => {
+                        if (curr.avg_latency !== null && curr.request_count > 0) {
+                            return acc + (curr.avg_latency * curr.request_count);
+                        }
+                        return acc;
+                    }, 0);
+                    const avgLatency = totalRequests > 0 ? Math.round(weightedLatencySum / totalRequests) : 0;
+        
+                    const container = document.getElementById('stats-container');
+                    container.innerHTML = `
+                        ${createStatCard('Total Spend', `$${totalCost}`, '+12.5% from last period', 'dollar-sign')}
+                        ${createStatCard('Total Tokens', formatNumber(totalTokens), 'Input: 40% | Output: 60%', 'cpu')}
+                        ${createStatCard('Avg Latency', `${avgLatency}ms`, 'P95: 2100ms', 'clock')}
+                        ${createStatCard('Total Requests', formatNumber(totalRequests), '99.9% Success Rate', 'activity')}
+                    `;
+                    lucide.createIcons();
+                }
+        
+                function createStatCard(title, value, subtext, iconName) {
+                    return `
+                        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start space-x-4 transition-all hover:shadow-md">
+                            <div class="p-3 bg-gray-50 rounded-lg border border-gray-100 flex-shrink-0">
+                                <i data-lucide="${iconName}" class="w-6 h-6 text-gray-900"></i>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">${title}</p>
+                                <h3 class="text-2xl font-bold text-gray-900 mt-1 tracking-tight">${value}</h3>
+                                <p class="text-xs text-gray-400 mt-1 font-medium">${subtext}</p>
+                            </div>
+                        </div>
+                    `;
+                }
+        
+                function loadingSkeleton() {
+                    return `
+                        <tr class="animate-pulse">
+                            <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-3/4"></div></td>
+                            <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-1/2"></div></td>
+                            <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-2/3"></div></td>
+                            <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-1/4"></div></td>
+                            <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-1/6"></div></td>
+                            <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-1/5"></div></td>
+                            <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-1/3"></div></td>
+                            <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-1/12"></div></td>
+                        </tr>
+                    `.repeat(5);
+                }
+        
+                function renderTable(data) {
+                    const tbody = document.getElementById('table-body');
+                    
+                    if (data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-gray-500">No records found matching your filters.</td></tr>`;
+                        return;
+                    }
+        
+                    tbody.innerHTML = data.map(item => `
+                        <tr class="hover:bg-gray-50 transition-colors duration-150">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">
+                                ${new Date(item.created_at).toLocaleString(undefined, {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                                    ${item.feature}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm text-gray-600 border border-gray-300 rounded px-2 py-0.5 font-mono text-xs">
+                                    ${item.model}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <span class="font-medium text-gray-900">${item.input_tokens}</span> / ${item.output_tokens}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                $${parseFloat(item.cost_usd).toFixed(5)}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                ${item.latency_ms !== null ? `${item.latency_ms}ms` : 'N/A'}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                ${getStatusBadge(item.status)}
+                            </td>
+                            
+                        </tr>
+                    `).join('');
+                    
+                    lucide.createIcons();
+                    updatePaginationInfo();
+                }
+        
+                function getStatusBadge(status) {
+                    if (status === 'success') {
+                        return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-black text-white">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> Success
+                                </span>`;
+                    }
+                    return `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Failed
+                            </span>`;
+                }
+        
+                function renderCharts(statsData) {
+                    const labels = statsData.map(d => d.period.slice(5)); // Remove year for cleaner labels
+                    const tokenData = statsData.map(d => d.total_tokens);
+                    const costData = statsData.map(d => parseFloat(d.total_cost || 0));
+        
+                    const commonOptions = {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#fff',
+                                titleColor: '#111827',
+                                bodyColor: '#4b5563',
+                                borderColor: '#e5e7eb',
+                                borderWidth: 1,
+                                padding: 10,
+                                displayColors: false,
+                            }
+                        },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Inter' } } },
+                            y: { border: { display: false }, grid: { color: '#f3f4f6' }, ticks: { font: { size: 10, family: 'Inter' } } }
+                        }
+                    };
+        
+                    // Usage Line Chart
+                    const ctxUsage = document.getElementById('usageChart').getContext('2d');
+                    if(usageChartInstance) usageChartInstance.destroy();
+                    
+                    // Create gradient
+                    let gradient = ctxUsage.createLinearGradient(0, 0, 0, 300);
+                    gradient.addColorStop(0, 'rgba(0, 0, 0, 0.1)');
+                    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        
+                    usageChartInstance = new Chart(ctxUsage, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Tokens',
+                                data: tokenData,
+                                borderColor: '#000',
+                                backgroundColor: gradient,
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                pointHoverRadius: 4,
+                                fill: true,
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            ...commonOptions,
+                            interaction: { intersect: false, mode: 'index' },
+                        }
+                    });
+        
+                    // Cost Bar Chart
+                    const ctxCost = document.getElementById('costChart').getContext('2d');
+                    if(costChartInstance) costChartInstance.destroy();
+                    
+                    costChartInstance = new Chart(ctxCost, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Cost ($)',
+                                data: costData,
+                                backgroundColor: '#111827',
+                                borderRadius: 4,
+                                barPercentage: 0.6,
+                            }]
+                        },
+                        options: commonOptions
+                    });
+                }
+        
+                // --- CONTROLLERS ---
+        
+                async function initDashboard() {
+                    try {
+                        // 1. Fetch Stats for Graphs and Cards
+                        const feature = document.getElementById('filter-feature').value || null;
+                        const statsData = await fetchData('/api/usage/stats', { interval: 'day', days_back: 30, feature });
+                        
+                        renderStatsCards(statsData || []);
+                        renderCharts(statsData || []);
+        
+                        // 2. Fetch Table Data
+                        await refreshTable();
+        
+                    } catch (error) {
+                        console.error("Dashboard Error:", error);
+                        // Optionally render error state
+                        document.getElementById('stats-container').innerHTML = '<div class="col-span-full text-center py-8 text-gray-500">Error loading data. Please try again.</div>';
+                        const tbody = document.getElementById('table-body');
+                        tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-red-500">Error loading data: ${error.message}</td></tr>`;
+                    }
+                }
+        
+                async function refreshTable() {
+                    const tbody = document.getElementById('table-body');
+                    tbody.innerHTML = loadingSkeleton();
+        
+                    const feature = document.getElementById('filter-feature').value || null;
+                    const model = document.getElementById('filter-model').value || null;
+                    
+                    try {
+                        const result = await fetchData('/llm-usage/', {
+                            page: currentPage,
+                            limit: limit,
+                            feature: feature,
+                            model: model
+                        });
+        
+                        renderTable(result.items || []);
+                        totalItems = result.total || 0;
+                        updatePaginationInfo();
+                    } catch (error) {
+                        console.error("Table Error:", error);
+                        tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-red-500">Error loading table data: ${error.message}</td></tr>`;
+                    }
+                }
+        
+                function changePage(direction) {
+                    const maxPage = Math.ceil(totalItems / limit);
+                    const newPage = currentPage + direction;
+                    if(newPage >= 1 && newPage <= maxPage) {
+                        currentPage = newPage;
+                        refreshTable();
+                    }
+                }
+        
+                function updatePaginationInfo() {
+                    const start = (currentPage - 1) * limit + 1;
+                    const end = Math.min(currentPage * limit, totalItems);
+                    
+                    document.getElementById('pagination-info').innerHTML = `
+                        Showing <span class="font-medium">${totalItems === 0 ? 0 : start}</span> to <span class="font-medium">${end}</span> of <span class="font-medium">${totalItems}</span> results
+                    `;
+                    document.getElementById('current-page-display').innerText = currentPage;
+                    
+                    document.getElementById('btn-prev').disabled = currentPage === 1;
+                    document.getElementById('btn-next').disabled = currentPage >= Math.ceil(totalItems / limit);
+                    
+                    // Visual disable style
+                    if(currentPage === 1) document.getElementById('btn-prev').classList.add('opacity-50', 'cursor-not-allowed');
+                    else document.getElementById('btn-prev').classList.remove('opacity-50', 'cursor-not-allowed');
+                    
+                    if(currentPage >= Math.ceil(totalItems / limit)) document.getElementById('btn-next').classList.add('opacity-50', 'cursor-not-allowed');
+                    else document.getElementById('btn-next').classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+        
+                function clearFilters() {
+                    document.getElementById('filter-feature').value = "";
+                    document.getElementById('filter-model').value = "";
+                    currentPage = 1;
+                    initDashboard(); // Re-fetch everything including charts
+                }
+        
+                function formatNumber(num) {
+                    return new Intl.NumberFormat('en-US').format(num);
+                }
+        
+                document.addEventListener('DOMContentLoaded', () => {
+                    initDashboard();
+                    lucide.createIcons();
+                });
+        
+            </script>
+            
+            </div>
+
+            <div class="tab-content">
+
+             
+
+          </div>
+
+        </div>
+    </div>
+</div>
+
+
+  <div id="postUiModalOverlay" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-slate-900/60 transition-opacity" onclick="closePostUiModal()"></div>
+    <div class="fixed inset-0 z-10 overflow-y-auto">
+      <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+        <div class="relative transform overflow-hidden rounded-2xl bg-white dark:bg-slate-850 text-left shadow-2xl transition-all sm:my-8 w-full max-w-5xl"
+             onclick="event.stopPropagation()">
+           <div id="modalContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<div id="modalOverlay" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="fixed inset-0 bg-gray-900/80 transition-opacity"></div>
+  <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+    <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
+      <div class="relative transform overflow-hidden rounded-3xl bg-white text-left  transition-all sm:w-full sm:max-w-5xl border border-gray-200 flex flex-col">
+        <div class="flex flex-col lg:grid lg:grid-cols-12 h-full">
+            <div class="lg:col-span-5 bg-gray-50/50 border-b lg:border-b-0 lg:border-r border-gray-200 p-6 lg:p-8 flex flex-col gap-6">
+                <div class="group relative w-full overflow-hidden rounded-2xl bg-gray-200 border border-gray-300 shadow-sm aspect-video lg:aspect-square flex items-center justify-center">
+                    <img id="modalImg" src="" class="w-full h-full object-cover transition-transform duration-700 hover:scale-105" style="display:none">
+                    <div id="modalNoImg" class="flex flex-col items-center justify-center text-gray-400 hidden p-6 text-center">
+                        <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span class="text-xs font-medium uppercase tracking-wide">No Media Preview</span>
+                    </div>
+                </div>
+                <div class="flex-1 min-h-0 flex flex-col">
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Caption Preview</label>
+                    <div class="bg-white rounded-lg p-4 border border-gray-200 shadow-sm flex-1 overflow-y-auto max-h-48 lg:max-h-[none]">
+                        <pre id="modalContentText" class="whitespace-pre-wrap text-sm leading-relaxed text-gray-600 font-sans"></pre>
+                        <div class="mt-4 pt-3 border-t border-gray-100 flex flex-wrap gap-2">
+                            <span id="modalHashtags" class="text-sm font-medium text-gray-500 italic"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="lg:col-span-7 bg-white p-6 lg:p-8 flex flex-col h-full">
+
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 tracking-tight" id="modalTitle">Task Details</h3>
+                        
+                    </div>
+                    <span class="px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-bold uppercase tracking-wide border border-gray-200">
+                        Draft
+                    </span>
+                </div>
+                <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                    <div id="schedulingSection" class="hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div class="mb-5 pb-4 border-b border-gray-100">
+                            <h4 class="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                Configuration
+                            </h4>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="px-4">
+                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Select Platforms</label>
+                                <div id="platformsList" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                                <div class="text-sm text-yellow-500 mt-2"> Instagram posting requires an image. Text-only posts are not supported. </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-5">
+                                <div>
+                                    <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                                      <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Publish Date & Time (IST)</label>
+                                      <svg class="w-4 h-4 mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                      <span class="mb-2">AI Suggestion: <span id="modalTime" class="font-medium text-gray-700"></span></span>
+                                    </div>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        </div>
+                                        <input type="datetime-local" id="scheduledAtInput" class="block w-full rounded-lg border-gray-300 bg-white pl-10 px-4 py-2.5 text-gray-900 shadow-sm focus:border-gray-500 focus:ring-gray-500 sm:text-sm transition-colors ">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Notes -->
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Internal Notes</label>
+                                <textarea id="notesInput" rows="3" class="block w-full rounded-lg border-gray-300 bg-white px-4 py-2 text-gray-900 shadow-sm focus:border-gray-500 focus:ring-gray-500 sm:text-sm resize-none transition-colors  " placeholder="Add specific instructions for the reviewer..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="emptyStatePlaceholder" class="hidden h-32 flex items-center justify-center border-2 border-dashed border-gray-100 rounded-lg">
+                        <span class="text-sm text-gray-400">Scheduling options not available</span>
+                    </div>
+
+                </div>
+                <div class="mt-8 pt-4 border-t border-gray-100 flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                     <button type="button" id="closeModalBtn" class="inline-flex w-full justify-center rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto transition-all">
+                        Cancel
+                    </button>
+                    <button type="button" id="scheduleBtn" class="hidden w-full inline-flex justify-center items-center rounded-xl bg-gray-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 transition-all">
+                        Confirm Schedule
+                    </button>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<div id="taskDetailsModalShd" class="fixed inset-0 z-50 hidden transition-opacity duration-300" aria-labelledby="modalShd-title" role="dialog" aria-modal="true">
+  <div class="fixed inset-0 bg-slate-900/40 transition-opacity"></div>
+
+  <div class="fixed inset-0 z-10 overflow-y-auto">
+      <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-6">
+
+          <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-2xl ring-1 ring-black/5 transition-all w-full max-w-7xl h-[85vh] flex flex-col">
+              <div class="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center flex-shrink-0 z-20">
+                  <div class="flex items-center gap-4">
+                      <div class="h-10 w-10 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                      </div>
+                      <div>
+                          <h3 class="text-lg font-semibold text-slate-800 flex items-center gap-3">
+                              Task Details
+                              <span id="detailStatusHeaderShd" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border shadow-sm"></span>
+                          </h3>
+                          <p class="text-xs text-slate-400 font-mono mt-0.5 flex items-center gap-1">
+                              ID: <span id="detailIdDisplayShd" class="select-all hover:text-slate-600 transition-colors cursor-pointer">Loading...</span>
+                          </p>
+                      </div>
+                  </div>
+
+                  <button id="closeModalShd" type="button" class="rounded-full bg-slate-50 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 focus:outline-none  transition-all duration-200">
+                      <span class="sr-only">Close</span>
+                      <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                  </button>
+              </div>
+
+              <!-- Loading State -->
+              <div id="modalLoadingShd" class="hidden flex flex-col justify-center items-center h-full bg-slate-50/50">
+                  <div class="animate-spin rounded-full h-10 w-10 border-2 border-slate-200 border-b-slate-600 mb-3"></div>
+                  <span class="text-sm text-gray-600 font-medium">Retrieving data...</span>
+              </div>
+
+              <div id="modalContentShd" class="hidden flex-1 overflow-y-auto bg-slate-50/50 custom-scrollbar p-3">
+                  
+                  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+
+                      <div class="lg:col-span-4 space-y-6">
+
+                          <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+                              <div class="flex justify-between items-start mb-4">
+                                  <h4 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Overview</h4>
+                                  <span id="detailCreatedAtShd" class="text-xs text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-100"></span>
+                              </div>
+
+                              <div class="space-y-5">
+                                  <!-- Title -->
+                                  <div>
+                                      <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1 block">Task Title</label>
+                                      <p id="detailTitleShd" class="text-md text-slate-700 leading-snug"></p>
+                                  </div>
+
+                                  <div class="h-px bg-slate-100 w-full"></div>
+
+
+                                  <div>
+                                      <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1 block">Scheduled Execution</label>
+                                      <div class="flex items-center text-sm font-medium text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+                                          <svg class="flex-shrink-0 mr-2.5 h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                          </svg>
+                                          <span id="detailScheduledAtShd"></span>
+                                      </div>
+                                  </div>
+
+                                  <div class="grid grid-cols-1 gap-4">
+                                      <div>
+                                          <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1 block">Last Updated</label>
+                                          <p id="detailUpdatedAtShd" class="text-sm text-slate-600 font-mono"></p>
+                                      </div>
+                                      <div id="detailTimeZoneShd">
+                                          <label class="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1 block">Time Zone</label>
+                                          <p id="detailTimeZoneValueShd" class="text-sm text-slate-600 font-mono bg-slate-100 inline-block px-2 py-0.5 rounded"></p>
+                                      </div>
+                                  </div>
+                              </div>
+                          </div>
+
+                          <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 flex flex-col">
+                              <div class="p-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
+                                  <h4 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-2">
+                                      <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                      </svg>
+                                      Context / Payload
+                                  </h4>
+                              </div>
+                              <div class="p-4">
+                                  <div id="detailNotesShd" class="text-sm text-slate-600 leading-relaxed font-mono bg-slate-50 p-3 rounded-lg border border-slate-100 overflow-x-auto custom-scrollbar"></div>
+                              </div>
+                          </div>
+                          <div class="bg-white rounded-xl border border-gray-200 shadow-sm flex-1 flex flex-col">
+                            <div class="p-4 border-b border-gray-100 bg-gray-50 rounded-t-xl">
+                              <h4 class="text-xs font-semibold text-gray-600 uppercase tracking-wider flex items-center gap-2">
+                                <svg class="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Caption & Media
+                              </h4>
+                            </div>
+                          
+
+                            <div class="p-5 border-b border-gray-100">
+                              <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-medium text-gray-600">Caption with Hashtags</span>
+                                <button
+                                    id="copyCaptionBtn"
+                                    class="flex items-center justify-center p-1.5 text-gray-600  hover:border-gray-200 border rounded-xl transition-all duration-200">
+                                    <svg id="copyIcon" class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <!-- Default copy icon -->
+                                        <path d="M6 11C6 8.17157 6 6.75736 6.87868 5.87868C7.75736 5 9.17157 5 12 5H15C17.8284 5 19.2426 5 20.1213 5.87868C21 6.75736 21 8.17157 21 11V16C21 18.8284 21 20.2426 20.1213 21.1213C19.2426 22 17.8284 22 15 22H12C9.17157 22 7.75736 22 6.87868 21.1213C6 20.2426 6 18.8284 6 16V11Z" stroke="currentColor" stroke-width="2"/>
+                                        <path d="M6 19C4.34315 19 3 17.6569 3 16V10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H15C16.6569 2 18 3.34315 18 5" stroke="currentColor" stroke-width="2"/>
+                                    </svg>
+                                </button>
+                              </div>
+                              <pre id="captionWithHash" class="text-sm text-gray-800 bg-gray-50 p-4 rounded-lg border border-gray-200 overflow-x-auto whitespace-pre-wrap break-words max-h-[200px] custom-scrollbar"></pre>
+                            </div>
+                          
+                            <div class="p-5">
+                              <div class="flex justify-between items-center">
+                                <span class="text-xs font-medium text-gray-600">Attached Image</span>
+                                <button
+                                  id="ImgDwnBtn"
+                                  class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-800 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                  </svg>
+                                  <span id="downloadBtnText">Download</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                      </div>
+
+                      <div class="lg:col-span-8 flex flex-col gap-6">
+
+                          <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-auto overflow-hidden">
+                              <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
+                                  <h4 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                                      <div class="p-1.5 bg-blue-50 rounded-md">
+                                          <svg class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                          </svg>
+                                      </div>
+                                      Execution Attempts
+                                  </h4>
+                                  <span class="text-[10px] font-medium px-2 py-1 bg-slate-100 text-gray-600 rounded">Log</span>
+                              </div>
+                              
+                              <div class="overflow-y-auto custom-scrollbar flex-1 bg-white">
+                                  <table class="min-w-full divide-y divide-slate-100">
+                                      <thead class="bg-slate-50 sticky top-0 z-10">
+                                          <tr>
+                                              <th class="px-5 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Platform</th>
+                                              <th class="px-5 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Status</th>
+                                              <th class="px-5 py-3 text-left text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Timestamp</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody id="attemptsTableBodyShd" class="bg-white divide-y divide-slate-50 text-sm"></tbody>
+                                  </table>
+                                  <!-- Empty State -->
+                                  <div id="noAttemptsShd" class="hidden flex flex-col items-center justify-center py-12 text-slate-400">
+                                      <svg class="h-10 w-10 mb-2 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      <p class="text-xs">No attempts recorded yet</p>
+                                  </div>
+                              </div>
+                          </div>
+
+                          <!-- Errors Section -->
+                          <div class="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col h-auto overflow-hidden">
+                              <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
+                                  <h4 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                                      <div class="p-1.5 bg-red-50 rounded-md">
+                                          <svg class="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                          </svg>
+                                      </div>
+                                      System Logs & Errors
+                                  </h4>
+                              </div>
+
+                              <div class="overflow-y-auto custom-scrollbar flex-1 bg-white">
+                                  <table class="min-w-full divide-y divide-slate-100">
+                                      <tbody id="errorsTableBodyShd" class="bg-white divide-y divide-slate-50 text-sm font-mono text-red-600"></tbody>
+                                  </table>
+                                  
+                                  <!-- Empty State: Healthy -->
+                                  <div id="noErrorsShd" class="hidden flex flex-col items-center justify-center py-6 bg-white h-full">
+                                      <div class="rounded-full bg-emerald-100 p-3 mb-3">
+                                          <svg class="h-6 w-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                          </svg>
+                                      </div>
+                                      <span class="text-sm font-medium text-emerald-800">All systems operational</span>
+                                      <span class="text-xs text-emerald-600 mt-1">No errors logs found</span>
+                                  </div>
+                              </div>
+                          </div>
+
+                      </div>
+                  </div>
+              </div>
+
+              <!-- Footer -->
+              <div class="bg-white px-6 py-4 border-t border-slate-100 flex justify-end flex-shrink-0 z-20">
+                  <button type="button" id="closeModalBtnFooterShd" class="inline-flex justify-center rounded-lg border border-slate-200 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900 focus:outline-none  transition-all duration-200">
+                      Close Details
+                  </button>
+              </div>
+
+          </div>
+      </div>
+  </div>
+</div>
+
+
+
+<div id="noti-capsule" class="fixed top-8 left-1/2 -translate-x-1/2 z-50 flex items-center bg-white border border-gray-200 rounded-full shadow-2xl shadow-black/50 opacity-0 -translate-y-10 transition-all duration-500 ease-elastic pointer-events-none">
+  <div class="relative w-12 h-12 flex items-center justify-center shrink-0">
+      <div id="noti-icon" class="text-gray-800"></div>
+  </div>
+  <div id="noti-text-wrapper" class="overflow-hidden max-w-0 opacity-0 transition-all duration-500 ease-smooth">
+      <div id="noti-message" class="pr-6 pl-1 text-sm font-semibold whitespace-nowrap text-gray-800">
+      </div>
+  </div>
+</div>
+
+
+
+<script>
+
+  let animationTimeouts = [];
+
+  const icons = {
+      success: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
+      error: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
+      warning: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
+      info: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`
+  };
+
+  function ShowNoti(type, message) {
+      const capsule = document.getElementById('noti-capsule');
+      const iconContainer = document.getElementById('noti-icon');
+      const textWrapper = document.getElementById('noti-text-wrapper');
+      const messageEl = document.getElementById('noti-message');
+
+ 
+      clearTimeouts();
+      
+      capsule.classList.add('opacity-0', '-translate-y-10');
+      textWrapper.classList.add('max-w-0', 'opacity-0');
+      setTimeout(() => {
+          // 2. Set Content
+          iconContainer.innerHTML = icons[type] || icons['info'];
+          messageEl.textContent = message;
+
+          capsule.classList.remove('opacity-0', '-translate-y-10');
+
+          const t1 = setTimeout(() => {
+              textWrapper.classList.remove('max-w-0', 'opacity-0');
+              textWrapper.classList.add('max-w-[500px]', 'opacity-100'); 
+          }, 400);
+
+          const t2 = setTimeout(() => {
+              textWrapper.classList.remove('max-w-[500px]', 'opacity-100');
+              textWrapper.classList.add('max-w-0', 'opacity-0');
+          }, 3000);
+
+          const t3 = setTimeout(() => {
+              capsule.classList.add('opacity-0', '-translate-y-10');
+          }, 3500);
+
+          animationTimeouts.push(t1, t2, t3);
+      }, 50);
+  }
+
+  function clearTimeouts() {
+      animationTimeouts.forEach(id => clearTimeout(id));
+      animationTimeouts = [];
+  }
+</script>
+
+<script src="/static/Tabs.js" ></script>
+<script src="/static/Platform.js"></script>
+<script src="/static/Scheduled.js"></script>
+<script src="/static/Error.js"></script>
+
+</body>
+</html>

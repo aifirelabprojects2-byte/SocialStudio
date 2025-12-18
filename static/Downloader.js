@@ -73,7 +73,7 @@ formYtb.addEventListener('submit', async (e) => {
         </span>
 
         <span class="tracking-tight">
-          Save ${audioOnlyYtb ? 'Audio' : 'Media'} to Device
+          Save Media to Device
         </span>
 
         <!-- Subtle shine -->
