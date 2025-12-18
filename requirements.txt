@@ -48,3 +48,4 @@ tweepy
 gallery-dl
 eventlet
 tiktoken
+bcrypt
