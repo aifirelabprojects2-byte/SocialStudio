@@ -861,10 +861,8 @@
             </main>
         
             <script>
-                // --- CONFIGURATION ---
-                // Set to FALSE to try connecting to your actual localhost Python backend
                 const USE_MOCK_DATA = false; 
-                const API_BASE_URL = 'http://localhost:8000'; 
+                
         
                 // --- STATE MANAGEMENT ---
                 let currentPage = 1;
@@ -875,19 +873,26 @@
         
                 // --- API CLIENT ---
                 async function fetchData(endpoint, params = {}) {
-                    if (USE_MOCK_DATA) {
-                        return null; // Mock removed, not used
-                    }
-        
-                    const url = new URL(`${API_BASE_URL}${endpoint}`);
-                    Object.keys(params).forEach(key => {
-                        if(params[key]) url.searchParams.append(key, params[key]);
-                    });
-                    
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
-                }
+                  if (USE_MOCK_DATA) {
+                      return null;
+                  }
+              
+                  const url = new URL(endpoint, window.location.origin);
+              
+                  Object.keys(params).forEach(key => {
+                      if (params[key] !== undefined && params[key] !== null) {
+                          url.searchParams.append(key, params[key]);
+                      }
+                  });
+              
+                  const response = await fetch(url);
+                  if (!response.ok) {
+                      throw new Error('Network response was not ok');
+                  }
+              
+                  return response.json();
+              }
+              
 
                 function renderStatsCards(statsData) {
                     const totalCost = statsData.reduce((acc, curr) => acc + parseFloat(curr.total_cost || 0), 0);
