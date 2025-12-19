@@ -63,6 +63,51 @@ def init(app):
             }
             for p in platforms
         ]
+        
+    @app.get("/api/active/platforms")
+    async def list_active_platforms(db: AsyncSession = Depends(get_db)):
+        result = await db.execute(
+            select(Platform)
+            .where(Platform.is_active == True)
+            .order_by(Platform.name)
+        )
+        platforms = result.scalars().all()
+
+        now_kolkata = datetime.now(KOLKATA_TZ)
+
+        active_platforms = []
+
+        for p in platforms:
+            platform_name = p.name.lower()
+            is_valid = False
+            if platform_name == "facebook":
+                if p.page_access_token:
+                    if p.expires_at is None or p.expires_at.astimezone(KOLKATA_TZ) > now_kolkata:
+                        is_valid = True
+
+            elif platform_name in ["instagram", "threads"]:
+                if p.ll_user_access_token:
+                    if p.expires_at is None or p.expires_at.astimezone(KOLKATA_TZ) > now_kolkata:
+                        is_valid = True
+
+            elif platform_name == "x" or platform_name == "twitter":
+                has_keys = any([
+                    p.consumer_key,
+                    p.consumer_secret,
+                    p.access_token,
+                    p.access_token_secret,
+                    p.bearer_token
+                ])
+                if has_keys:
+                    is_valid = True
+
+            if is_valid:
+                active_platforms.append({
+                    "platform_id": p.platform_id,
+                    "name": p.name.capitalize(), 
+                })
+
+        return active_platforms
     @app.get("/api/platforms/{name}")
     async def get_platform(name: str, db: AsyncSession = Depends(get_db)):
         platform = await get_platform_by_name(db, name.lower())

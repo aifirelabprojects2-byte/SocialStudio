@@ -158,7 +158,8 @@ scheduleSection: document.getElementById('schedulingSection'),
 scheduleBtn: document.getElementById('scheduleBtn'),
 scheduledInput: document.getElementById('scheduledAtInput'),
 notes: document.getElementById('notesInput'),
-closeBtn: document.getElementById('closeModalBtn')
+closeBtn: document.getElementById('closeModalBtn'),
+inswarn: document.getElementById('inswarn')
 };
 
 async function openDetail(taskId) {
@@ -187,22 +188,24 @@ try {
     } else {
         els.img.style.display = 'none';
         els.noImg.classList.remove('hidden');
-        els.noImg.style.display = 'flex'; // Use flex for centering logic in CSS
+        els.noImg.style.display = 'flex'; 
     }
 
     // Fetch available platforms
-    const platformsRes = await fetch('/api/platforms');
+    const platformsRes = await fetch('/api/active/platforms');
     if (!platformsRes.ok) {
         console.error('Failed to fetch platforms');
         populatePlatforms([
-            { platform_id: 'instagram-platform-uuid', name: 'Instagram' },
+            { platform_id: 'aaa', name: 'No Platform Configured' },
             { platform_id: 'threads-platform-uuid', name: 'Threads' },
             { platform_id: 'facebook-platform-uuid', name: 'Facebook' }
         ]);
     } else {
         const platformsData = await platformsRes.json();
+        console.log(platformsData);
         populatePlatforms(platformsData || []);
     }
+    
     const now = new Date();
     now.setHours(now.getHours() + 1);
 
@@ -235,13 +238,49 @@ finally{
 }
 
 function populatePlatforms(platforms) {
-    els.platforms.innerHTML = ''; 
+    els.platforms.innerHTML = ''; // Clear previous content
 
+    if (platforms.length === 0) {
+        els.platforms.classList.remove(
+            "grid",
+            "grid-cols-1",
+            "sm:grid-cols-2",
+            "gap-3"
+          );
+        els.inswarn.classList.add('hidden');
+          
+        els.platforms.classList.add('flex');
+        const emptyMessage = document.createElement('div');
+        emptyMessage.innerHTML = `
+            <div class="max-w-md mx-auto rounded-xl border px-7 py-4 border-gray-100">
+                <div class="flex justify-center items-center gap-2">
+                    <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <h3 class="text-lg font-medium text-gray-900">
+                        No Connected Platforms
+                    </h3>
+                </div>
+
+                <p class="mt-2 text-sm text-gray-600 leading-relaxed">
+                    There are currently no social media platforms connected to your account.
+                    To begin publishing or managing content, please connect a platform from
+                    <span class="font-medium text-gray-700">Settings → Setup</span>.
+                </p>
+            </div>
+        `;
+
+        els.platforms.appendChild(emptyMessage);
+        return;
+    }
+
+    // Normal case: render platform toggles
     platforms.forEach(platform => {
         const platformId = platform.platform_id;
         const div = document.createElement('div');
 
-        div.className = 'relative flex items-center justify-between p-3 bg-white rounded-xl  border border-gray-100 hover:border-gray-500 transition-all cursor-pointer';
+        div.className = 'relative flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-gray-500 transition-all cursor-pointer';
 
         div.innerHTML = `
             <label for="platform-toggle-${platformId}" class="text-sm font-medium text-gray-900 select-none cursor-pointer">
@@ -251,7 +290,7 @@ function populatePlatforms(platforms) {
             <input type="checkbox" id="platform-toggle-${platformId}" value="${platformId}" 
                    class="sr-only peer"> 
             
-            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none  rounded-full peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-800"></div>
+            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-800"></div>
             
             <label for="platform-toggle-${platformId}" class="absolute inset-0 cursor-pointer"></label>
         `;
