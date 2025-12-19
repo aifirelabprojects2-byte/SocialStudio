@@ -9,8 +9,8 @@ load_dotenv()
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-image_path = "static/media/f738a4d2-0d3e-4997-8b86-5b2c0d90862f.jpg"  
-customization_text = "instead black use white backgoud and add aifirelab watermark"  
+image_path = "static/media/af1eb3f9-ec55-43c9-96a1-098c42678dfe_original.jpg"  
+customization_text = "instead black use white backgroud and add aifirelab watermark"  
 output_path = "edited_image.png"  
 
 input_image = Image.open(image_path)

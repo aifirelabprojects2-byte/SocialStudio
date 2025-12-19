@@ -88,12 +88,15 @@ def init(app):
                 "task_id": task.task_id,
                 "title": task.title or "Untitled Draft",
                 "created_at": task.created_at.isoformat(),
-                "caption_preview": (content.caption[:120] + "...") if content and content.caption and len(content.caption) > 120 else (content.caption or ""),
+                "caption_preview": (
+                            (content.caption[:120] + "...")
+                            if content and content.caption and len(content.caption) > 120
+                            else (content.caption if content and content.caption else "")
+                        ),
                 "has_image": bool(media_url),
                 "media_url": media_url,
             })
 
-        # Return the tasks along with total count and current pagination info
         return {
             "tasks": task_list,
             "total_count": total_drafts,
