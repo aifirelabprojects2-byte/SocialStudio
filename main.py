@@ -26,7 +26,7 @@ from enum import Enum
 from fastapi import Body, Cookie, FastAPI, Form, Query, Request, Depends, HTTPException, logger, status, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 import json
-from Database import AsyncSessionLocal, AttemptStatus, ErrorLog, LLMUsage, LoginSession, OAuthToken, Platform, PostAttempt, PublishStatus, TaskStatus, User, gen_uuid_str, get_db, init_db, Task, GeneratedContent, Media, PlatformSelection
+from Database import AsyncSessionLocal, AttemptStatus, ErrorLog, LLMUsage, LoginSession, Platform, PostAttempt, PublishStatus, TaskStatus, User, gen_uuid_str, get_db, init_db, Task, GeneratedContent, Media, PlatformSelection
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select, update, delete,desc
 from sqlalchemy.orm import selectinload,joinedload
@@ -478,37 +478,36 @@ class ErrorLogListResponse(BaseModel):
 
 @app.get("/error-logs", response_model=ErrorLogListResponse)
 async def list_error_logs(
-    from_date: Optional[datetime] = Query(None, description="Filter from this date (YYYY-MM-DDTHH:MM:SS)"),
-    to_date: Optional[datetime] = Query(None, description="Filter up to this date (YYYY-MM-DDTHH:MM:SS)"),
+    from_date: Optional[datetime] = Query(None),
+    to_date: Optional[datetime] = Query(None),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db)
 ):
-
     query = select(ErrorLog).order_by(desc(ErrorLog.created_at))
-
 
     if from_date:
         query = query.where(ErrorLog.created_at >= from_date)
     if to_date:
         query = query.where(ErrorLog.created_at <= to_date)
 
-    count_query = select(func.count(ErrorLog.error_id)).select_from(query.subquery())
+    subq = query.subquery()
+    count_query = select(func.count()).select_from(subq)
+
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
-
 
     query = query.limit(limit).offset(offset)
     result = await db.execute(query)
     error_logs = result.scalars().all()
 
     return ErrorLogListResponse(
-        error_logs=error_logs,  
+        error_logs=error_logs,
         total=total,
         limit=limit,
         offset=offset
     )
-    
+
 
 class FormatRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=10000, description="The text to format")

@@ -22,6 +22,7 @@ from sqlalchemy import (
     Enum as SAEnum,
     func,
     create_engine,
+    select,
 )
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, sessionmaker,relationship
@@ -47,11 +48,8 @@ sync_engine = create_engine(
 class Base(AsyncAttrs, DeclarativeBase):
     pass
 
-# Sync Base (without AsyncAttrs for Celery compatibility)
 class SyncBase(DeclarativeBase):
     pass
-
-# Note: In production, consider separate sync models if issues arise, but models are shared here.
 
 class TaskStatus(enum.Enum):
     draft = "draft"
@@ -80,11 +78,35 @@ class Platform(Base, SyncBase):
     __tablename__ = "platform"
 
     platform_id = Column(String(36), primary_key=True, default=gen_uuid_str)
-    name = Column(String(64), nullable=False, unique=True, index=True) 
+    name = Column(String(64), nullable=False, unique=True, index=True)
     api_name = Column(String(128), nullable=True)
-    meta = Column(JSON, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    is_active = Column(Boolean, default=True)
 
+    # Generic
+    expires_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Meta specific
+    page_id = Column(String(64), nullable=True)  # For IG & FB
+    # Facebook specific 
+    page_access_token = Column(String(128), nullable=True)  
+    
+    # Instagram specific 
+    ll_user_access_token = Column(String(128), nullable=True)  # long live user access token
+    
+    # Threads specific
+    threads_user_id = Column(String(64), nullable=True)
+    threads_username = Column(String(64), nullable=True)
+
+    # X/Twitter specific
+    consumer_key = Column(String(128), nullable=True)
+    consumer_secret = Column(String(128), nullable=True)
+    access_token = Column(String(128), nullable=True)
+    access_token_secret = Column(String(128), nullable=True)
+    bearer_token = Column(Text, nullable=True)
+
+    meta = Column(JSON, nullable=True) 
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
 class ImageTheme(Base, SyncBase):
     __tablename__ = "image_theme"
 
@@ -172,19 +194,6 @@ class PlatformSelection(Base, SyncBase):
     platform = relationship("Platform")
 
     __table_args__ = (UniqueConstraint("task_id", "platform_id", name="uq_task_platform"),)
-
-class OAuthToken(Base, SyncBase):
-    __tablename__ = "oauth_token"
-
-    token_id = Column(String(36), primary_key=True, default=gen_uuid_str)
-    platform_id = Column(String(36), ForeignKey("platform.platform_id", ondelete="CASCADE"), nullable=False, index=True)
-    organization_id = Column(String(36), nullable=True)
-    access_token = Column(Text, nullable=False) 
-    refresh_token = Column(Text, nullable=True) 
-    expires_at = Column(DateTime(timezone=True), nullable=True, index=True)
-    meta = Column(JSON, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 class LLMUsage(Base, SyncBase):
     __tablename__ = "llm_usage"
@@ -274,11 +283,58 @@ SyncSessionLocal = sessionmaker(
     future=True,
 )
 
+async def seed_platforms_if_missing() -> None:
+    async with AsyncSessionLocal() as session:
+        async with session.begin():
+            required_platforms = [
+                {
+                    "name": "facebook",
+                    "api_name": "facebook",
+                },
+                {
+                    "name": "instagram",
+                    "api_name": "instagram",
+                },
+                {
+                    "name": "threads",
+                    "api_name": "threads",
+                },
+                {
+                    "name": "x",
+                    "api_name": "twitter",
+                },
+            ]
+
+            for plat in required_platforms:
+                exists = await session.execute(
+                    select(Platform).filter_by(name=plat["name"])
+                )
+                if exists.scalar_one_or_none() is None:
+                    new_platform = Platform(
+                        name=plat["name"],
+                        api_name=plat["api_name"],
+                        expires_at=None,
+                        page_id=None,
+                        page_access_token=None,
+                        ll_user_access_token=None,
+                        threads_user_id=None,
+                        threads_username=None,
+                        consumer_key=None,
+                        consumer_secret=None,
+                        access_token=None,
+                        access_token_secret=None,
+                        bearer_token=None,
+                        meta=None,  
+                    )
+                    session.add(new_platform)
+        await session.commit()
+
 async def init_db() -> None:
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)
     with sync_engine.begin() as conn:
         SyncBase.metadata.create_all(bind=conn, checkfirst=True)
+    await seed_platforms_if_missing()
 
 def get_sync_db():
     db = SyncSessionLocal()

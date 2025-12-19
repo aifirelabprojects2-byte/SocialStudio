@@ -2,6 +2,7 @@ import os
 import json
 import time
 import asyncio
+import bcrypt
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 
@@ -82,4 +83,6 @@ async def enrich_company(question: str) -> dict:
 
 # print(asyncio.run(enrich_company("whtai developed by aifirelab")))
 
-asyncio.run(init_db())
+# asyncio.run(init_db())
+
+# print(hash_password("qwerty2k26"))

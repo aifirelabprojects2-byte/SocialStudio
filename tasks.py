@@ -14,7 +14,6 @@ from Database import (
     TaskStatus,
     PlatformSelection,
     PublishStatus,
-    OAuthToken,
     PostAttempt,
     AttemptStatus,
     ErrorLog,
@@ -63,17 +62,6 @@ def execute_posting(self, task_id: str) -> None:
                 _handle_post_failure(session, task, platform, sel, "Missing API name configuration")
                 all_success = False
                 continue
-            # Get OAuth token
-            token = session.query(OAuthToken).filter(
-                OAuthToken.platform_id == platform.platform_id,
-                OAuthToken.organization_id == task.organization_id
-            ).first()
-            if not token or (token.expires_at and token.expires_at < datetime.now(ist)):
-                # Transient if expired (retry might refresh), but for now permanent
-                _handle_post_failure(session, task, platform, sel, "Invalid or expired OAuth token")
-                all_success = False
-                continue
-            # Execute post
             start_time = time.time()
             attempt = PostAttempt(
                 task_id=task.task_id,

@@ -44,6 +44,23 @@
   </script>
   <style>
 
+    .spinner-pls {
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spinPls 0.6s linear infinite;
+    }
+    @keyframes spinPls {
+      to { transform: rotate(360deg); }
+    }
+    /* Hide scrollbar for modal content if needed */
+    .no-scrollbar-pls::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar-pls {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
     .shimmer-text-rfx {
       background: linear-gradient(to right, #1f2937 0%, #9ca3af 50%, #1f2937 100%);
       background-size: 200% auto;
@@ -391,107 +408,48 @@
 
             <div class="tab-content">
               
-              <section id="Platform">
-                <div class="min-h-full">
-                  <header class="bg-white shadow-sm border-b">
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                      <div class="flex justify-between items-center">
-                        <div class="flex-1">
-                          <h1 class="text-2xl lg:text-3xl font-semibold text-neutral-900 tracking-tight">Platforms</h1>
-                          <p class="text-sm text-neutral-500 mt-2 max-w-md">Manage platforms</p>
-                        </div>
-                        <div class="flex gap-3">
-                          <button id="refreshBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
-                            Refresh
-                          </button>
-                          <button id="openModalBtn" class="flex items-center gap-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                              <path d="M12 5L12 19"/>
-                              <path d="M5 12L19 12"/>
-                            </svg>
-                              New Platform
-                          </button>
-                        </div>
-                      </div>
+              <main class="flex-1 py-10">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  
+                  <!-- Section Header -->
+                  <div class="md:flex md:items-center md:justify-between mb-8">
+                    <div class="min-w-0 flex-1">
+                      <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                        Connected Platforms
+                      </h2>
+                      <p class="mt-1 text-sm text-gray-500">Manage API keys, tokens, and expiration dates for your integrations.</p>
                     </div>
-                  </header>
-              
-                  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                  <div id="skeletonPlatform" class="space-y-6">
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                      <div class="h-14 bg-gray-50 skeletonPlatform-loader"></div>
-                      <div class="p-6 space-y-4">
-                        <div class="h-5 w-48 bg-gray-200 rounded skeletonPlatform-loader"></div>
-                        <div class="h-4 w-64 bg-gray-200 rounded skeletonPlatform-loader"></div>
-                        <div class="flex items-center gap-8">
-                          <div class="h-8 w-32 bg-gray-200 rounded-full skeletonPlatform-loader"></div>
-                          <div class="h-4 w-24 bg-gray-200 rounded skeletonPlatform-loader"></div>
-                        </div>
-                      </div>
+                    <div class="mt-4 flex md:ml-4 md:mt-0">
+                      <button type="button" onclick="loadPlatformsPls()" id="refreshBtnPls" class="inline-flex items-center rounded-2xl bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">
+                        Refresh Data
+                      </button>
                     </div>
                   </div>
-              
-                  <div id="PlatformEmptyState" class="hidden flex-col items-center justify-center py-2 text-center">
-                    <div class="rounded-full bg-gray-50 p-4 mb-3 inline-block">
-                        <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
-                    </div>
-                    <h3 class="mt-2 text-sm font-semibold text-gray-900">No platforms yet</h3>
-                    <p class="mt-1 text-sm text-gray-500">Add your first social platform to get started.</p>
-                    <button id="openModalBtn2" class="mt-6 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-                      Create Platform
-                    </button>
-                </div>
-
-                  <div id="table" class="hidden bg-white shadow overflow-hidden sm:rounded-lg">
+          
+                  <!-- Platform List Card -->
+                  <div id="platformListPls" class="bg-white shadow-sm ring-1 ring-gray-900/5 rounded-2xl overflow-hidden">
                     <table class="min-w-full divide-y divide-gray-200">
                       <thead class="bg-gray-50">
                         <tr>
-                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">API</th>
-                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Token</th>
-                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                          <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 sm:pl-6">Platform</th>
+                          <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Status</th>
+                          <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Token Expiry</th>
+                          <th scope="col" class="px-3 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Configuration</th>
+                          <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                            <span class="sr-only">Edit</span>
+                          </th>
                         </tr>
                       </thead>
-                      <tbody id="tbody" class="bg-white divide-y divide-gray-200"></tbody>
+                      <tbody id="platformTableBodyPls" class="divide-y divide-gray-200 bg-white">
+                        <!-- Filled by JS -->
+                      </tbody>
                     </table>
                   </div>
-                </main>
-              </div>
+                </div>
 
-              <dialog id="createModal" class="p-8 rounded-2xl shadow-2xl max-w-lg w-full bg-white">
-                <h2 class="text-2xl font-bold mb-6">Add New Platform</h2>
 
-                <form id="createForm" class="space-y-5">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Platform Name *</label>
-                    <input name="name" required placeholder="e.g. Facebook" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"/>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">API Name (optional)</label>
-                    <input name="api_name" placeholder="e.g. facebook_graph" class="w-full px-4 py-2 border border-gray-300 rounded-lg"/>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Access Token *</label>
-                    <textarea name="access_token" required placeholder="Paste your access token here" class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm"></textarea>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Refresh Token (optional)</label>
-                    <textarea name="refresh_token" rows="2" placeholder="Optional" class="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm"></textarea>
-                  </div>
-            
-                  <div class="flex justify-end gap-3 mt-8">
-                    <button type="button" id="cancelBtn" class="px-5 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                      Cancel
-                    </button>
-                    <button type="submit" id="saveBtn" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-                      Save Platform
-                    </button>
-                  </div>
-                </form>
-              </dialog>
-            
-            </section>
+          
+              </main>
 
 
             <section id="ThemeThx">
@@ -712,11 +670,7 @@
 
             <div class="tab-content">
                 
-        
-            <!-- Main Content -->
             <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        
-                <!-- Header Controls -->
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <h1 class="text-2xl font-bold text-gray-900">LLM Analytics</h1>
@@ -729,10 +683,6 @@
                                 Last 30 Days
                             </div>
                         </div>
-                        <!-- <button  class="inline-flex items-center px-4 py-2 bg-black border border-transparent rounded-lg shadow-sm text-sm font-medium text-white hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors">
-                            <i data-lucide="download" class="w-4 h-4 mr-2"></i>
-                            Export Report
-                        </button> -->
                     </div>
                 </div>
         
@@ -744,10 +694,9 @@
                     <div class="animate-pulse bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-32"></div>
                     <div class="animate-pulse bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-32"></div>
                 </div>
-        
-                <!-- Charts Section -->
+
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Line Chart (Usage Trends) -->
+
                     <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm lg:col-span-2">
                         <div class="flex items-center justify-between mb-6">
                             <div>
@@ -862,16 +811,13 @@
         
             <script>
                 const USE_MOCK_DATA = false; 
-                
-        
-                // --- STATE MANAGEMENT ---
+
                 let currentPage = 1;
                 const limit = 10;
                 let totalItems = 0;
                 let usageChartInstance = null;
                 let costChartInstance = null;
-        
-                // --- API CLIENT ---
+
                 async function fetchData(endpoint, params = {}) {
                   if (USE_MOCK_DATA) {
                       return null;
@@ -894,45 +840,52 @@
               }
               
 
-                function renderStatsCards(statsData) {
-                    const totalCost = statsData.reduce((acc, curr) => acc + parseFloat(curr.total_cost || 0), 0);
-                    const totalTokens = statsData.reduce((acc, curr) => acc + curr.total_tokens, 0);
-                    const totalRequests = statsData.reduce((acc, curr) => acc + curr.request_count, 0);
-                    
-                    // Weighted average for latency, handling nulls
-                    const weightedLatencySum = statsData.reduce((acc, curr) => {
-                        if (curr.avg_latency !== null && curr.request_count > 0) {
-                            return acc + (curr.avg_latency * curr.request_count);
-                        }
-                        return acc;
-                    }, 0);
-                    const avgLatency = totalRequests > 0 ? Math.round(weightedLatencySum / totalRequests) : 0;
-        
-                    const container = document.getElementById('stats-container');
-                    container.innerHTML = `
-                        ${createStatCard('Total Spend', `$${totalCost}`, '+12.5% from last period', 'dollar-sign')}
-                        ${createStatCard('Total Tokens', formatNumber(totalTokens), 'Input: 40% | Output: 60%', 'cpu')}
-                        ${createStatCard('Avg Latency', `${avgLatency}ms`, 'P95: 2100ms', 'clock')}
-                        ${createStatCard('Total Requests', formatNumber(totalRequests), '99.9% Success Rate', 'activity')}
-                    `;
-                    lucide.createIcons();
-                }
-        
-                function createStatCard(title, value, subtext, iconName) {
-                    return `
-                        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start space-x-4 transition-all hover:shadow-md">
-                            <div class="p-3 bg-gray-50 rounded-lg border border-gray-100 flex-shrink-0">
-                                <i data-lucide="${iconName}" class="w-6 h-6 text-gray-900"></i>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-gray-500">${title}</p>
-                                <h3 class="text-2xl font-bold text-gray-900 mt-1 tracking-tight">${value}</h3>
-                                <p class="text-xs text-gray-400 mt-1 font-medium">${subtext}</p>
-                            </div>
-                        </div>
-                    `;
-                }
-        
+              function renderStatsCards(statsData, summaryData) {
+                const totalCost = statsData.reduce((acc, curr) => acc + parseFloat(curr.total_cost || 0), 0);
+                const totalTokens = statsData.reduce((acc, curr) => acc + curr.total_tokens, 0);
+                const totalRequests = statsData.reduce((acc, curr) => acc + curr.request_count, 0);
+                
+                // Weighted average for latency, handling nulls
+                const weightedLatencySum = statsData.reduce((acc, curr) => {
+                    if (curr.avg_latency !== null && curr.request_count > 0) {
+                        return acc + (curr.avg_latency * curr.request_count);
+                    }
+                    return acc;
+                }, 0);
+                const avgLatency = totalRequests > 0 ? Math.round(weightedLatencySum / totalRequests) : 0;
+            
+                // Use real data from summary
+                const inputPct = summaryData ? Math.round((summaryData.input_tokens / (summaryData.input_tokens + summaryData.output_tokens)) * 100) : 40;
+                const outputPct = 100 - inputPct;
+                const costChange = summaryData && summaryData.cost_change_pct !== null
+                    ? `${summaryData.cost_change_pct >= 0 ? '+' : ''}${summaryData.cost_change_pct}% from last period`
+                    : summaryData ? 'No previous data' : '+12.5% from last period';
+                const successRate = summaryData ? `${summaryData.success_rate}% Success Rate` : '99.9% Success Rate';
+                const p95Latency = summaryData ? `${summaryData.p95_latency}ms` : '2100ms';
+            
+                const container = document.getElementById('stats-container');
+                container.innerHTML = `
+                    ${createStatCard('Total Spend', `$${totalCost.toFixed(4)}`, costChange, 'dollar-sign')}
+                    ${createStatCard('Total Tokens', formatNumber(totalTokens), `Input: ${inputPct}% | Output: ${outputPct}%`, 'cpu')}
+                    ${createStatCard('Avg Latency', `${avgLatency}ms`, `P95: ${p95Latency}`, 'clock')}
+                    ${createStatCard('Total Requests', formatNumber(totalRequests), successRate, 'activity')}
+                `;
+                lucide.createIcons();
+            }
+            function createStatCard(title, value, subtext, iconName) {
+              return `
+                  <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start space-x-4 transition-all hover:shadow-md">
+                      <div class="p-3 bg-gray-50 rounded-lg border border-gray-100 flex-shrink-0">
+                          <i data-lucide="${iconName}" class="w-6 h-6 text-gray-900"></i>
+                      </div>
+                      <div>
+                          <p class="text-sm font-medium text-gray-500">${title}</p>
+                          <h3 class="text-2xl font-bold text-gray-900 mt-1 tracking-tight">${value}</h3>
+                          <p class="text-xs text-gray-400 mt-1 font-medium">${subtext}</p>
+                      </div>
+                  </div>
+              `;
+          }
                 function loadingSkeleton() {
                     return `
                         <tr class="animate-pulse">
@@ -1058,8 +1011,7 @@
                             interaction: { intersect: false, mode: 'index' },
                         }
                     });
-        
-                    // Cost Bar Chart
+
                     const ctxCost = document.getElementById('costChart').getContext('2d');
                     if(costChartInstance) costChartInstance.destroy();
                     
@@ -1078,30 +1030,27 @@
                         options: commonOptions
                     });
                 }
-        
-                // --- CONTROLLERS ---
-        
+
                 async function initDashboard() {
-                    try {
-                        // 1. Fetch Stats for Graphs and Cards
-                        const feature = document.getElementById('filter-feature').value || null;
-                        const statsData = await fetchData('/api/usage/stats', { interval: 'day', days_back: 30, feature });
-                        
-                        renderStatsCards(statsData || []);
-                        renderCharts(statsData || []);
-        
-                        // 2. Fetch Table Data
-                        await refreshTable();
-        
-                    } catch (error) {
-                        console.error("Dashboard Error:", error);
-                        // Optionally render error state
-                        document.getElementById('stats-container').innerHTML = '<div class="col-span-full text-center py-8 text-gray-500">Error loading data. Please try again.</div>';
-                        const tbody = document.getElementById('table-body');
-                        tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-red-500">Error loading data: ${error.message}</td></tr>`;
-                    }
-                }
-        
+                  try {
+                      const feature = document.getElementById('filter-feature').value || null;
+                      const statsData = await fetchData('/api/usage/stats', { interval: 'day', days_back: 30, feature });
+                      const summaryData = await fetchData('/api/usage/summary', { days_back: 30, feature });
+                      
+                      renderStatsCards(statsData || [], summaryData || null);
+                      renderCharts(statsData || []);
+              
+                      // 2. Fetch Table Data
+                      await refreshTable();
+              
+                  } catch (error) {
+                      console.error("Dashboard Error:", error);
+                      // Optionally render error state
+                      document.getElementById('stats-container').innerHTML = '<div class="col-span-full text-center py-8 text-gray-500">Error loading data. Please try again.</div>';
+                      const tbody = document.getElementById('table-body');
+                      tbody.innerHTML = `<tr><td colspan="8" class="px-6 py-12 text-center text-red-500">Error loading data: ${error.message}</td></tr>`;
+                  }
+              }
                 async function refreshTable() {
                     const tbody = document.getElementById('table-body');
                     tbody.innerHTML = loadingSkeleton();
@@ -1292,7 +1241,78 @@
   </div>
 </div>
 
+<div id="editModalPls" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <!-- Background backdrop -->
+  <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity "></div>
 
+  <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+    <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+      
+      <div class="relative transform overflow-hidden rounded-2xl bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-xl border border-gray-200">
+        
+        <!-- Modal Header -->
+        <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4 border-b border-gray-100">
+          <div class="sm:flex sm:items-start">
+            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 sm:mx-0 sm:h-10 sm:w-10">
+              <svg class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+              </svg>
+            </div>
+            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full">
+              <h3 class="text-lg font-semibold leading-6 text-gray-900" id="modalTitlePls">Edit Settings</h3>
+              <div class="mt-2">
+                <p class="text-sm text-gray-500">Update your API keys and configuration below.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Form -->
+        <form id="editFormPls">
+          <div class="px-4 py-5 sm:p-6 space-y-6 max-h-[60vh] overflow-y-auto no-scrollbar-pls">
+            
+            <!-- Active Toggle -->
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+              <div class="flex flex-col">
+                <span class="text-sm font-medium text-gray-900">Integration Status</span>
+                <span class="text-xs text-gray-500">Enable or disable this platform</span>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="isActivePls" class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-black"></div>
+              </label>
+            </div>
+
+            <!-- Date Picker -->
+            <div>
+              <label for="expiresAtPls" class="block text-sm font-medium leading-6 text-gray-900">Token Expiration</label>
+              <div class="mt-2">
+                <input type="datetime-local" id="expiresAtPls" class="block w-full rounded-2xl border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-black sm:text-sm sm:leading-6 px-3">
+              </div>
+            </div>
+
+            <!-- Dynamic Fields -->
+            <div id="platformFieldsPls" class="space-y-5 pt-2 border-t border-gray-100">
+              <!-- Fields injected via JS -->
+            </div>
+          </div>
+
+          <!-- Footer Actions -->
+          <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6 border-t border-gray-100">
+            <button type="submit" id="saveBtnPls" class="inline-flex w-full justify-center items-center rounded-2xl bg-black px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gray-800 sm:ml-3 sm:w-auto transition-all disabled:opacity-70 disabled:cursor-not-allowed">
+              <span class="btn-text-pls">Save Changes</span>
+              <div class="spinner-pls h-4 w-4 ml-2 hidden"></div>
+            </button>
+            <button type="button" id="cancelBtnPls" class="mt-3 inline-flex w-full justify-center rounded-2xl bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+              Cancel
+            </button>
+          </div>
+        </form>
+        <div id="messagePls" class="hidden mx-2 mb-2 p-2 rounded-md text-sm border-l-2"></div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="taskDetailsModalShd" class="fixed inset-0 z-50 hidden transition-opacity duration-300" aria-labelledby="modalShd-title" role="dialog" aria-modal="true">
   <div class="fixed inset-0 bg-slate-900/40 transition-opacity"></div>

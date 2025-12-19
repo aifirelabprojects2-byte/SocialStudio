@@ -1,4 +1,3 @@
-# meta_poster/exceptions.py
 class MetaAPIError(Exception):
     """Custom exception for Meta Graph API errors"""
     def __init__(self, message: str, error_code: int = None, subcode: int = None):
