@@ -187,7 +187,7 @@ async def home(request: Request, user=Depends(get_current_user)):
     return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/setting", response_class=HTMLResponse)
-async def settings(request: Request):
+async def settings(request: Request, user=Depends(get_current_user)):
     return templates.TemplateResponse("settings.html", {"request": request})
 
 PostGen.init(app)    
