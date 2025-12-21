@@ -3,6 +3,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field, field_validator, ValidationError
 import ManageTheme
 import MediaSnag
+import Referencer
 import Researcher
 import ManualPost
 import TextFormatter
@@ -82,6 +83,7 @@ ManageTheme.init(app)
 UsageTracker.init(app)
 Accounts.init(app)
 Researcher.init(app)
+Referencer.init(app)
 MediaSnag.init(app)
 TextFormatter.init(app)
 ErrorLogs.init(app)
