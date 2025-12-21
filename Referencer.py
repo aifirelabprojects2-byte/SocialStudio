@@ -25,6 +25,7 @@ from openai import AsyncOpenAI
 from google import genai
 from google.genai import types
 
+import Accounts
 from CostCalc import calculate_image_cost, calculate_llm_cost
 from Database import GeneratedContent, ImageTheme, LLMUsage, Media, Task, TaskStatus, get_db
 
@@ -313,7 +314,7 @@ class CreateRequest(BaseModel):
     
 def init(app):
     @app.post("/api/fetch-post-details")
-    async def fetch_post_details(request: FetchRequest):
+    async def fetch_post_details(request: FetchRequest,_=Depends(Accounts.get_current_user)):
         result = await fetch_social_post(request.url)
         if "error" in result:
             raise HTTPException(status_code=400, detail=result["error"])
@@ -321,7 +322,7 @@ def init(app):
 
 
     @app.post("/api/create-draft-task")
-    async def create_draft_task(request: CreateRequest, db: AsyncSession = Depends(get_db)):
+    async def create_draft_task(request: CreateRequest, db: AsyncSession = Depends(get_db),_=Depends(Accounts.get_current_user)):
         original_caption = request.caption
 
         clean_path = Path(request.imgpath).name  

@@ -1,12 +1,9 @@
-
 let state = {
     limit: 10,     
     nextOffset: null,
     prevOffset: null,
     currentOffset: 0
 };
-
-
 
 document.addEventListener('DOMContentLoaded', () => {
     fetchData(0);
@@ -134,8 +131,6 @@ function setLoading(bool) {
 }
 
 
-
-
 const els = {
 tbody: document.getElementById('tableBody'),
 skeletonDraft: document.getElementById('skeletonDraft'),
@@ -153,6 +148,9 @@ hashtags: document.getElementById('modalHashtags'),
 time: document.getElementById('modalTime'),
 img: document.getElementById('modalImg'),
 noImg: document.getElementById('modalNoImg'),
+imageDownloadBtn: document.getElementById('imageDownloadBtn'),
+copyCaptionBtn: document.getElementById('copyCaptionBtn'),
+downloadCaptionBtn: document.getElementById('downloadCaptionBtn'),
 platforms: document.getElementById('platformsList'),
 scheduleSection: document.getElementById('schedulingSection'),
 scheduleBtn: document.getElementById('scheduleBtn'),
@@ -165,76 +163,155 @@ inswarn: document.getElementById('inswarn')
 async function openDetail(taskId) {
     toggleLoading(`viewBtnApr-${taskId}`, true, 'Opening');
     
-try {
-    const res = await fetch(`/api/tasks/approved/${taskId}`);
-    if (!res.ok) throw new Error("Err");
-    const d = await res.json();
-    const task_id = d.task_id;
-    const gc = d.generated_content || {};
+    try {
+        const res = await fetch(`/api/tasks/approved/${taskId}`);
+        if (!res.ok) throw new Error("Err");
+        const d = await res.json();
+        const task_id = d.task_id;
+        const gc = d.generated_content || {};
 
-    // Populate basic details
-    els.title.textContent = d.title || "Task Details";
-    els.content.textContent = gc.caption || '';
-    
-    const tags = gc.hashtags || [];
-    els.hashtags.textContent = tags.map(t => `#${t}`).join(' ');
-    els.time.textContent = gc.suggested_posting_time || "Not scheduled";
+        // Populate basic details
+        els.title.textContent = d.title || "Task Details";
+        els.content.textContent = gc.caption || '';
+        
+        const tags = gc.hashtags || [];
+        els.hashtags.textContent = tags.map(t => `#${t}`).join(' ');
+        els.time.textContent = gc.suggested_posting_time || "Not scheduled";
 
-    // Handle Image
-    if (d.preview_image) {
-        els.img.src = d.preview_image;
-        els.img.style.display = 'block';
-        els.noImg.classList.add('hidden');
-    } else {
-        els.img.style.display = 'none';
-        els.noImg.classList.remove('hidden');
-        els.noImg.style.display = 'flex'; 
+        // Handle Image
+        if (d.preview_image) {
+            els.img.src = d.preview_image;
+            els.img.style.display = 'block';
+            els.noImg.classList.add('hidden');
+            els.imageDownloadBtn.classList.remove('hidden');
+        } else {
+            els.img.style.display = 'none';
+            els.noImg.classList.remove('hidden');
+            els.noImg.style.display = 'flex'; 
+            els.imageDownloadBtn.classList.add('hidden');
+        }
+
+        // Define getFullCaptionText for caption actions
+        const getFullCaptionText = () => {
+            const content = els.content.textContent || '';
+            const hashtags = els.hashtags.textContent || '';
+            const now = new Date().toLocaleString();
+            return `${now}\n\nCaption:\n${content}\n\nHashtags:\n${hashtags}`;
+        };
+
+        // Add event listeners for new buttons
+        els.imageDownloadBtn.onclick = (e) => {
+            e.stopPropagation();
+            console.log('Image download button clicked');
+            if (els.img.src) {
+                const a = document.createElement('a');
+                a.href = els.img.src;
+                a.download = `task-image-${Date.now()}.jpg`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                console.log('Image download initiated');
+            } else {
+                console.log('No image src available');
+            }
+        };
+
+        els.copyCaptionBtn.onclick = async (e) => {
+            e.stopPropagation();
+            console.log('Copy caption button clicked');
+            try {
+                const text = getFullCaptionText();
+                console.log('Text to copy:', text);
+                await navigator.clipboard.writeText(text);
+                const originalText = els.copyCaptionBtn.innerHTML;
+                els.copyCaptionBtn.innerHTML = '<svg class="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.89163 13.2687L9.16582 17.5427L18.7085 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                setTimeout(() => { els.copyCaptionBtn.innerHTML = originalText; }, 2000);
+                console.log('Copy successful');
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                // Fallback for older browsers or non-secure contexts
+                if (els.content) {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = getFullCaptionText();
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        const originalText = els.copyCaptionBtn.innerHTML;
+                        els.copyCaptionBtn.innerHTML = '<svg class="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.89163 13.2687L9.16582 17.5427L18.7085 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+                        setTimeout(() => { els.copyCaptionBtn.innerHTML = originalText; }, 2000);
+                        console.log('Fallback copy successful');
+                    } catch (fallbackErr) {
+                        console.error('Fallback copy failed: ', fallbackErr);
+                        alert('Failed to copy to clipboard. Please select and copy manually.');
+                    }
+                    document.body.removeChild(textArea);
+                }
+            }
+        };
+
+        els.downloadCaptionBtn.onclick = (e) => {
+            e.stopPropagation();
+            console.log('Download caption button clicked');
+            const fullText = getFullCaptionText();
+            console.log('Text to download:', fullText);
+            const blob = new Blob([fullText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `task-caption-${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            console.log('Caption download initiated');
+        };
+
+        console.log('Event listeners attached for buttons');
+
+        // Fetch available platforms
+        const platformsRes = await fetch('/api/active/platforms');
+        if (!platformsRes.ok) {
+            console.error('Failed to fetch platforms');
+            populatePlatforms([
+                { platform_id: 'aaa', name: 'No Platform Configured' },
+                { platform_id: 'threads-platform-uuid', name: 'Threads' },
+                { platform_id: 'facebook-platform-uuid', name: 'Facebook' }
+            ]);
+        } else {
+            const platformsData = await platformsRes.json();
+            console.log(platformsData);
+            populatePlatforms(platformsData || []);
+        }
+        
+        const now = new Date();
+        now.setHours(now.getHours() + 1);
+
+        const offset = now.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
+        
+        els.scheduledInput.value = localISOTime;
+
+        const minTime = (new Date(Date.now() - offset)).toISOString().slice(0, 16);
+        els.scheduledInput.min = minTime;
+
+        els.scheduleSection.classList.remove('hidden');
+        els.scheduleBtn.classList.remove('hidden');
+
+        const newBtn = els.scheduleBtn.cloneNode(true);
+        els.scheduleBtn.parentNode.replaceChild(newBtn, els.scheduleBtn);
+        els.scheduleBtn = newBtn; 
+        
+        els.scheduleBtn.onclick = () => handleSchedule(task_id);
+
+        els.overlaymodal.classList.remove('hidden');
+    } catch (e) {
+        console.error(e);
+        alert("Could not load details");
+        toggleLoading(`viewBtnApr-${taskId}`, false);
+    } finally {
+        toggleLoading(`viewBtnApr-${taskId}`, false);
     }
-
-    // Fetch available platforms
-    const platformsRes = await fetch('/api/active/platforms');
-    if (!platformsRes.ok) {
-        console.error('Failed to fetch platforms');
-        populatePlatforms([
-            { platform_id: 'aaa', name: 'No Platform Configured' },
-            { platform_id: 'threads-platform-uuid', name: 'Threads' },
-            { platform_id: 'facebook-platform-uuid', name: 'Facebook' }
-        ]);
-    } else {
-        const platformsData = await platformsRes.json();
-        console.log(platformsData);
-        populatePlatforms(platformsData || []);
-    }
-    
-    const now = new Date();
-    now.setHours(now.getHours() + 1);
-
-    const offset = now.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(now - offset)).toISOString().slice(0, 16);
-    
-    els.scheduledInput.value = localISOTime;
-
-    const minTime = (new Date(Date.now() - offset)).toISOString().slice(0, 16);
-    els.scheduledInput.min = minTime;
-
-    els.scheduleSection.classList.remove('hidden');
-    els.scheduleBtn.classList.remove('hidden');
-
-    const newBtn = els.scheduleBtn.cloneNode(true);
-    els.scheduleBtn.parentNode.replaceChild(newBtn, els.scheduleBtn);
-    els.scheduleBtn = newBtn; 
-    
-    els.scheduleBtn.onclick = () => handleSchedule(task_id);
-
-    els.overlaymodal.classList.remove('hidden');
-} catch (e) {
-    console.error(e);
-    alert("Could not load details");
-    toggleLoading(`viewBtnApr-${taskId}`, true, 'Opening');
-}
-finally{
-    toggleLoading(`viewBtnApr-${taskId}`, false);
-}
 }
 
 function populatePlatforms(platforms) {
@@ -309,7 +386,7 @@ if (platformIds.length === 0) {
 
 const scheduledAtStr = els.scheduledInput.value;
 if (!scheduledAtStr) {
-    ShowNoti('info', 'Please select a scheduled date and time')
+    ShowNoti('info', 'Please select a scheduled date and time');
     return;
 }
 
@@ -342,13 +419,10 @@ try {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.detail || 'Failed to schedule task');
     }
-
     const data = await res.json();
-    // Modern approach: Toast or nice alert (sticking to alert per request)
     alert(`Task scheduled successfully!`);
     
     closeModal();
-    // location.reload(); // Optional: reload to update UI
 } catch (e) {
     console.error(e);
     alert(`Error: ${e.message}`);
@@ -367,6 +441,9 @@ els.platforms.innerHTML = '';
 els.notes.value = '';
 els.scheduledInput.value = '';
 els.img.src = '';
+els.imageDownloadBtn.classList.add('hidden');
+
+// Re-attach event listeners? No need, will be re-set on next openDetail
 }
 
 els.closeBtn.onclick = closeModal;

@@ -1,27 +1,17 @@
-from pydantic import BaseModel, Field
-from typing import  Optional
 from fastapi import Depends, HTTPException
 from fastapi.responses import JSONResponse
+import Accounts
 from Database import ImageTheme, get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import  select, delete
+from Schema.Theme import ImageThemeCreate
 
 
-class ImageThemeCreate(BaseModel):
-    name: str = Field(..., description="Unique name of the theme")
-    description: Optional[str] = None
-
-
-class ImageThemeResponse(BaseModel):
-    theme_id: str
-    name: str
-    description: Optional[str]
-    created_at: str
 
 def init(app):
     
     @app.get("/api/themes")
-    async def get_themes(db: AsyncSession = Depends(get_db)):
+    async def get_themes(db: AsyncSession = Depends(get_db), _=Depends(Accounts.get_current_user)):
         result = await db.execute(select(ImageTheme).order_by(ImageTheme.created_at.desc()))
         themes = result.scalars().all()
 
@@ -39,7 +29,8 @@ def init(app):
     @app.post("/api/themes/create")
     async def create_theme(
         payload: ImageThemeCreate,
-        db: AsyncSession = Depends(get_db)
+        db: AsyncSession = Depends(get_db),
+        _=Depends(Accounts.get_current_user)
     ):
         # Check if name already exists
         exists = await db.execute(select(ImageTheme).where(ImageTheme.name == payload.name))
@@ -58,7 +49,7 @@ def init(app):
 
 
     @app.delete("/api/themes/{theme_id}")
-    async def delete_theme(theme_id: str, db: AsyncSession = Depends(get_db)):
+    async def delete_theme(theme_id: str, db: AsyncSession = Depends(get_db), _=Depends(Accounts.get_current_user)):
         result = await db.execute(select(ImageTheme).filter(ImageTheme.theme_id == theme_id))
         theme = result.scalars().first()
         if not theme:

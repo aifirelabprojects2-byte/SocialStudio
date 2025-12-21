@@ -1,25 +1,14 @@
-from dotenv import load_dotenv
-from openai import AsyncOpenAI
-from pydantic import BaseModel, Field
-from ImgGen import ImageGenClient
-import os
-import base64
-import io
 from datetime import datetime
-from typing import List, Optional, Literal
-from pathlib import Path
-from cryptography.fernet import Fernet
-from fastapi import Form, Query, Request, Depends, HTTPException, status, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse
-import json
-from Database import Platform, TaskStatus, get_db, Task, GeneratedContent, Media
+from fastapi import Depends, HTTPException
+import Accounts
+from Database import Platform, get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, select
+from sqlalchemy import select
 from Encryption import encrypt_token, decrypt_token  
 import pytz
-from datetime import datetime
 
 KOLKATA_TZ = pytz.timezone("Asia/Kolkata")
+UTC_TZ = pytz.UTC
 
 
 async def get_platform_by_name(db: AsyncSession, name: str) -> Platform:
@@ -30,10 +19,32 @@ async def get_platform_by_name(db: AsyncSession, name: str) -> Platform:
     return platform
 
 
+def convert_db_datetime_to_kolkata(db_datetime):
+    if db_datetime is None:
+        return None
+    
+    # If datetime is naive (no timezone), treat it as UTC
+    if db_datetime.tzinfo is None:
+        utc_datetime = UTC_TZ.localize(db_datetime)
+    else:
+        utc_datetime = db_datetime.astimezone(UTC_TZ)
+    
+    # Convert to Kolkata
+    return utc_datetime.astimezone(KOLKATA_TZ)
+
+
+def convert_kolkata_to_db_datetime(datetime_str):
+    if not datetime_str:
+        return None
+    naive_datetime = datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M")
+    kolkata_datetime = KOLKATA_TZ.localize(naive_datetime)
+    utc_datetime = kolkata_datetime.astimezone(UTC_TZ)
+    return utc_datetime.replace(tzinfo=None)
+
 
 def init(app):
     @app.get("/api/platforms/list")
-    async def list_platforms(db: AsyncSession = Depends(get_db)):
+    async def list_platforms(db: AsyncSession = Depends(get_db), _=Depends(Accounts.get_current_user)):
         result = await db.execute(select(Platform).order_by(Platform.name))
         platforms = result.scalars().all()
 
@@ -44,10 +55,10 @@ def init(app):
                 "platform_id": p.platform_id,
                 "name": p.name.capitalize(),
                 "api_name": p.api_name,
-                "expires_at": p.expires_at.astimezone(KOLKATA_TZ).isoformat() if p.expires_at else None,
-                "expires_at_local": p.expires_at.astimezone(KOLKATA_TZ).strftime("%d %b %Y, %I:%M %p") if p.expires_at else "Never",
+                "expires_at": convert_db_datetime_to_kolkata(p.expires_at).isoformat() if p.expires_at else None,
+                "expires_at_local": convert_db_datetime_to_kolkata(p.expires_at).strftime("%d %b %Y, %I:%M %p") if p.expires_at else "Never",
                 "days_remaining": (
-                    (p.expires_at.astimezone(KOLKATA_TZ) - now_kolkata).days
+                    (convert_db_datetime_to_kolkata(p.expires_at) - now_kolkata).days
                     if p.expires_at else None
                 ),
                 "is_active": p.is_active or False,
@@ -65,7 +76,7 @@ def init(app):
         ]
         
     @app.get("/api/active/platforms")
-    async def list_active_platforms(db: AsyncSession = Depends(get_db)):
+    async def list_active_platforms(db: AsyncSession = Depends(get_db), _=Depends(Accounts.get_current_user)):
         result = await db.execute(
             select(Platform)
             .where(Platform.is_active == True)
@@ -80,15 +91,24 @@ def init(app):
         for p in platforms:
             platform_name = p.name.lower()
             is_valid = False
+            
             if platform_name == "facebook":
                 if p.page_access_token:
-                    if p.expires_at is None or p.expires_at.astimezone(KOLKATA_TZ) > now_kolkata:
+                    if p.expires_at is None:
                         is_valid = True
+                    else:
+                        kolkata_expires = convert_db_datetime_to_kolkata(p.expires_at)
+                        if kolkata_expires > now_kolkata:
+                            is_valid = True
 
             elif platform_name in ["instagram", "threads"]:
                 if p.ll_user_access_token:
-                    if p.expires_at is None or p.expires_at.astimezone(KOLKATA_TZ) > now_kolkata:
+                    if p.expires_at is None:
                         is_valid = True
+                    else:
+                        kolkata_expires = convert_db_datetime_to_kolkata(p.expires_at)
+                        if kolkata_expires > now_kolkata:
+                            is_valid = True
 
             elif platform_name == "x" or platform_name == "twitter":
                 has_keys = any([
@@ -108,19 +128,27 @@ def init(app):
                 })
 
         return active_platforms
+    
     @app.get("/api/platforms/{name}")
-    async def get_platform(name: str, db: AsyncSession = Depends(get_db)):
+    async def get_platform(name: str, db: AsyncSession = Depends(get_db), _=Depends(Accounts.get_current_user)):
         platform = await get_platform_by_name(db, name.lower())
 
-        # Convert expires_at to Kolkata time for display
-        expires_local = None
+        # Convert expires_at from UTC (in database) to Kolkata time for display
+        expires_local_str = None
+        expires_display = "Never"
+        days_remaining = None
+        
         if platform.expires_at:
-            expires_local = platform.expires_at.astimezone(KOLKATA_TZ)
+            expires_kolkata = convert_db_datetime_to_kolkata(platform.expires_at)
+            # Return in format that datetime-local input expects (YYYY-MM-DDTHH:MM)
+            expires_local_str = expires_kolkata.strftime("%Y-%m-%dT%H:%M")
+            expires_display = expires_kolkata.strftime("%d %b %Y, %I:%M %p")
+            days_remaining = (expires_kolkata - datetime.now(KOLKATA_TZ)).days
 
         decrypted = {
             "page_access_token": decrypt_token(platform.page_access_token) or "",
             "ll_user_access_token": decrypt_token(platform.ll_user_access_token) or "",
-            "threads_long_lived_token": decrypt_token(platform.ll_user_access_token) or "",  # shared with IG
+            "threads_long_lived_token": decrypt_token(platform.ll_user_access_token) or "",
             "consumer_key": decrypt_token(platform.consumer_key) or "",
             "consumer_secret": decrypt_token(platform.consumer_secret) or "",
             "access_token": decrypt_token(platform.access_token) or "",
@@ -132,12 +160,9 @@ def init(app):
             "platform_id": platform.platform_id,
             "name": platform.name,
             "is_active": platform.is_active or False,
-            "expires_at": expires_local.isoformat() if expires_local else None,
-            "expires_at_display": expires_local.strftime("%d %b %Y, %I:%M %p") if expires_local else "Never",
-            "days_remaining": (
-                (expires_local - datetime.now(KOLKATA_TZ)).days
-                if expires_local else None
-            ),
+            "expires_at": expires_local_str,  # Format for datetime-local input
+            "expires_at_display": expires_display,
+            "days_remaining": days_remaining,
             "page_id": platform.page_id or "",
             "threads_user_id": platform.threads_user_id or "",
             "threads_username": platform.threads_username or "",
@@ -161,15 +186,14 @@ def init(app):
         if "is_active" in data:
             platform.is_active = data["is_active"]
 
-        if "expires_at" in data and data["expires_at"]:
-            # Frontend sends Kolkata time → convert to UTC for storage
-            local_dt = datetime.fromisoformat(data["expires_at"])
-            utc_dt = KOLKATA_TZ.localize(local_dt).astimezone(pytz.UTC)
-            platform.expires_at = utc_dt
-        elif "expires_at" in data and data["expires_at"] is None:
-            platform.expires_at = None
+        if "expires_at" in data:
+            if data["expires_at"]:
+                # Convert Kolkata time string to naive UTC datetime for storage
+                platform.expires_at = convert_kolkata_to_db_datetime(data["expires_at"])
+            else:
+                platform.expires_at = None
 
-        # Platform-specific
+        # Platform-specific token updates
         if name == "facebook":
             if "page_id" in data:
                 platform.page_id = data["page_id"] or None

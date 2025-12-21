@@ -3,7 +3,11 @@
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>AI Social Studio</title>
+  <title>Settings | AISocialStudio</title>
+  <meta name="description" content="Describe your idea, and we'll craft the caption, hashtags, and visuals">
+  <link rel="icon" href="/static/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <meta name="theme-color" content="#ffffff">
   <script src="/static/tailwind.js"></script>
   <link href="https://fonts.googleapis.com" rel="preconnect"/>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,8 +18,7 @@
   <link rel="stylesheet" href="/static/Nav.css">
   <link rel="stylesheet" href="/static/Scheduled.css">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="/static/lucide.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <script>
@@ -129,13 +132,6 @@
       100% { background-position: -200% 0; }
     }
   
-    .skeletonPlatform-line {
-      @apply h-4 bg-gray-200 rounded;
-    }
-  
-    dialog::backdrop {
-      @apply bg-black/50;
-    }
   </style>
   <style>
     :root {
@@ -143,11 +139,8 @@
         --bg-body: #eef2f5; 
         --bg-app: #ffffff;
         --text-main: #1d1d1f; 
-        --text-muted: #86868b;
-        --accent: #0071e3; 
         --pill-color: #dddddde5; 
         --card-bg: #f2f2f7;
-        --shadow-soft: 0 10px 40px rgba(0,0,0,0.08); 
     }
 
     body, html {
@@ -170,10 +163,10 @@
     <nav class="nav-header">
       <div class="flex h-16 w-full items-center shadow-[0px_20px_20px_8px_white]">
           
-          <div class="flex items-center gap-3 w-1/4">
-              <div class="bg-gray-600 text-white p-1.5 rounded-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-              </div>
+          <div class="flex items-center gap-1.5 w-1/4">
+            <div class="rounded-lg">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" class="text-slate-900" ><path d="M12,22.24a1,1,0,0,1-.5-.14l-8-4.62a1,1,0,0,1-.5-.86V7.38a1,1,0,0,1,.5-.86l8-4.62a1,1,0,0,1,1,0l8,4.62a1,1,0,0,1,.5.86v9.24a1,1,0,0,1-.5.86l-8,4.62A1,1,0,0,1,12,22.24ZM5,16l7,4,7-4V8l-7-4L5,8Z"/><path d="M12,19a1,1,0,0,1-1-1V12a1,1,0,0,1,.49-.86l5-3a1,1,0,0,1,1,1.72L13,12.57V18A1,1,0,0,1,12,19Z"/> <path d="M12,13a1,1,0,0,1-.51-.14l-5-3a1,1,0,0,1,1-1.72l5,3A1,1,0,0,1,12,13Z"/></svg>
+            </div>
               <span class="font-semibold text-lg tracking-tight text-slate-900 dark:text-white">AI Social Studio</span>
           </div>
           
@@ -184,7 +177,7 @@
                   <li class="pill-nav-item" data-index="1">Tasks</li>
                   <li class="pill-nav-item" data-index="2">Setup</li>
                   <li class="pill-nav-item" data-index="3">Usage</li>
-                  <li class="pill-nav-item" data-index="4">_</li>
+                  <li class="pill-nav-item" data-index="4">Devices</li>
               </ul>
           </div>
           
@@ -462,10 +455,10 @@
                         <p class="text-sm text-neutral-500 mt-2 max-w-md">Manage your image generation themes</p>
                       </div>
                       <div class="flex gap-3">
-                        <button id="refreshBtnThx" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        <button id="refreshBtnThx" class="px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50">
                           Refresh
                         </button>
-                        <button id="openModalBtnThx" class="flex items-center gap-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm font-medium">
+                        <button id="openModalBtnThx" class="flex items-center gap-1 px-4 py-2 bg-gray-800 text-white rounded-full hover:bg-gray-700 text-sm font-medium">
                           <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 5L12 19"/>
                             <path d="M5 12L19 12"/>
@@ -488,7 +481,7 @@
                     </div>
                   </div>
 
-                  <div id="emptyStateThx" class="hidden flex flex-col items-center justify-center py-12 text-center">
+                  <div id="emptyStateThx" class="hidden flex flex-col items-center justify-center py-6 text-center">
                     <div class="rounded-full bg-gray-50 p-4 mb-3 inline-block">
                       <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
@@ -496,7 +489,7 @@
                     </div>
                     <h3 class="mt-2 text-sm font-semibold text-gray-900">No themes yet</h3>
                     <p class="mt-1 text-sm text-gray-500">Create your first image theme to get started.</p>
-                    <button id="openModalBtn2Thx" class="mt-6 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+                    <button id="openModalBtn2Thx" class="mt-6 px-6 py-3 bg-gray-800 text-white rounded-full hover:bg-gray-700">
                       Create Theme
                     </button>
                   </div>
@@ -677,6 +670,11 @@
                         <p class="text-sm text-gray-500 mt-1">Monitor real-time token usage, costs, and latency metrics.</p>
                     </div>
                     <div class="flex items-center gap-3">
+                      <div>
+                        <button id="clear-llm-usage-btn" class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700  focus:outline-none transition-colors ">
+                          <i data-lucide="shredder" class="w-4 h-4 mr-2 text-gray-500"></i>
+                          Reset Usage </button>
+                      </div>
                         <div class="relative">
                             <div class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700  focus:outline-none transition-colors ">
                                 <i data-lucide="calendar" class="w-4 h-4 mr-2 text-gray-500"></i>
@@ -1109,12 +1107,43 @@
                     document.getElementById('filter-feature').value = "";
                     document.getElementById('filter-model').value = "";
                     currentPage = 1;
-                    initDashboard(); // Re-fetch everything including charts
+                    initDashboard(); 
                 }
         
                 function formatNumber(num) {
                     return new Intl.NumberFormat('en-US').format(num);
                 }
+
+                async function clearLLMUsage() {
+                  try {
+                      const response = await fetch('/llm-usage/clear', {
+                          method: 'DELETE',
+                          credentials: 'include',
+                          headers: {
+                              'Accept': 'application/json',
+                          }
+                      });
+              
+                      const data = await response.json();
+              
+                      if (response.ok) {
+                          ShowNoti('success',`Success ${data.deleted_count} records deleted`);
+                          
+                      } else {
+                        ShowNoti('error',`Unknown error occured`);
+                          
+                      }
+                  } catch (err) {
+                    ShowNoti('error','Network error occured');
+
+                  }
+              }
+
+              document.getElementById('clear-llm-usage-btn').addEventListener('click', () => {
+                  if (confirm('Are you ABSOLUTELY sure you want to delete ALL LLM usage records?\nThis action cannot be undone.')) {
+                      clearLLMUsage();
+                  }
+              });
         
                 document.addEventListener('DOMContentLoaded', () => {
                     initDashboard();
@@ -1125,11 +1154,74 @@
             
             </div>
 
-            <div class="tab-content">
+          <div class="tab-content">
 
-             
+            <main class="flex-grow py-10 px-4 sm:px-6">
+              <div class="max-w-6xl mx-auto space-y-10">
 
-          </div>
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Logged In Devices</h1>
+                        <p class="text-sm text-gray-500 mt-1">Manage sessions and devices connected to your account. Log out of any device you don't recognize.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      
+                      <button onclick="loadSess()" class="group  hover:bg-gray-100 border border-gray-200 text-gray-800 px-3 py-1.5 rounded-2xl shadow-slate-900/10 hover:shadow-slate-900/20 transition-all duration-200 flex items-center gap-2 font-medium text-sm flex-none">
+                        <div class=" p-1 rounded-2xl  transition-colors">
+                            <i data-lucide="refresh-cw" class="w-5 h-5 relative z-10"></i>
+                        </div>
+                        
+                    </button>
+                    <form method="post" action="/logout-all">
+                      <button type="submit"  class="group  hover:bg-gray-100 border border-gray-200 text-gray-800 px-3 py-1.5 rounded-2xl shadow-slate-900/10 hover:shadow-slate-900/20 transition-all duration-200 flex items-center gap-2 font-medium text-sm flex-none">
+                        <div class=" p-1 rounded-2xl  transition-colors">
+                            <i data-lucide="log-out" class="w-5 h-5 relative z-10"></i>
+                        </div>
+                        <span>Logout All</span>
+                    </button>
+                    </form>
+                    
+
+                    </div>
+                </div>
+          
+                  <div id="loadingSess" class="text-center py-16">
+                      <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-600 border-t-transparent"></div>
+                      <p class="mt-4 text-slate-500">Loading session data...</p>
+                  </div>
+          
+                  <div id="error" class="hidden bg-gray-100 border border-gray-300 rounded-xl p-5">
+                      <div class="flex items-center gap-3">
+                          <i data-lucide="bug" class="w-5 h-5 relative z-10"></i>
+                          <p class="text-slate-800 font-medium" id="error-text"></p>
+                      </div>
+                  </div>
+          
+                  <section id="current-session-section" class="hidden">
+                      <div class="flex items-center justify-between mb-4 px-1">
+                          <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Current Session</h2>
+                          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-slate-700 border border-gray-300 uppercase tracking-wide">
+                              Online Now
+                          </span>
+                      </div>
+                      <div id="current-session" class="bg-white rounded-2xl p-1 "></div>
+                  </section>
+
+                  <section id="other-sessions-section" class="hidden">
+                      <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 px-1">Other Active Sessions</h2>
+                      <div id="other-sessions" class="grid grid-cols-2 gap-4"></div>
+                  </section>
+
+                  <div id="empty-state" class="hidden pt-6 text-center">
+                      <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+                          <i data-lucide="server" class="w-5 h-5 relative z-10"></i>
+                      </div>
+                      <h3 class="mt-4 text-lg font-semibold text-slate-900">No active sessions</h3>
+                      <p class="mt-1 text-sm text-slate-500">You are not logged in to any other devices.</p>
+                  </div>
+              </div>
+          </main>
+        </div>
 
         </div>
     </div>
@@ -1556,11 +1648,11 @@
   let animationTimeouts = [];
 
   const icons = {
-      success: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,
-      error: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
-      warning: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
-      info: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`
-  };
+    success: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`,  // green-600
+    error: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,  // red-600
+    warning: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,  // yellow-600
+    info: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`  // blue-600
+};
 
   function ShowNoti(type, message) {
       const capsule = document.getElementById('noti-capsule');
@@ -1608,6 +1700,7 @@
 <script src="/static/Platform.js"></script>
 <script src="/static/Scheduled.js"></script>
 <script src="/static/Error.js"></script>
+<script src="/static/Session.js"></script>
 
 </body>
 </html>

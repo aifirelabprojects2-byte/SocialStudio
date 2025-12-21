@@ -1,31 +1,18 @@
 import time
-from dotenv import load_dotenv
-from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
+import Accounts
 from CostCalc import calculate_llm_cost
-from ImgGen import ImageGenClient
-import os
-import base64
-import io
 from datetime import datetime
 from typing import List, Optional, Literal
 from pathlib import Path
-from fastapi import Form, Query, Request, Depends, HTTPException, status, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import Form, Query, Depends, HTTPException, status
+from fastapi.responses import  JSONResponse
 import json
 from Database import LLMUsage, TaskStatus, get_db, Task, GeneratedContent, Media
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select, update, delete
 from sqlalchemy.orm import selectinload
-
-load_dotenv()
-
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    raise RuntimeError("Set OPENAI_API_KEY in .env")
-
-client = AsyncOpenAI(api_key=OPENAI_API_KEY)
-image_client = ImageGenClient(api_key=os.getenv("IMG_API_KEY"))   
+from Configs import image_client, client
 
 
 media_dir = Path("static/media")
@@ -44,9 +31,9 @@ def init(app):
     @app.get("/api/tasks")
     async def api_list_tasks(
         db: AsyncSession = Depends(get_db),
-        # Add query parameters for pagination
         limit: int = DEFAULT_LIMIT,
-        offset: int = 0
+        offset: int = 0,
+        _=Depends(Accounts.get_current_user)
     ):
         # Ensure limit is reasonable (e.g., max 5 drafts)
         limit = min(limit, DEFAULT_LIMIT)
@@ -114,6 +101,7 @@ def init(app):
         generate_image: Literal["yes", "no"] = Form("no"),
         image_style: Optional[str] = Form("realistic"),  
         db: AsyncSession = Depends(get_db),
+        _=Depends(Accounts.get_current_user)
     ):
         want_image = generate_image == "yes"
 
@@ -254,7 +242,7 @@ def init(app):
 
 
     @app.get("/tasks/{task_id}")
-    async def get_task(task_id: str, db: AsyncSession = Depends(get_db)):
+    async def get_task(task_id: str, db: AsyncSession = Depends(get_db),_=Depends(Accounts.get_current_user)):
         stmt = select(Task).options(
             selectinload(Task.generated_contents),
             selectinload(Task.media)
@@ -288,7 +276,7 @@ def init(app):
     from sqlalchemy.exc import SQLAlchemyError
 
     @app.post("/tasks/{task_id}/approve")
-    async def approve_task(task_id: str, db: AsyncSession = Depends(get_db)):
+    async def approve_task(task_id: str, db: AsyncSession = Depends(get_db),_=Depends(Accounts.get_current_user)):
         try:
             async with db.begin():
                 stmt = select(Task).where(Task.task_id == task_id)
@@ -334,6 +322,7 @@ def init(app):
         hashtags: str = Form(None),  # JSON string
         image_prompt: str = Form(None),
         db: AsyncSession = Depends(get_db),
+        _=Depends(Accounts.get_current_user)
     ):
         try:
             hashtags_list = json.loads(hashtags) if hashtags else []
@@ -351,7 +340,7 @@ def init(app):
 
 
     @app.delete("/tasks/{task_id}")
-    async def delete_task(task_id: str, db: AsyncSession = Depends(get_db)):
+    async def delete_task(task_id: str, db: AsyncSession = Depends(get_db),_=Depends(Accounts.get_current_user)):
         stmt = delete(Task).where(Task.task_id == task_id)
         await db.execute(stmt)
         await db.commit()
@@ -362,6 +351,7 @@ def init(app):
     async def generate_image_for_task(
         task_id: str,
         db: AsyncSession = Depends(get_db),
+        _=Depends(Accounts.get_current_user)
     ):
 
         stmt = select(GeneratedContent).join(Task).where(Task.task_id == task_id)
@@ -440,7 +430,8 @@ def init(app):
     async def list_approved_drafts(
         db: AsyncSession = Depends(get_db),
         limit: int = Query(DEFAULT_LIMIT, ge=1),
-        offset: int = 0
+        offset: int = 0,
+        _=Depends(Accounts.get_current_user)
     ):
         limit = min(limit, DEFAULT_LIMIT)
 
@@ -498,7 +489,7 @@ def init(app):
 
 
     @app.get("/api/tasks/approved/{task_id}", status_code=200)
-    async def get_approved_draft_detail(task_id: str, db: AsyncSession = Depends(get_db)):
+    async def get_approved_draft_detail(task_id: str, db: AsyncSession = Depends(get_db),_=Depends(Accounts.get_current_user)):
         stmt = (
             select(Task)
             .where(Task.task_id == task_id, Task.status == TaskStatus.draft_approved)

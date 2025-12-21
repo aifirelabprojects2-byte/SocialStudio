@@ -7,6 +7,7 @@ from enum import Enum
 from fastapi import Body, FastAPI, Form, Query, Request, Depends, HTTPException, logger, status, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 import json
+import Accounts
 from Database import AttemptStatus, ErrorLog, LLMUsage, Platform, PostAttempt, PublishStatus, TaskStatus, gen_uuid_str, get_db, init_db, Task, GeneratedContent, Media, PlatformSelection
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select, update, delete,desc, case
@@ -79,7 +80,8 @@ def init(app):
         model: Optional[str] = Query(None),
         start_date: Optional[datetime] = Query(None),
         end_date: Optional[datetime] = Query(None),
-        db: AsyncSession = Depends(get_db)
+        db: AsyncSession = Depends(get_db),
+        _=Depends(Accounts.get_current_user)
     ):
         stmt = select(LLMUsage)
         
@@ -128,7 +130,8 @@ def init(app):
         interval: str = Query("day", regex="^(hour|day|month)$"),
         days_back: int = Query(30, ge=1, le=365),
         feature: Optional[str] = Query(None),
-        db: AsyncSession = Depends(get_db)
+        db: AsyncSession = Depends(get_db),
+        _=Depends(Accounts.get_current_user)
     ):
         end_date = datetime.utcnow()
         start_date = end_date - timedelta(days=days_back)
@@ -170,7 +173,8 @@ def init(app):
     async def get_usage_summary(
         days_back: int = Query(30, ge=1, le=365),
         feature: Optional[str] = Query(None),
-        db: AsyncSession = Depends(get_db)
+        db: AsyncSession = Depends(get_db),
+        _=Depends(Accounts.get_current_user)
     ):
         end_date = datetime.utcnow()
         start_date = end_date - timedelta(days=days_back)
@@ -249,3 +253,22 @@ def init(app):
             cost_change_pct=round(cost_change_pct, 1) if cost_change_pct is not None else None,
             token_change_pct=round(token_change_pct, 1) if token_change_pct is not None else None
         )
+        
+    @app.delete("/llm-usage/clear", status_code=status.HTTP_200_OK)
+    async def clear_all_llm_usage(db: AsyncSession = Depends(get_db),_=Depends(Accounts.get_current_user)):
+        try:
+            result = await db.execute(delete(LLMUsage))
+            await db.commit()
+            
+            deleted_count = result.rowcount
+            
+            return {
+                "detail": "All LLM usage records cleared successfully",
+                "deleted_count": deleted_count
+            }
+        except Exception as e:
+            await db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to clear LLM usage: {str(e)}"
+            )

@@ -1,8 +1,10 @@
 # utils/encryption.py  or at the top of main.py
 from cryptography.fernet import Fernet
 import os
+from Configs import FERNET_KEY
 
-FERNET_KEY = os.getenv("FERNET_KEY") 
+
+
 if not FERNET_KEY:
     raise ValueError("FERNET_KEY environment variable is required")
 fernet = Fernet(FERNET_KEY.encode())

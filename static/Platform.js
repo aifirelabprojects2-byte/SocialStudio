@@ -107,13 +107,13 @@ async function openEditPls(namePls, btnElementPls) {
       
         document.getElementById('modalTitlePls').textContent = `Configure ${dataPls.name}`;
         document.getElementById('isActivePls').checked = dataPls.is_active;
-        document.getElementById('expiresAtPls').value = dataPls.expires_at ? dataPls.expires_at.slice(0,16) : '';
+        document.getElementById('expiresAtPls').value = dataPls.expires_at || '';
       
         const fieldsContainerPls = document.getElementById('platformFieldsPls');
         fieldsContainerPls.innerHTML = '';
         const addFieldPls = (labelPls, idPls, typePls = 'text', valuePls = '', isPasswordPls = false) => {
             const divPls = document.createElement('div');
-            let inputHtmlPls = `<input type="${typePls}" id="${idPls}Pls" value="${valuePls || ''}" placeholder="Leave blank to keep unchanged" class="block w-full rounded-2xl border-0 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-black sm:text-sm sm:leading-6 px-3"/>`;
+            let inputHtmlPls = `<input type="${typePls}" id="${idPls}Pls" value="${valuePls || ''}" placeholder="Leave blank to keep unchanged" class="block w-full rounded-2xl border-0 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-black sm:text-sm sm:leading-6 pr-9 px-3"/>`;
             
             if (isPasswordPls) {
               inputHtmlPls = `
@@ -124,8 +124,9 @@ async function openEditPls(namePls, btnElementPls) {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                       </svg>
-                      <svg class="h-4 w-4 text-gray-400 hover:text-gray-600 hidden eye-slash-pls" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                      <svg class="h-4 w-4 text-gray-400 hover:text-gray-600 hidden eye-slash-pls" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M4 4L20 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                      <path fill-rule="evenodd" clip-rule="evenodd" d="M6.22308 5.63732C4.19212 6.89322 2.60069 8.79137 1.73175 11.0474C1.49567 11.6604 1.49567 12.3396 1.73175 12.9526C3.31889 17.0733 7.31641 20 12 20C14.422 20 16.6606 19.2173 18.4773 17.8915L17.042 16.4562C15.6033 17.4309 13.8678 18 12 18C8.17084 18 4.89784 15.6083 3.5981 12.2337C3.54022 12.0835 3.54022 11.9165 3.5981 11.7663C4.36731 9.76914 5.82766 8.11625 7.6854 7.09964L6.22308 5.63732ZM9.47955 8.89379C8.5768 9.6272 7.99997 10.7462 7.99997 12C7.99997 14.2091 9.79083 16 12 16C13.2537 16 14.3728 15.4232 15.1062 14.5204L13.6766 13.0908C13.3197 13.6382 12.7021 14 12 14C10.8954 14 9.99997 13.1046 9.99997 12C9.99997 11.2979 10.3618 10.6802 10.9091 10.3234L9.47955 8.89379ZM15.9627 12.5485L11.4515 8.03729C11.6308 8.0127 11.8139 8 12 8C14.2091 8 16 9.79086 16 12C16 12.1861 15.9873 12.3692 15.9627 12.5485ZM18.5678 15.1536C19.3538 14.3151 19.9812 13.3259 20.4018 12.2337C20.4597 12.0835 20.4597 11.9165 20.4018 11.7663C19.1021 8.39172 15.8291 6 12 6C11.2082 6 10.4402 6.10226 9.70851 6.29433L8.11855 4.70437C9.32541 4.24913 10.6335 4 12 4C16.6835 4 20.681 6.92668 22.2682 11.0474C22.5043 11.6604 22.5043 12.3396 22.2682 12.9526C21.7464 14.3074 20.964 15.5331 19.9824 16.5682L18.5678 15.1536Z" fill="currentColor"/>
                       </svg>
                   </button>
                 </div>

@@ -5,8 +5,6 @@ import enum
 import uuid
 from typing import AsyncGenerator, Optional
 from datetime import datetime
-
-import pytz
 from sqlalchemy import (
     DECIMAL,
     Boolean,
@@ -27,6 +25,12 @@ from sqlalchemy import (
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, sessionmaker,relationship
 from sqlalchemy.exc import SQLAlchemyError
+import pytz
+
+IST = pytz.timezone('Asia/Kolkata')
+
+def ist_now() -> datetime:
+    return datetime.now(IST)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./app.db")
 
@@ -80,7 +84,7 @@ class Platform(Base, SyncBase):
     platform_id = Column(String(36), primary_key=True, default=gen_uuid_str)
     name = Column(String(64), nullable=False, unique=True, index=True)
     api_name = Column(String(128), nullable=True)
-    is_active = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=False)
 
     # Generic
     expires_at = Column(DateTime(timezone=True), nullable=True)
@@ -105,7 +109,7 @@ class Platform(Base, SyncBase):
     bearer_token = Column(Text, nullable=True)
 
     meta = Column(JSON, nullable=True) 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), default=ist_now)
     
 class ImageTheme(Base, SyncBase):
     __tablename__ = "image_theme"
@@ -113,7 +117,7 @@ class ImageTheme(Base, SyncBase):
     theme_id = Column(String(36), primary_key=True, default=gen_uuid_str)
     name = Column(String(64), nullable=False, unique=True, index=True)
     description = Column(Text, nullable=True) 
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), default=ist_now)
 
 class TaskStatus(enum.Enum):
     draft = "draft"
@@ -132,8 +136,8 @@ class Task(Base, SyncBase):
     organization_id = Column(String(36), nullable=True, index=True)
     title = Column(String(255), nullable=True)
     status = Column(SAEnum(TaskStatus, name="task_status"), nullable=False, default=TaskStatus.draft, index=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), default=ist_now)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=ist_now)
     scheduled_at = Column(DateTime(timezone=True), nullable=True, index=True)
     time_zone = Column(String(64), nullable=True)
     notes = Column(Text, nullable=True)
@@ -155,7 +159,7 @@ class GeneratedContent(Base, SyncBase):
     image_generated = Column(Boolean, default=False)
     suggested_posting_time = Column(String(255), nullable=True)  # e.g., "Weekdays 8-10 AM EST"
     meta = Column(JSON, nullable=True)  # model name, tokens, scores etc
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), default=ist_now)
 
     task = relationship("Task", back_populates="generated_contents")
     media = relationship("Media", back_populates="generated_content", cascade="all, delete-orphan")
@@ -175,7 +179,7 @@ class Media(Base, SyncBase):
     checksum = Column(String(128), nullable=True)
     size_bytes = Column(Integer, nullable=True)
     is_generated = Column(Boolean, default=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), default=ist_now)
 
     task = relationship("Task", back_populates="media")
     generated_content = relationship("GeneratedContent", back_populates="media")
@@ -188,7 +192,7 @@ class PlatformSelection(Base, SyncBase):
     platform_id = Column(String(36), ForeignKey("platform.platform_id", ondelete="RESTRICT"), nullable=False, index=True)
     publish_status = Column(SAEnum(PublishStatus, name="publish_status"), nullable=False, default=PublishStatus.pending, index=True)
     scheduled_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), default=ist_now)
 
     task = relationship("Task", back_populates="platform_selections")
     platform = relationship("Platform")
@@ -206,7 +210,7 @@ class LLMUsage(Base, SyncBase):
     cost_usd = Column(DECIMAL(10, 6), nullable=False)
     latency_ms = Column(Integer, nullable=True)
     status = Column(String(20), nullable=False, default="success")
-    created_at = Column( DateTime(timezone=True),server_default=func.now(),nullable=False)
+    created_at = Column( DateTime(timezone=True),server_default=func.now(), default=ist_now,nullable=False)
 
 class PostAttempt(Base, SyncBase):
     __tablename__ = "post_attempt"
@@ -234,7 +238,7 @@ class ErrorLog(Base, SyncBase):
     error_code = Column(String(64), nullable=True)
     message = Column(Text, nullable=True)
     details = Column(JSON, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), default=ist_now)
 
 class User(Base, SyncBase):
     __tablename__ = "user"
@@ -243,7 +247,7 @@ class User(Base, SyncBase):
     username = Column(String(64), nullable=False, unique=True, default="admin")  # fixed username
     password_hash = Column(String(128), nullable=False)   # bcrypt hash
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), default=ist_now)
 
 
 class LoginSession(Base, SyncBase):
@@ -255,16 +259,16 @@ class LoginSession(Base, SyncBase):
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    last_seen_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    last_seen_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=ist_now)
     expires_at = Column(DateTime(timezone=True), nullable=False)  # e.g. 30 days
 
     user = relationship("User")
 
-Index("ix_task_scheduled_at_status", Task.scheduled_at, Task.status)
-Index("ix_generated_content_created_at", GeneratedContent.created_at)
-Index("ix_post_attempt_status_attempted_at", PostAttempt.status, PostAttempt.attempted_at)
-Index("ix_login_session_token", LoginSession.token)
-Index("ix_login_session_expires_at", LoginSession.expires_at)
+# Index("ix_task_scheduled_at_status", Task.scheduled_at, Task.status)
+# Index("ix_generated_content_created_at", GeneratedContent.created_at)
+# Index("ix_post_attempt_status_attempted_at", PostAttempt.status, PostAttempt.attempted_at)
+# Index("ix_login_session_token", LoginSession.token)
+# Index("ix_login_session_expires_at", LoginSession.expires_at)
 
 AsyncSessionLocal = async_sessionmaker(
     bind=async_engine,
@@ -332,8 +336,10 @@ async def seed_platforms_if_missing() -> None:
 async def init_db() -> None:
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)
-    with sync_engine.begin() as conn:
-        SyncBase.metadata.create_all(bind=conn, checkfirst=True)
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(SyncBase.metadata.create_all, checkfirst=True)
+
     await seed_platforms_if_missing()
 
 def get_sync_db():

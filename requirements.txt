@@ -49,3 +49,4 @@ gallery-dl
 eventlet
 tiktoken
 bcrypt
+ipinfo

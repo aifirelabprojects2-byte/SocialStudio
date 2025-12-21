@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logged In Devices Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script src="/static/lucide.js" ></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    colors: {
+                        "secondary": "#64748b",
+                    },
+                    boxShadow: {
+                        "soft": "0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)",
+                        "card": "0 0 0 1px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.05)",
+                    }
+                },
+            },
+        }
+    </script>
+
+</head>
+<body class="bg-gray-50 text-slate-800 font-display antialiased min-h-screen flex flex-col">
+
+<main class="flex-grow py-10 px-4 sm:px-6">
+    <div class="max-w-4xl mx-auto space-y-10">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6 border-b border-gray-200">
+            <div class="space-y-2">
+                <h1 class="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">Logged In Devices</h1>
+                <p class="text-slate-500 text-base max-w-lg leading-relaxed">
+                    Manage sessions and devices connected to your account. Log out of any device you don't recognize.
+                </p>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="loadSess()" class="group bg-gray-100 hover:bg-gray-300 border border-gray text-black px-3 py-1.5 rounded-2xl shadow-slate-900/10 hover:shadow-slate-900/20 transition-all duration-200 flex items-center gap-2 font-medium text-sm flex-none">
+                    <div class=" p-1 rounded-2xl  transition-colors">
+                        <i data-lucide="refresh-cw" class="w-5 h-5 relative z-10"></i>
+                    </div>
+                    
+                </button>
+                <a href="/logout-all" class="group bg-gray-100 hover:bg-gray-300 border border-gray-200 text-black px-3 py-1.5 rounded-2xl shadow-slate-900/10 hover:shadow-slate-900/20 transition-all duration-200 flex items-center gap-2 font-medium text-sm flex-none">
+                    <div class=" p-1 rounded-2xl  transition-colors">
+                        <i data-lucide="log-out" class="w-5 h-5 relative z-10"></i>
+                    </div>
+                    <span>Logout All</span>
+                </a>
+            </div>
+
+        </div>
+
+        <div id="loadingSess" class="text-center py-16">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-slate-600 border-t-transparent"></div>
+            <p class="mt-4 text-slate-500">Loading session data...</p>
+        </div>
+
+        <div id="error" class="hidden bg-gray-100 border border-gray-300 rounded-xl p-5">
+            <div class="flex items-center gap-3">
+                <i data-lucide="bug" class="w-5 h-5 relative z-10"></i>
+                <p class="text-slate-800 font-medium" id="error-text"></p>
+            </div>
+        </div>
+
+        <section id="current-session-section" class="hidden">
+            <div class="flex items-center justify-between mb-4 px-1">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest">Current Session</h2>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-slate-700 border border-gray-300 uppercase tracking-wide">
+                    Online Now
+                </span>
+            </div>
+            <div id="current-session" class="bg-white rounded-2xl p-1 shadow-soft border border-gray-200"></div>
+        </section>
+
+        <!-- Other Active Sessions -->
+        <section id="other-sessions-section" class="hidden">
+            <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 px-1">Other Active Sessions</h2>
+            <div id="other-sessions" class="grid gap-4"></div>
+        </section>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden pt-6 text-center">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+                <i data-lucide="server" class="w-5 h-5 relative z-10"></i>
+            </div>
+            <h3 class="mt-4 text-lg font-semibold text-slate-900">No active sessions</h3>
+            <p class="mt-1 text-sm text-slate-500">You are not logged in to any other devices.</p>
+        </div>
+    </div>
+</main>
+
+<script src="/static/Session.js"></script>
+</body>
+</html>
