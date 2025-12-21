@@ -1441,6 +1441,7 @@
   };
 
   async function handleMainClick() {
+    
       if (menuState.inputMode) {
           const userMessage = chatInput.value.trim();
           chatInput.value = "";
@@ -1498,11 +1499,12 @@
 
 
       } else {
-          toggleMenu();
+          editToggleMenu();
       }
   }
 
-  function toggleMenu() {
+  function editToggleMenu() {
+    console.log("asd");
     menuState.menuOpen = !menuState.menuOpen;
       updateUI();
   }
