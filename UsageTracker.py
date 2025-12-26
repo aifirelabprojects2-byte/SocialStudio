@@ -23,7 +23,7 @@ import itertools
 from gallery_dl import config, job
 import instaloader
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-import numpy as np  # Add this import for percentile calculation
+import numpy as np  
 
 class UsageItem(BaseModel):
     id: str
@@ -127,7 +127,7 @@ def init(app):
 
     @app.get("/api/usage/stats", response_model=List[UsageStat])
     async def get_usage_stats(
-        interval: str = Query("day", regex="^(hour|day|month)$"),
+        interval: str = Query("day", pattern="^(hour|day|month)$"),
         days_back: int = Query(30, ge=1, le=365),
         feature: Optional[str] = Query(None),
         db: AsyncSession = Depends(get_db),

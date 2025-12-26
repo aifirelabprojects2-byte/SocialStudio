@@ -24,6 +24,8 @@ DOWNLOADS_DIR = Path("./downloads")
 DOWNLOADS_DIR.mkdir(exist_ok=True)
 INSTALOADER_AVAILABLE = True
 FFMPEG_AVAILABLE = False
+CONCURRENT_DOWNLOADS = 10  # Limit concurrent heavy downloads for scalability
+download_sem = asyncio.Semaphore(CONCURRENT_DOWNLOADS)
 
 try:
     subprocess.run(["ffmpeg", "-version"], capture_output=True, check=True)
@@ -105,56 +107,57 @@ async def download_x_media(url: str, cookies_file: str = None) -> Tuple[str, Lis
     :param cookies_file: Optional path to cookies.txt for authentication (Netscape format)
     :return: Tuple of status and list of downloaded file paths
     """
-    loop = asyncio.get_event_loop()
-    
-    def _sync_download():
-        old_files = set(str(f) for f in DOWNLOADS_DIR.rglob("*"))
+    async with download_sem:
+        loop = asyncio.get_event_loop()
         
-        # Base directory for downloads
-        config.set((), "base-directory", str(DOWNLOADS_DIR))
-        
-        # Authentication via cookies (critical for many public posts in 2025)
-        if cookies_file:
-            config.set(("extractor", "twitter"), "cookies", cookies_file)
-        
-        # Optional: Better default filename (tweet_id + numbering + extension)
-        # This avoids overwrites for multi-media posts
-        config.set(("extractor", "twitter"), "filename", "{tweet_id}_{num}.{extension}")
-        
-        # No need to set "videos": True — it's the default, so both images & videos download
-        
-        download_job = job.DownloadJob(url)
-        download_job.run()
-        
-        # Detect newly downloaded files
-        new_files = [f for f in DOWNLOADS_DIR.rglob("*") if f.is_file() and str(f) not in old_files]
-        
-        # Rename to avoid conflicts if needed (your original logic)
-        moved_files = []
-        for f in new_files:
-            dest_name = f.name
-            dest = DOWNLOADS_DIR / dest_name
-            counter = 1
-            while dest.exists():
-                if '.' in dest_name:
-                    name, ext = dest_name.rsplit('.', 1)
-                    dest_name = f"{name}_{counter}.{ext}"
-                else:
-                    dest_name = f"{dest_name}_{counter}"
+        def _sync_download():
+            old_files = set(str(f) for f in DOWNLOADS_DIR.rglob("*"))
+            
+            # Base directory for downloads
+            config.set((), "base-directory", str(DOWNLOADS_DIR))
+            
+            # Authentication via cookies (critical for many public posts in 2025)
+            if cookies_file:
+                config.set(("extractor", "twitter"), "cookies", cookies_file)
+            
+            # Optional: Better default filename (tweet_id + numbering + extension)
+            # This avoids overwrites for multi-media posts
+            config.set(("extractor", "twitter"), "filename", "{tweet_id}_{num}.{extension}")
+            
+            # No need to set "videos": True — it's the default, so both images & videos download
+            
+            download_job = job.DownloadJob(url)
+            download_job.run()
+            
+            # Detect newly downloaded files
+            new_files = [f for f in DOWNLOADS_DIR.rglob("*") if f.is_file() and str(f) not in old_files]
+            
+            # Rename to avoid conflicts if needed (your original logic)
+            moved_files = []
+            for f in new_files:
+                dest_name = f.name
                 dest = DOWNLOADS_DIR / dest_name
-                counter += 1
-            if dest != f:  # Only rename if needed
-                f.rename(dest)
-            moved_files.append(dest)
+                counter = 1
+                while dest.exists():
+                    if '.' in dest_name:
+                        name, ext = dest_name.rsplit('.', 1)
+                        dest_name = f"{name}_{counter}.{ext}"
+                    else:
+                        dest_name = f"{dest_name}_{counter}"
+                    dest = DOWNLOADS_DIR / dest_name
+                    counter += 1
+                if dest != f:  # Only rename if needed
+                    f.rename(dest)
+                moved_files.append(dest)
+            
+            return moved_files
         
-        return moved_files
-    
-    downloaded_files = await loop.run_in_executor(None, _sync_download)
-    
-    if downloaded_files:
-        return "success", downloaded_files
-    else:
-        return "no_media_or_error", []
+        downloaded_files = await loop.run_in_executor(None, _sync_download)
+        
+        if downloaded_files:
+            return "success", downloaded_files
+        else:
+            return "no_media_or_error", []
 
 # Instagram image downloader
 def extract_instagram_shortcode(url: str) -> str:
@@ -372,139 +375,146 @@ def get_pytube_stream(yt: YouTube, quality: str, audio_only: bool):
         raise ValueError("No video stream available")
     return stream, "mp4"
 
-async def download_video(url: str, quality: str, audio_only: bool) -> Tuple[str, list, list]:
-    platform = detect_platform(url)
-    loop = asyncio.get_event_loop()
-
-    if platform == "YouTube":
-        def _pytube_download():
-            try:
-                def progress_callback(stream, chunk, bytes_remaining):
-                    pass  # Silent progress
-
-                yt = YouTube(url, on_progress_callback=progress_callback)
-
-                vid_id = yt.video_id
-                raw_title = yt.title
-                safe_title = slugify_filename(raw_title, max_length=90)
-                final_base = f"{safe_title}_{vid_id}"
-
-                stream, ext = get_pytube_stream(yt, quality, audio_only)
-                final_filename = f"{final_base}.{ext}"
-                filepath = DOWNLOADS_DIR / final_filename
-
-                stream.download(output_path=str(DOWNLOADS_DIR), filename=final_filename)
-
-                downloaded = filepath
-                if not downloaded.exists():
-                    matches = list(DOWNLOADS_DIR.glob(f"{final_base}.*"))
-                    if matches:
-                        matches[0].rename(downloaded)
-
-                # Handle MP3 conversion for audio_only if FFMPEG available
-                if audio_only and FFMPEG_AVAILABLE and ext == "m4a":
-                    mp3_path = downloaded.with_suffix(".mp3")
-                    subprocess.run([
-                        "ffmpeg", "-i", str(downloaded),
-                        "-codec:a", "libmp3lame", "-q:a", "2",
-                        str(mp3_path)
-                    ], check=True, capture_output=True)
-                    downloaded.unlink()
-                    final_filename = mp3_path.name
-                    downloaded = mp3_path
-
-                return "success", [str(downloaded)], [final_filename]
-            except Exception as e:
-                raise e
-
-        try:
-            return await loop.run_in_executor(None, _pytube_download)
-        except Exception as e:
-            print(f"Pytube failed for YouTube, falling back to yt-dlp: {e}")
-
-    # yt-dlp logic (for non-YouTube or pytube fallback)
-    base_opts = {
-        "quiet": True,
-        "no_warnings": True,
-        "noplaylist": True,
-        "retries": 20,
-        "fragment_retries": 20,
-        "extractor_retries": 10,
-        "sleep_interval": 3,
-        "max_sleep_interval": 15,
-        "http_headers": get_random_headers(),
-        "geo_bypass": True,
-        "concurrent_fragment_downloads": 3,
-        "continuedl": True,
-        "retries_sleep": 5,
-        "extractor_args": {
-            "youtube": {
-                "player_client": "android",
-                "player_skip": ["webpage", "configs"],
-                "skip": ["dash"]
-            }
-        },
-    }
-
-    cookies_path = Path("cookies.txt")
-    if cookies_path.exists():
-        base_opts["cookiefile"] = str(cookies_path)
-    else:
-        try:
-            base_opts["cookiefile"] = yt_dlp.utils.browser_cookie_file()
-        except:
-            pass
-
+def _extract_info(url: str, base_opts: dict):
     with yt_dlp.YoutubeDL(base_opts) as ydl:
-        info = loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
+        return ydl.extract_info(url, download=False)
 
-    if not info:
-        raise HTTPException(status_code=400, detail="Failed to extract video info")
+def _do_yt_dlp_download(url: str, download_opts: dict):
+    with yt_dlp.YoutubeDL(download_opts) as ydl:
+        ydl.download([url])
 
-    raw_title = info.get("title", "video")
-    vid_id = info.get("id", "unknown")[:11]
-    safe_title = slugify_filename(raw_title, max_length=90)
-    final_base = f"{safe_title}_{vid_id}"
+async def download_video(url: str, quality: str, audio_only: bool) -> Tuple[str, list, list]:
+    async with download_sem:
+        platform = detect_platform(url)
+        loop = asyncio.get_event_loop()
 
-    ext = "mp3" if audio_only and FFMPEG_AVAILABLE else "m4a" if audio_only else "mp4"
-    final_filename = f"{final_base}.{ext}"
-    filepath = DOWNLOADS_DIR / final_filename
+        if platform == "YouTube":
+            def _pytube_download():
+                try:
+                    def progress_callback(stream, chunk, bytes_remaining):
+                        pass  # Silent progress
 
-    download_opts = base_opts.copy()
-    download_opts.update({
-        "format": get_ydl_format(quality, audio_only)["format"],
-        "outtmpl": str(filepath.with_suffix(".%(ext)s")),
-        "merge_output_format": "mp4" if not audio_only and FFMPEG_AVAILABLE else None,
-        "postprocessors": [{
-            "key": "FFmpegExtractAudio",
-            "preferredcodec": "mp3",
-            "preferredquality": "192",
-        }] if audio_only and FFMPEG_AVAILABLE else [],
-        "http_headers": get_random_headers(),
-    })
+                    yt = YouTube(url, on_progress_callback=progress_callback)
 
-    try:
-        with yt_dlp.YoutubeDL(download_opts) as ydl:
-            loop.run_in_executor(None, lambda: ydl.download([url]))
-        
-        if not filepath.exists():
-            matches = list(DOWNLOADS_DIR.glob(f"{final_base}.*"))
-            if matches:
-                matches[0].rename(filepath)
+                    vid_id = yt.video_id
+                    raw_title = yt.title
+                    safe_title = slugify_filename(raw_title, max_length=90)
+                    final_base = f"{safe_title}_{vid_id}"
 
-        file_paths = [str(filepath)]
-        file_names = [final_filename]
-        return "success", file_paths, file_names
+                    stream, ext = get_pytube_stream(yt, quality, audio_only)
+                    final_filename = f"{final_base}.{ext}"
+                    filepath = DOWNLOADS_DIR / final_filename
 
-    except yt_dlp.utils.DownloadError as e:
-        error_msg = str(e)
-        if "Sign in to confirm you're not a bot" in error_msg:
-            raise HTTPException(status_code=429, detail="Bot detection triggered. Update your cookies.txt")
-        if "Private video" in error_msg or "unavailable" in error_msg.lower():
-            raise HTTPException(status_code=400, detail="Video is private or region-locked")
-        raise HTTPException(status_code=500, detail=f"Download failed: {error_msg}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+                    stream.download(output_path=str(DOWNLOADS_DIR), filename=final_filename)
+
+                    downloaded = filepath
+                    if not downloaded.exists():
+                        matches = list(DOWNLOADS_DIR.glob(f"{final_base}.*"))
+                        if matches:
+                            matches[0].rename(downloaded)
+
+                    # Handle MP3 conversion for audio_only if FFMPEG available
+                    if audio_only and FFMPEG_AVAILABLE and ext == "m4a":
+                        mp3_path = downloaded.with_suffix(".mp3")
+                        subprocess.run([
+                            "ffmpeg", "-i", str(downloaded),
+                            "-codec:a", "libmp3lame", "-q:a", "2",
+                            str(mp3_path)
+                        ], check=True, capture_output=True)
+                        downloaded.unlink()
+                        final_filename = mp3_path.name
+                        downloaded = mp3_path
+
+                    return "success", [str(downloaded)], [final_filename]
+                except Exception as e:
+                    raise e
+
+            try:
+                return await loop.run_in_executor(None, _pytube_download)
+            except Exception as e:
+                print(f"Pytube failed for YouTube, falling back to yt-dlp: {e}")
+
+        # yt-dlp logic (for non-YouTube or pytube fallback)
+        base_opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "noplaylist": True,
+            "retries": 20,
+            "fragment_retries": 20,
+            "extractor_retries": 10,
+            "sleep_interval": 3,
+            "max_sleep_interval": 15,
+            "http_headers": get_random_headers(),
+            "geo_bypass": True,
+            "concurrent_fragment_downloads": 3,
+            "continuedl": True,
+            "retries_sleep": 5,
+            "extractor_args": {
+                "youtube": {
+                    "player_client": "android",
+                    "player_skip": ["webpage", "configs"],
+                    "skip": ["dash"]
+                }
+            },
+        }
+
+        cookies_path = Path("cookies.txt")
+        if cookies_path.exists():
+            base_opts["cookiefile"] = str(cookies_path)
+        else:
+            try:
+                base_opts["cookiefile"] = yt_dlp.utils.browser_cookie_file()
+            except:
+                pass
+
+        info = await loop.run_in_executor(None, _extract_info, url, base_opts)
+
+        if not info:
+            raise HTTPException(status_code=400, detail="Failed to extract video info")
+
+        raw_title = info.get("title", "video")
+        vid_id = info.get("id", "unknown")[:11]
+        safe_title = slugify_filename(raw_title, max_length=90)
+        final_base = f"{safe_title}_{vid_id}"
+
+        ext = "mp3" if audio_only and FFMPEG_AVAILABLE else "m4a" if audio_only else "mp4"
+        final_filename = f"{final_base}.{ext}"
+        filepath = DOWNLOADS_DIR / final_filename
+
+        download_opts = base_opts.copy()
+        download_opts.update({
+            "format": get_ydl_format(quality, audio_only)["format"],
+            "outtmpl": str(filepath.with_suffix(".%(ext)s")),
+            "merge_output_format": "mp4" if not audio_only and FFMPEG_AVAILABLE else None,
+            "postprocessors": [{
+                "key": "FFmpegExtractAudio",
+                "preferredcodec": "mp3",
+                "preferredquality": "192",
+            }] if audio_only and FFMPEG_AVAILABLE else [],
+            "http_headers": get_random_headers(),
+        })
+
+        try:
+            await loop.run_in_executor(None, _do_yt_dlp_download, url, download_opts)
+            
+            if not filepath.exists():
+                matches = list(DOWNLOADS_DIR.glob(f"{final_base}.*"))
+                if matches:
+                    matches[0].rename(filepath)
+
+            file_paths = [str(filepath)]
+            file_names = [final_filename]
+            return "success", file_paths, file_names
+
+        except yt_dlp.utils.DownloadError as e:
+            error_msg = str(e)
+            if "Sign in to confirm you're not a bot" in error_msg:
+                raise HTTPException(status_code=429, detail="Bot detection triggered. Update your cookies.txt")
+            if "Private video" in error_msg or "unavailable" in error_msg.lower():
+                raise HTTPException(status_code=400, detail="Video is private or region-locked")
+            raise HTTPException(status_code=500, detail=f"Download failed: {error_msg}")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
     
 def init(app):
     @app.post("/download", response_model=dict)
