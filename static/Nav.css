@@ -111,6 +111,21 @@ width: 6px;
 height: 6px; 
 }
 
+/* Always show icons on mobile, hide on desktop */
+.nav-icon {
+    display: none; /* Hidden by default (desktop) */
+    color: var(--text-muted);
+    transition: color 0.3s ease;
+}
+
+.pill-nav-item.active .nav-icon {
+    color: #000;
+}
+
+.logo-sec ,.toolsmn{
+    display: flex;
+}
+
 @media (max-width: 768px) {
     .tab-content {
         padding: 0;
@@ -118,8 +133,8 @@ height: 6px;
 }
 /* Hide text on mobile */
 @media (max-width: 768px) {
-    .logo-text {
-        display: none; /* Hide "AI Social Studio" text */
+    .logo-sec {
+        display: none; 
     }
 
     .nav-text {
@@ -166,22 +181,9 @@ height: 6px;
     }
 }
 
-/* Always show icons on mobile, hide on desktop */
-.nav-icon {
-    display: none; /* Hidden by default (desktop) */
-    color: var(--text-muted);
-    transition: color 0.3s ease;
-}
 
-.pill-nav-item.active .nav-icon {
-    color: #000;
-}
 
-.toolsmn{
-    display: flex;
-}
 
-/* On mobile, show icons */
 @media (max-width: 768px) {
     .nav-icon {
         display: block;
