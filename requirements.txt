@@ -50,3 +50,7 @@ eventlet
 tiktoken
 bcrypt
 ipinfo
+moviepy
+pytubefix
+pytube
+moviepy

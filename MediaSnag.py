@@ -6,7 +6,7 @@ import aiohttp
 from pydantic import BaseModel
 import yt_dlp
 from datetime import datetime
-from typing import List, AsyncGenerator, Dict, Any, Annotated, Optional, Literal, Tuple
+from typing import List, Optional,  Tuple
 from pathlib import Path
 from enum import Enum
 from fastapi import Body, Cookie, FastAPI, Form, Query, Request, Depends, HTTPException, logger, status, UploadFile, File
@@ -16,6 +16,7 @@ import itertools
 from gallery_dl import config, job
 import instaloader
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+from pytubefix import YouTube
 
 import Accounts
 
@@ -96,18 +97,39 @@ def slugify_filename(text: str, max_length: int = 100) -> str:
     
     return text
 
-async def download_x_images(url: str) -> Tuple[str, list]:
-
+async def download_x_media(url: str, cookies_file: str = None) -> Tuple[str, List[Path]]:
+    """
+    Download both images and videos from an X/Twitter post URL.
+    
+    :param url: The X post URL (e.g., https://x.com/username/status/1234567890)
+    :param cookies_file: Optional path to cookies.txt for authentication (Netscape format)
+    :return: Tuple of status and list of downloaded file paths
+    """
     loop = asyncio.get_event_loop()
     
     def _sync_download():
         old_files = set(str(f) for f in DOWNLOADS_DIR.rglob("*"))
-        config.set(("extractor", "twitter"), "videos", False)
+        
+        # Base directory for downloads
         config.set((), "base-directory", str(DOWNLOADS_DIR))
+        
+        # Authentication via cookies (critical for many public posts in 2025)
+        if cookies_file:
+            config.set(("extractor", "twitter"), "cookies", cookies_file)
+        
+        # Optional: Better default filename (tweet_id + numbering + extension)
+        # This avoids overwrites for multi-media posts
+        config.set(("extractor", "twitter"), "filename", "{tweet_id}_{num}.{extension}")
+        
+        # No need to set "videos": True — it's the default, so both images & videos download
+        
         download_job = job.DownloadJob(url)
         download_job.run()
+        
+        # Detect newly downloaded files
         new_files = [f for f in DOWNLOADS_DIR.rglob("*") if f.is_file() and str(f) not in old_files]
         
+        # Rename to avoid conflicts if needed (your original logic)
         moved_files = []
         for f in new_files:
             dest_name = f.name
@@ -121,14 +143,18 @@ async def download_x_images(url: str) -> Tuple[str, list]:
                     dest_name = f"{dest_name}_{counter}"
                 dest = DOWNLOADS_DIR / dest_name
                 counter += 1
-            f.rename(dest)
+            if dest != f:  # Only rename if needed
+                f.rename(dest)
             moved_files.append(dest)
         
         return moved_files
     
     downloaded_files = await loop.run_in_executor(None, _sync_download)
     
-    return "success", downloaded_files
+    if downloaded_files:
+        return "success", downloaded_files
+    else:
+        return "no_media_or_error", []
 
 # Instagram image downloader
 def extract_instagram_shortcode(url: str) -> str:
@@ -314,9 +340,89 @@ def get_ydl_format(quality: str, audio_only: bool) -> dict:
     else:
         return {"format": f"{fmt}[ext=mp4]/{fmt}"}
 
+def get_pytube_stream(yt: YouTube, quality: str, audio_only: bool):
+    if audio_only:
+        stream = yt.streams.get_audio_only()
+        if not stream:
+            raise ValueError("No audio stream available")
+        return stream, "m4a"
+
+    res_map = {
+        "best": None,
+        "720p": 720,
+        "1080p": 1080,
+        "4k": 2160
+    }
+    target_height = res_map.get(quality)
+    if target_height is None:
+        stream = yt.streams.get_highest_resolution()
+        if not stream:
+            raise ValueError("No video stream available")
+        return stream, "mp4"
+
+    # Get best progressive stream <= target height
+    streams = yt.streams.filter(progressive=True, file_extension='mp4').order_by('height').desc()
+    for stream in streams:
+        if stream.height and stream.height <= target_height:
+            return stream, "mp4"
+
+    # Fallback to highest resolution
+    stream = yt.streams.get_highest_resolution()
+    if not stream:
+        raise ValueError("No video stream available")
+    return stream, "mp4"
+
 async def download_video(url: str, quality: str, audio_only: bool) -> Tuple[str, list, list]:
+    platform = detect_platform(url)
     loop = asyncio.get_event_loop()
 
+    if platform == "YouTube":
+        def _pytube_download():
+            try:
+                def progress_callback(stream, chunk, bytes_remaining):
+                    pass  # Silent progress
+
+                yt = YouTube(url, on_progress_callback=progress_callback)
+
+                vid_id = yt.video_id
+                raw_title = yt.title
+                safe_title = slugify_filename(raw_title, max_length=90)
+                final_base = f"{safe_title}_{vid_id}"
+
+                stream, ext = get_pytube_stream(yt, quality, audio_only)
+                final_filename = f"{final_base}.{ext}"
+                filepath = DOWNLOADS_DIR / final_filename
+
+                stream.download(output_path=str(DOWNLOADS_DIR), filename=final_filename)
+
+                downloaded = filepath
+                if not downloaded.exists():
+                    matches = list(DOWNLOADS_DIR.glob(f"{final_base}.*"))
+                    if matches:
+                        matches[0].rename(downloaded)
+
+                # Handle MP3 conversion for audio_only if FFMPEG available
+                if audio_only and FFMPEG_AVAILABLE and ext == "m4a":
+                    mp3_path = downloaded.with_suffix(".mp3")
+                    subprocess.run([
+                        "ffmpeg", "-i", str(downloaded),
+                        "-codec:a", "libmp3lame", "-q:a", "2",
+                        str(mp3_path)
+                    ], check=True, capture_output=True)
+                    downloaded.unlink()
+                    final_filename = mp3_path.name
+                    downloaded = mp3_path
+
+                return "success", [str(downloaded)], [final_filename]
+            except Exception as e:
+                raise e
+
+        try:
+            return await loop.run_in_executor(None, _pytube_download)
+        except Exception as e:
+            print(f"Pytube failed for YouTube, falling back to yt-dlp: {e}")
+
+    # yt-dlp logic (for non-YouTube or pytube fallback)
     base_opts = {
         "quiet": True,
         "no_warnings": True,
@@ -350,7 +456,7 @@ async def download_video(url: str, quality: str, audio_only: bool) -> Tuple[str,
             pass
 
     with yt_dlp.YoutubeDL(base_opts) as ydl:
-        info = await loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
+        info = loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
 
     if not info:
         raise HTTPException(status_code=400, detail="Failed to extract video info")
@@ -379,7 +485,7 @@ async def download_video(url: str, quality: str, audio_only: bool) -> Tuple[str,
 
     try:
         with yt_dlp.YoutubeDL(download_opts) as ydl:
-            await loop.run_in_executor(None, lambda: ydl.download([url]))
+            loop.run_in_executor(None, lambda: ydl.download([url]))
         
         if not filepath.exists():
             matches = list(DOWNLOADS_DIR.glob(f"{final_base}.*"))
@@ -423,7 +529,7 @@ def init(app):
             except Exception as e:
                 print(f"X video download failed, trying images: {e}")
                 try:
-                    status, files = await download_x_images(request.url)
+                    status, files = await download_x_media(request.url)
                     file_paths = [str(f) for f in files]
                     file_names = [f.name for f in files]
                     download_urls = [f"/downloads/{name}" for name in file_names]
@@ -461,9 +567,6 @@ def init(app):
                 print(f"Instagram images skipped (video detected): {ve} – falling back to yt-dlp")
             except Exception as e:
                 print(f"Instagram images failed, falling back to yt-dlp: {e}")
-            # Fall through to yt-dlp below
-        
-        # Use yt-dlp for other platforms or as fallback
         try:
             status, file_paths, file_names = await download_video(request.url, request.quality, request.audio_only)
             download_urls = [f"/downloads/{name}" for name in file_names]
@@ -482,4 +585,3 @@ def init(app):
             raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")
-        

@@ -14,6 +14,7 @@ import ManagePlatform
 import ErrorLogs
 import Accounts
 import ScheduledTasks
+import VideoTempBuilder
 import os
 from starlette.status import HTTP_303_SEE_OTHER
 from datetime import datetime
@@ -89,4 +90,5 @@ TextFormatter.init(app)
 ErrorLogs.init(app)
 ManualPost.init(app)
 ScheduledTasks.init(app)
+VideoTempBuilder.init(app)
 # TaskScheduler.init(app)

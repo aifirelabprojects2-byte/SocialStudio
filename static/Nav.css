@@ -107,5 +107,86 @@ width: 6px;
 height: 6px; 
 }
 
+@media (max-width: 768px) {
+    .tab-content {
+        padding: 0;
+    }
+}
+/* Hide text on mobile */
+@media (max-width: 768px) {
+    .logo-text {
+        display: none; /* Hide "AI Social Studio" text */
+    }
 
+    .nav-text {
+        display: none; /* Hide nav item text */
+    }
 
+    .pill-nav-item {
+        padding: 10px 16px; /* Comfortable touch target */
+        min-width: 48px;    /* Minimum touch size */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .nav-icon {
+        display: block;
+    }
+
+    .nav-header {
+        padding: 5px 16px;
+    }
+
+    /* Make nav list centered and spaced nicely */
+    .nav-list {
+        gap: 8px;
+        justify-content: center;
+    }
+
+    /* Reduce right-side buttons size */
+    .nav-header > div:last-child button {
+        padding: 8px;
+    }
+
+    .tab-content {
+        padding: 16px 20px 40px 20px;
+    }
+}
+
+/* Desktop: ensure icons are hidden when text is shown (optional cleaner look) */
+@media (min-width: 769px) {
+    .nav-icon {
+        display: none;
+    }
+
+    .pill-nav-item {
+        padding: 8px 24px; /* Restore original */
+    }
+}
+
+/* Always show icons on mobile, hide on desktop */
+.nav-icon {
+    display: none; /* Hidden by default (desktop) */
+    color: var(--text-muted);
+    transition: color 0.3s ease;
+}
+
+.pill-nav-item.active .nav-icon {
+    color: #000;
+}
+
+.toolsmn{
+    display: flex;
+}
+
+/* On mobile, show icons */
+@media (max-width: 768px) {
+    .nav-icon {
+        display: block;
+        pointer-events: none;
+    }
+    .toolsmn{
+        display: none;
+    }
+}
