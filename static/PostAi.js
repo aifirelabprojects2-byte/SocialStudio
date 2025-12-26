@@ -82,58 +82,51 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
        grid.className = `grid gap-6 grid-cols-3`; 
        grid.innerHTML="";
        grid.innerHTML=`
-                        <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-pulse">
-                          <div class="relative h-48 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
-                          <div class="flex flex-1 flex-col justify-between p-5">
-                            <div>
-                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
-                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
+                        <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 animate-pulse">
+                                <div class="relative h-56 sm:h-64 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
+                                <div class="flex flex-1 flex-col justify-between p-5 sm:p-6">
+                                    <div>
+                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
+                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
+                                    </div>
+                                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                                        <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
+                                        <div class="flex items-center gap-1.5">
+                                            <div class="h-9 w-20 bg-gray-200 dark:bg-slate-700 rounded-xl skeletonPlatform-loader"></div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                              <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
-                              <div class="flex items-center gap-1.5">
-                                <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-12 skeletonPlatform-loader"></div>
-                                <div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded skeletonPlatform-loader"></div>
-                              </div>
+                            <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 animate-pulse">
+                                <div class="relative h-56 sm:h-64 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
+                                <div class="flex flex-1 flex-col justify-between p-5 sm:p-6">
+                                    <div>
+                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
+                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
+                                    </div>
+                                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                                        <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
+                                        <div class="flex items-center gap-1.5">
+                                            <div class="h-9 w-20 bg-gray-200 dark:bg-slate-700 rounded-xl skeletonPlatform-loader"></div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                          </div>
-                        </div>
-
-                        <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-pulse">
-                          <div class="relative h-48 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
-                          <div class="flex flex-1 flex-col justify-between p-5">
-                            <div>
-                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
-                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
-                            </div>
-                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                              <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
-                              <div class="flex items-center gap-1.5">
-                                <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-12 skeletonPlatform-loader"></div>
-                                <div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded skeletonPlatform-loader"></div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        
-
-                        <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-pulse">
-                          <div class="relative h-48 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
-                          <div class="flex flex-1 flex-col justify-between p-5">
-                            <div>
-                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
-                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
-                            </div>
-                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                              <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
-                              <div class="flex items-center gap-1.5">
-                                <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-12 skeletonPlatform-loader"></div>
-                                <div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded skeletonPlatform-loader"></div>
-                              </div>
-                            </div>
-                          </div>
-                      </div>`;
+                            <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 animate-pulse">
+                                <div class="relative h-56 sm:h-64 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
+                                <div class="flex flex-1 flex-col justify-between p-5 sm:p-6">
+                                    <div>
+                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
+                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
+                                    </div>
+                                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                                        <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
+                                        <div class="flex items-center gap-1.5">
+                                            <div class="h-9 w-20 bg-gray-200 dark:bg-slate-700 rounded-xl skeletonPlatform-loader"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>`;
       
         currentDraftOffset = offset;
       try {
@@ -164,39 +157,40 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
           PaginBtns.classList.remove('hidden');
   
           const newColClass = getGridColsClass(tasks.length);
-          
-          // Note: Tailwind classes are preserved, assuming no drafts grid needs to be empty/hidden
+
           grid.className = `grid gap-6 ${newColClass}`; 
-  
-          // --- Render Drafts (mapping HTML remains the same) ---
+
           grid.innerHTML = tasks.map(task => `
-          <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition-all duration-200 cursor-pointer overflow-hidden"
-              onclick="openPostUiModalGfr('${task.task_id}')">
-              
-              <div class="relative h-48 w-full overflow-hidden">
-                  ${getImageHtmlWithLoader(task.media_url, 'Post Preview', 'h-full w-full object-cover transition-transform duration-500 group-hover:scale-105')}
-              </div>
-              
-              <div class="flex flex-1 flex-col justify-between p-5">
-                <div>
-                   <h3 class="text-sm font-semibold text-slate-900 dark:text-white line-clamp-2 mb-2">
-                      ${task.caption_preview || task.title || 'Untitled Draft'}
-                   </h3>
-                   
+            <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 transition-all duration-300 cursor-pointer overflow-hidden shadow-sm hover:shadow-xl"
+                 onclick="openPostUiModalGfr('${task.task_id}')">
+                
+                <div class="relative h-56 sm:h-64 w-full overflow-hidden bg-slate-100 dark:bg-slate-700">
+                    ${getImageHtmlWithLoader(task.media_url, 'Post Preview', 'h-full w-full object-cover transition-transform duration-500 group-hover:scale-105')}
                 </div>
                 
-                <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                   <span class="text-xs font-medium text-slate-400">
-                      ${new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                   </span>
-                   <button id="editBtnDrf-${task.task_id}" class=" text-gray-600 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl border  border-gray-200 transition-all duration-200 inline-flex gap-1 items-center  hover:shadow-medium" >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="ml-1"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                    Edit
-                    </button>
+                <div class="flex flex-1 flex-col justify-between p-5 sm:p-6">
+                    <div>
+                        <h3 class="text-base sm:text-lg font-semibold text-slate-900 dark:text-white line-clamp-2 mb-2">
+                            ${task.caption_preview || task.title || 'Untitled Draft'}
+                        </h3>
+                    </div>
+                    
+                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                        <span class="text-sm font-medium text-slate-500 dark:text-slate-400">
+                            ${new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                        <button id="editBtnDrf-${task.task_id}" 
+                                class="text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 transition-all duration-200 inline-flex items-center gap-2 hover:shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                            Edit
+                        </button>
+                    </div>
                 </div>
-              </div>
-          </div>
-          `).join('');
+            </div>
+        `).join('');
           
           // --- Handle Pagination Buttons (Updated Logic) ---
   

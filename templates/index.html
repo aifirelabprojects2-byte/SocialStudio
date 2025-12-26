@@ -443,108 +443,104 @@ input[type="color"]::-webkit-color-swatch { border: none; border-radius: 0.25rem
                     </section>
                 
 
-                  <section class="min-h-[20rem] ">
-                    <div class="flex mb-6 px-1">
-                      <h2 class="text-2xl flex items-center font-semibold tracking-tight text-slate-900 dark:text-white w-full">
-                        <div class="mr-3">Recent Drafts</div>
-                        
-                        <div id="draftCount" class="inline-flex items-center  rounded-full bg-slate-100 dark:bg-slate-700 px-2.5 py-0.5 text-sm font-medium text-slate-800 dark:text-slate-300">0</div>
-                      </h2>
+                    <section class="min-h-[20rem] py-6 sm:py-8">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4 px-1">
+                            <h2 class="text-2xl sm:text-3xl flex items-center font-semibold tracking-tight text-slate-900 dark:text-white">
+                                <div class="mr-3">Recent Drafts</div>
+                                <div id="draftCount" class="inline-flex items-center rounded-full bg-slate-100 dark:bg-slate-700 px-2.5 py-0.5 text-sm font-medium text-slate-800 dark:text-slate-300">
+                                    0
+                                </div>
+                            </h2>
                     
-                      <button onclick="loadDrafts()" class="refresh-button group text-gray-600 hover:text-gray-500">
-                        <svg class="w-6 h-6 transition-transform duration-500 ease-out group-hover:rotate-360"  viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M13.5 4.5H12.5C8.08172 4.5 4.5 8.08172 4.5 12.5C4.5 15.6631 6.33576 18.3975 9 19.6958M11.5 20.5H12.5C16.9183 20.5 20.5 16.9183 20.5 12.5C20.5 9.33688 18.6642 6.60253 16 5.30423" stroke="currentColor" stroke-width="2"/>
-                          <path d="M14 17.5619L11.5 20.5L14.5 23.0619M11 7.43811L13.5 4.50001L10.5 1.93811" stroke="currentColor" stroke-width="2"/>
-                          </svg>
-                      </button>
-                    </div>
-                      
-                    <div id="draftsGrid" class="grid gap-6 grid-cols-3">
-
-                        <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-pulse">
-                          <div class="relative h-48 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
-                          <div class="flex flex-1 flex-col justify-between p-5">
-                            <div>
-                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
-                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
-                            </div>
-                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                              <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
-                              <div class="flex items-center gap-1.5">
-                                <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-12 skeletonPlatform-loader"></div>
-                                <div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded skeletonPlatform-loader"></div>
-                              </div>
-                            </div>
-                          </div>
+                            <button onclick="loadDrafts()" class="refresh-button group p-2 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                                <svg class="w-6 h-6 text-slate-600 dark:text-slate-300 transition-transform duration-500 ease-out group-hover:rotate-360" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M13.5 4.5H12.5C8.08172 4.5 4.5 8.08172 4.5 12.5C4.5 15.6631 6.33576 18.3975 9 19.6958M11.5 20.5H12.5C16.9183 20.5 20.5 16.9183 20.5 12.5C20.5 9.33688 18.6642 6.60253 16 5.30423" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M14 17.5619L11.5 20.5L14.5 23.0619M11 7.43811L13.5 4.50001L10.5 1.93811" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </button>
                         </div>
 
+                        <div id="draftsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 animate-pulse">
+                                <div class="relative h-56 sm:h-64 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
+                                <div class="flex flex-1 flex-col justify-between p-5 sm:p-6">
+                                    <div>
+                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
+                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
+                                    </div>
+                                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                                        <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
+                                        <div class="flex items-center gap-1.5">
+                                            <div class="h-9 w-20 bg-gray-200 dark:bg-slate-700 rounded-xl skeletonPlatform-loader"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 animate-pulse">
+                                <div class="relative h-56 sm:h-64 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
+                                <div class="flex flex-1 flex-col justify-between p-5 sm:p-6">
+                                    <div>
+                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
+                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
+                                    </div>
+                                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                                        <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
+                                        <div class="flex items-center gap-1.5">
+                                            <div class="h-9 w-20 bg-gray-200 dark:bg-slate-700 rounded-xl skeletonPlatform-loader"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 animate-pulse">
+                                <div class="relative h-56 sm:h-64 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
+                                <div class="flex flex-1 flex-col justify-between p-5 sm:p-6">
+                                    <div>
+                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
+                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
+                                    </div>
+                                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                                        <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
+                                        <div class="flex items-center gap-1.5">
+                                            <div class="h-9 w-20 bg-gray-200 dark:bg-slate-700 rounded-xl skeletonPlatform-loader"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                    
 
-                        <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-pulse">
-                          <div class="relative h-48 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
-                          <div class="flex flex-1 flex-col justify-between p-5">
-                            <div>
-                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
-                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
-                            </div>
-                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                              <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
-                              <div class="flex items-center gap-1.5">
-                                <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-12 skeletonPlatform-loader"></div>
-                                <div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded skeletonPlatform-loader"></div>
-                              </div>
-                            </div>
-                          </div>
                         </div>
-
-                        <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden animate-pulse">
-                          <div class="relative h-48 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
-                          <div class="flex flex-1 flex-col justify-between p-5">
-                            <div>
-                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
-                              <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
+                    
+                        <!-- No Drafts State -->
+                        <div id="noDrafts" class="hidden flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-2xl bg-slate-50/50 dark:bg-slate-800/50">
+                            <div class="p-4 bg-slate-100 dark:bg-slate-700 rounded-full mb-5">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
                             </div>
-                            <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                              <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
-                              <div class="flex items-center gap-1.5">
-                                <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-12 skeletonPlatform-loader"></div>
-                                <div class="h-4 w-4 bg-gray-200 dark:bg-slate-700 rounded skeletonPlatform-loader"></div>
-                              </div>
-                            </div>
-                          </div>
+                            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">No drafts found</h3>
+                            <p class="mt-2 text-sm text-slate-600 dark:text-slate-400 max-w-xs">Get started by generating your first post above.</p>
                         </div>
-                    </div>
-
-                    <div id="noDrafts" class="hidden flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
-                      <div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-full mb-4">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                        </svg>
-                      </div>
-                      <h3 class="text-sm font-semibold text-slate-900 dark:text-white">No drafts found</h3>
-                      <p class="mt-1 text-sm text-gray-600">Get started by generating your first post above.</p>
-                    </div>
-                      
-                    <div id="PaginBtns" class="flex justify-center mt-8 space-x-6 font-sans hidden">
-                      <button id="prevDrafts" 
-                              class="flex items-center px-6 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl shadow-md 
-                                     hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 ease-in-out"
-                              disabled>
-                          <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path fill-rule="evenodd" clip-rule="evenodd" d="M11.7071 4.29289C12.0976 4.68342 12.0976 5.31658 11.7071 5.70711L6.41421 11H20C20.5523 11 21 11.4477 21 12C21 12.5523 20.5523 13 20 13H6.41421L11.7071 18.2929C12.0976 18.6834 12.0976 19.3166 11.7071 19.7071C11.3166 20.0976 10.6834 20.0976 10.2929 19.7071L3.29289 12.7071C3.10536 12.5196 3 12.2652 3 12C3 11.7348 3.10536 11.4804 3.29289 11.2929L10.2929 4.29289C10.6834 3.90237 11.3166 3.90237 11.7071 4.29289Z" fill="currentColor"/>
-                          </svg>
-                          Newer Drafts
-                      </button>
-                      
-                      <button id="nextDrafts" 
-                              class="flex items-center px-6 py-2 text-sm font-semibold text-white bg-gray-600 rounded-xl shadow-md 
-                                     hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 ease-in-out">
-                          Older Drafts 
-                          <svg class="w-5 h-5 ml-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path fill-rule="evenodd" clip-rule="evenodd" d="M12.2929 4.29289C12.6834 3.90237 13.3166 3.90237 13.7071 4.29289L20.7071 11.2929C21.0976 11.6834 21.0976 12.3166 20.7071 12.7071L13.7071 19.7071C13.3166 20.0976 12.6834 20.0976 12.2929 19.7071C11.9024 19.3166 11.9024 18.6834 12.2929 18.2929L17.5858 13H4C3.44772 13 3 12.5523 3 12C3 11.4477 3.44772 11 4 11H17.5858L12.2929 5.70711C11.9024 5.31658 11.9024 4.68342 12.2929 4.29289Z" fill="currentColor"/>
-                          </svg>
-                      </button>
-                  </div>
-                  </section>
+                    
+                        <!-- Pagination -->
+                        <div id="PaginBtns" class="flex flex-col sm:flex-row justify-center items-center mt-10 gap-4 font-sans hidden">
+                            <button id="prevDrafts" 
+                                    class="w-full sm:w-auto flex items-center justify-center px-6 py-3 text-sm font-semibold text-gray-700 bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-xl shadow-md hover:bg-gray-50 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                                    disabled>
+                                <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M11.7071 4.29289C12.0976 4.68342 12.0976 5.31658 11.7071 5.70711L6.41421 11H20C20.5523 11 21 11.4477 21 12C21 12.5523 20.5523 13 20 13H6.41421L11.7071 18.2929C12.0976 18.6834 12.0976 19.3166 11.7071 19.7071C11.3166 20.0976 10.6834 20.0976 10.2929 19.7071L3.29289 12.7071C3.10536 12.5196 3 12.2652 3 12C3 11.7348 3.10536 11.4804 3.29289 11.2929L10.2929 4.29289C10.6834 3.90237 11.3166 3.90237 11.7071 4.29289Z" fill="currentColor"/>
+                                </svg>
+                                Newer Drafts
+                            </button>
+                    
+                            <button id="nextDrafts" 
+                                    class="w-full sm:w-auto flex items-center justify-center px-6 py-3 text-sm font-semibold text-white bg-gray-800 dark:bg-slate-600 rounded-xl shadow-md hover:bg-gray-900 dark:hover:bg-slate-500 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200">
+                                Older Drafts 
+                                <svg class="w-5 h-5 ml-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12.2929 4.29289C12.6834 3.90237 13.3166 3.90237 13.7071 4.29289L20.7071 11.2929C21.0976 11.6834 21.0976 12.3166 20.7071 12.7071L13.7071 19.7071C13.3166 20.0976 12.6834 20.0976 12.2929 19.7071C11.9024 19.3166 11.9024 18.6834 12.2929 18.2929L17.5858 13H4C3.44772 13 3 12.5523 3 12C3 11.4477 3.44772 11 4 11H17.5858L12.2929 5.70711C11.9024 5.31658 11.9024 4.68342 12.2929 4.29289Z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </section>
 
 
                   <section>

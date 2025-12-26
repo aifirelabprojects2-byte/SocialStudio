@@ -25,7 +25,6 @@ watchdog
 portalocker
 pypdf
 psutil
-numpy 
 scipy
 lightrag-hku
 docx
@@ -54,3 +53,4 @@ moviepy
 pytubefix
 pytube
 moviepy
+numpy>=2.1.0
