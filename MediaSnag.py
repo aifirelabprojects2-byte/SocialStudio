@@ -19,6 +19,7 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 from pytubefix import YouTube
 
 import Accounts
+from Configs import PROXY_URL
 
 DOWNLOADS_DIR = Path("./downloads")
 DOWNLOADS_DIR.mkdir(exist_ok=True)
@@ -449,6 +450,7 @@ async def download_video(url: str, quality: str, audio_only: bool) -> Tuple[str,
             "concurrent_fragment_downloads": 3,
             "continuedl": True,
             "retries_sleep": 5,
+            "proxy": PROXY_URL,
             "extractor_args": {
                 "youtube": {
                     "player_client": "android",
