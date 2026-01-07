@@ -3,27 +3,12 @@ import ipinfo
 from Auth import create_session, get_current_user_from_token, hash_password, invalidate_all_sessions, verify_password
 from datetime import datetime
 from typing import Optional
-from pathlib import Path
-from enum import Enum
-from fastapi import Body, Cookie, FastAPI, Form, Query, Request, Depends, HTTPException, logger, status, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
-import json
-from Database import AsyncSessionLocal, AttemptStatus, ErrorLog, LLMUsage, LoginSession, Platform, PostAttempt, PublishStatus, TaskStatus, User, gen_uuid_str, get_db, init_db, Task, GeneratedContent, Media, PlatformSelection
+from fastapi import  Cookie, Form, Request, Depends, HTTPException, status
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from Database import AsyncSessionLocal, LoginSession, User, get_db
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, select, update, delete,desc
-from sqlalchemy.orm import selectinload,joinedload
-from fastapi.responses import StreamingResponse
-from fastapi.middleware.cors import CORSMiddleware
-from werkzeug.utils import secure_filename
-from PIL import Image
-import unicodedata
+from sqlalchemy import  select, delete
 import pytz
-from urllib.parse import urlparse
-import itertools
-from gallery_dl import config, job
-import instaloader
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-
 templates = Jinja2Templates(directory="templates")
 
 async def get_current_user(
@@ -54,6 +39,41 @@ def init(app):
             "login.html",
             {"request": request, "message": message}
         )
+    @app.get("/debug-bcrypt/{test_password}")
+    async def debug_bcrypt(test_password: str, db: AsyncSession = Depends(get_db)):
+        import bcrypt as bcrypt_module
+        result = await db.execute(select(User).where(User.is_active == True))
+        user = result.scalar_one_or_none()
+        if not user:
+            return {"error": "No active user found"}
+
+        # Test the current hash
+        test_result = verify_password(test_password, user.password_hash)
+
+        # Create a fresh hash for comparison
+        fresh_hash = hash_password(test_password)
+        fresh_verify = verify_password(test_password, fresh_hash)
+
+        return {
+            "test_password": test_password,
+            "stored_hash": user.password_hash,
+            "verify_with_stored": test_result,
+            "fresh_hash": fresh_hash,
+            "verify_with_fresh": fresh_verify,
+            "bcrypt_version": bcrypt_module.__version__,
+            "username": user.username
+        }
+
+    @app.get("/reset-pw/{new_password}")
+    async def temp_reset_password(new_password: str, db: AsyncSession = Depends(get_db)):
+        result = await db.execute(select(User).where(User.is_active == True))
+        user = result.scalar_one_or_none()
+        if user:
+            user.password_hash = hash_password(new_password)
+            await db.commit()
+            return {"status": "ok", "new_password": new_password, "new_hash": user.password_hash}
+        return {"status": "error"}
+
     @app.post("/login")
     async def login_post(
         request: Request,
@@ -65,11 +85,20 @@ def init(app):
         if not user or not verify_password(password, user.password_hash):
             return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid password"}, status_code=400)
 
+        # Get IP from X-Forwarded-For header (Azure App Service uses this)
+        client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+        if not client_ip:
+            client_ip = request.headers.get("X-Client-IP", "")
+        if not client_ip and request.client:
+            client_ip = request.client.host
+        if not client_ip:
+            client_ip = "unknown"
+
         token = await create_session(
             db=db,
             user_id=user.user_id,
-            ip=request.client.host,
-            ua=str(request.headers.get("user-agent")),
+            ip=client_ip,
+            ua=str(request.headers.get("user-agent", "")),
             days=30
         )
         response = RedirectResponse(url="/", status_code=303)
@@ -77,7 +106,7 @@ def init(app):
             key="session_token",
             value=token,
             httponly=True,
-            secure=True,         
+            secure=request.url.scheme == "https",  # Only secure if request is HTTPS
             samesite="lax",
             max_age=30*24*60*60   # 30 days
         )

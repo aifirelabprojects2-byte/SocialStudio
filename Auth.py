@@ -1,4 +1,3 @@
-import bcrypt
 from datetime import datetime, timedelta
 from fastapi import HTTPException, status
 import pytz
@@ -6,17 +5,23 @@ from sqlalchemy import select, delete
 from Database import User, LoginSession, get_db, AsyncSession
 import secrets
 from sqlalchemy.orm import joinedload  
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(
+    schemes=["argon2"],
+    deprecated="auto",
+)
 
 def hash_password(password: str) -> str:
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(password.encode("utf-8"), salt).decode("utf-8")
+    return pwd_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(plain_password.encode("utf-8"), hashed_password.encode("utf-8"))
+    return pwd_context.verify(plain_password, hashed_password)
 
 async def create_session(db: AsyncSession, user_id: str, ip: str, ua: str, days: int = 30) -> str:
     token = secrets.token_urlsafe(48)
-    expires_at = datetime.now(pytz.timezone("Asia/Kolkata")) + timedelta(days=days)
+    now = datetime.now(pytz.UTC)
+    expires_at = now + timedelta(days=days)
     session = LoginSession(
         user_id=user_id,
         token=token,
@@ -31,10 +36,10 @@ async def create_session(db: AsyncSession, user_id: str, ip: str, ua: str, days:
 
 
 async def get_current_user_from_token(db: AsyncSession, token: str):
-    now = datetime.now(pytz.timezone("Asia/Kolkata"))
+    now = datetime.now(pytz.UTC)
     result = await db.execute(
         select(LoginSession)
-        .options(joinedload(LoginSession.user))  
+        .options(joinedload(LoginSession.user))
         .where(
             LoginSession.token == token,
             LoginSession.expires_at > now

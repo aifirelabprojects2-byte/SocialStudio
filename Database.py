@@ -3,7 +3,7 @@
 import os
 import enum
 import uuid
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
 from datetime import datetime
 from sqlalchemy import (
     DECIMAL,
@@ -14,18 +14,25 @@ from sqlalchemy import (
     Text,
     DateTime,
     ForeignKey,
-    Index,
     UniqueConstraint,
     JSON,
     Enum as SAEnum,
     func,
     create_engine,
     select,
+    event
 )
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, sessionmaker,relationship
 from sqlalchemy.exc import SQLAlchemyError
 import pytz
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(
+    schemes=["argon2"],
+    deprecated="auto",
+)
+
 
 IST = pytz.timezone('Asia/Kolkata')
 
@@ -34,6 +41,7 @@ def ist_now() -> datetime:
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./app.db")
 
+
 # Sync URL for Celery (remove aiosqlite)
 SYNC_DATABASE_URL = DATABASE_URL.replace("+aiosqlite", "").replace("aiosqlite://", "sqlite://")
 
@@ -41,13 +49,23 @@ async_engine = create_async_engine(
     DATABASE_URL,
     echo=False,
     future=True,
+    connect_args={"timeout": 30} 
 )
 
+# 2. Update Sync Engine
 sync_engine = create_engine(
     SYNC_DATABASE_URL,
     echo=False,
     future=True,
+    connect_args={"timeout": 30}
 )
+@event.listens_for(async_engine.sync_engine, "connect")
+@event.listens_for(sync_engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA synchronous=NORMAL")
+    cursor.close()
 
 class Base(AsyncAttrs, DeclarativeBase):
     pass
@@ -78,38 +96,28 @@ class AttemptStatus(enum.Enum):
 def gen_uuid_str() -> str:
     return str(uuid.uuid4())
 
-class Platform(Base, SyncBase):
-    __tablename__ = "platform"
-
-    platform_id = Column(String(36), primary_key=True, default=gen_uuid_str)
-    name = Column(String(64), nullable=False, unique=True, index=True)
-    api_name = Column(String(128), nullable=True)
-    is_active = Column(Boolean, default=False)
-
-    # Generic
-    expires_at = Column(DateTime(timezone=True), nullable=True)
-    
-    # Meta specific
-    page_id = Column(String(64), nullable=True)  # For IG & FB
-    # Facebook specific 
-    page_access_token = Column(String(128), nullable=True)  
-    
-    # Instagram specific 
-    ll_user_access_token = Column(String(128), nullable=True)  # long live user access token
-    
-    # Threads specific
-    threads_user_id = Column(String(64), nullable=True)
-    threads_username = Column(String(64), nullable=True)
-
-    # X/Twitter specific
-    consumer_key = Column(String(128), nullable=True)
-    consumer_secret = Column(String(128), nullable=True)
-    access_token = Column(String(128), nullable=True)
-    access_token_secret = Column(String(128), nullable=True)
-    bearer_token = Column(Text, nullable=True)
-
-    meta = Column(JSON, nullable=True) 
+class DesignTemplate(Base, SyncBase):
+    __tablename__ = "design_template"
+    template_id = Column(String(36), primary_key=True, default=gen_uuid_str)
+    name = Column(String(255), nullable=False, index=True)
+    canvas_json = Column(JSON, nullable=False)  
+    canvas_width = Column(Integer, nullable=True) 
+    canvas_height = Column(Integer, nullable=True)
+    thumbnail_url = Column(String(500), nullable=True) 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), default=ist_now)
+
+    
+class Platform(Base):
+    __tablename__ = "platform"
+    platform_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    api_name = Column(String(32), nullable=False, index=True)
+    account_id = Column(String(64))
+    account_name = Column(String(128))
+    access_token = Column(Text, nullable=False)
+    expires_at = Column(DateTime(timezone=True))
+    meta = Column(JSON) # platform.meta.get("REFRESH_TOKEN") for accessing
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())    
     
 class ImageTheme(Base, SyncBase):
     __tablename__ = "image_theme"
@@ -170,7 +178,7 @@ class Media(Base, SyncBase):
     media_id = Column(String(36), primary_key=True, default=gen_uuid_str)
     task_id = Column(String(36), ForeignKey("task.task_id", ondelete="CASCADE"), nullable=False, index=True)
     gen_id = Column(String(36), ForeignKey("generated_content.gen_id", ondelete="SET NULL"), nullable=True, index=True)
-    storage_path = Column(Text, nullable=False)  # S3/MinIO/CNAME path or local path during testing
+    storage_path = Column(Text, nullable=False)  
     mime_type = Column(String(64), nullable=True)
     img_url = Column(String(128), nullable=True)
     width = Column(Integer, nullable=True)
@@ -264,12 +272,6 @@ class LoginSession(Base, SyncBase):
 
     user = relationship("User")
 
-# Index("ix_task_scheduled_at_status", Task.scheduled_at, Task.status)
-# Index("ix_generated_content_created_at", GeneratedContent.created_at)
-# Index("ix_post_attempt_status_attempted_at", PostAttempt.status, PostAttempt.attempted_at)
-# Index("ix_login_session_token", LoginSession.token)
-# Index("ix_login_session_expires_at", LoginSession.expires_at)
-
 AsyncSessionLocal = async_sessionmaker(
     bind=async_engine,
     autoflush=False,
@@ -287,60 +289,46 @@ SyncSessionLocal = sessionmaker(
     future=True,
 )
 
-async def seed_platforms_if_missing() -> None:
+
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+async def seed_admin_user_if_missing() -> None:
     async with AsyncSessionLocal() as session:
         async with session.begin():
-            required_platforms = [
-                {
-                    "name": "facebook",
-                    "api_name": "facebook",
-                },
-                {
-                    "name": "instagram",
-                    "api_name": "instagram",
-                },
-                {
-                    "name": "threads",
-                    "api_name": "threads",
-                },
-                {
-                    "name": "x",
-                    "api_name": "twitter",
-                },
-            ]
+            result = await session.execute(
+                select(User).where(User.username == "admin")
+            )
+            admin = result.scalar_one_or_none()
 
-            for plat in required_platforms:
-                exists = await session.execute(
-                    select(Platform).filter_by(name=plat["name"])
+            if admin is None:
+                admin_user = User(
+                    username="admin",
+                    password_hash=hash_password("qwerty2k26"),
+                    is_active=True,
                 )
-                if exists.scalar_one_or_none() is None:
-                    new_platform = Platform(
-                        name=plat["name"],
-                        api_name=plat["api_name"],
-                        expires_at=None,
-                        page_id=None,
-                        page_access_token=None,
-                        ll_user_access_token=None,
-                        threads_user_id=None,
-                        threads_username=None,
-                        consumer_key=None,
-                        consumer_secret=None,
-                        access_token=None,
-                        access_token_secret=None,
-                        bearer_token=None,
-                        meta=None,  
-                    )
-                    session.add(new_platform)
-        await session.commit()
+                session.add(admin_user)
+
 
 async def init_db() -> None:
-    async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all, checkfirst=True)
+    try:
+        async with async_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all, checkfirst=True)
+    except Exception as e:
+        print(f"Note: Base metadata creation encountered: {e}")
+        pass
 
-    async with async_engine.begin() as conn:
-        await conn.run_sync(SyncBase.metadata.create_all, checkfirst=True)
-
-    await seed_platforms_if_missing()
+    try:
+        async with async_engine.begin() as conn:
+            await conn.run_sync(SyncBase.metadata.create_all, checkfirst=True)
+    except Exception as e:
+        print(f"Note: SyncBase metadata creation encountered: {e}")
+        pass
+    await seed_admin_user_if_missing()
 
 def get_sync_db():
     db = SyncSessionLocal()

@@ -1,38 +1,50 @@
+import asyncio
+from PlatformTokenGen import get_platform_credentials_sync
+# from XPoster import post_to_x
 from meta_poster import InstagramPoster, ThreadsPoster, FacebookPoster
 import os
-from dotenv import load_dotenv
+
+# InsTkn=get_platform_credentials_sync("instagram")
+poster = InstagramPoster(
+    page_id="905767789286116",
+    access_token="EAAaBgZB079rABQYExfnfVNjORbh75bhbT2eg3K4vNcuYReKagUG4CJAPFHZC4ZAZBmGsydNSfNnPlq2VIEyi3FrlZBkrXdJcEEi22G7Jh2iLV8TGc1o9hLeHs8qmD0h64zZBXmxA39UCgGBtibKuZANCRKBU2tkhwCuMTRRX3ymCnvPwIlePO1AAsEfWkeAFQg9ICTKkXTq189Mjvp1"
+)
 
 
-load_dotenv()
-# ig = InstagramPoster()
+# fb = FacebookPoster(
+#     page_id=InsTkn.page_id, #Facebook Page ID
+#     page_access_token=InsTkn.page_access_token
+#     )
 
-
-fb = FacebookPoster(
-    page_id=os.getenv('PAGE_ID'), #Facebook Page ID
-    page_access_token=os.getenv('PAGE_ACSESS_TOKEN')
-    )
 
 
 # threads = ThreadsPoster(
-#     threads_user_id=os.getenv('THREADS_USER_ID'), #thread user id
-#     access_token=os.getenv('THREADS_LONG_LIVE_TOKEN'), #long-lived token
-#     username=os.getenv('THREAD_USERNAME')   #optional        
+#     threads_user_id=InsTkn.threads_user_id, #thread user id
+#     access_token=InsTkn.ll_user_access_token, #long-lived token
+#     username=InsTkn.threads_username   #optional        
 #     )
 
 # threads.post(
 #     text="Just realized how fast 2025 is going...",
-#     image_url="https://pub-582b7213209642b9b995c96c95a30381.r2.dev/flux-schnell-cf/prompt-1764858989983-291517.png",
+#     media_url="https://files.catbox.moe/fgly20.mp4",
 #     hashtags=["DeepThoughts", "2025"]
 # )
 
-# Instagram 
-# ig.post(
-#     caption="Morning coffee ritual ",
-#     image_url="https://pub-582b7213209642b9b995c96c95a30381.r2.dev/flux-schnell-cf/prompt-1764858989983-291517.png",
-#     hashtags=["CoffeeLover", "MorningRoutine"],
+# ttt = post_to_x(
+#         captions="Just realized how fast 2025 is going...",
+#         media_input="https://files.catbox.moe/fgly20.mp4",
+#         hashtags=["DeepThoughts", "2025"],
+#         )
+# print(ttt)
 
+# Instagram 
+# poster.post(
+#     caption="Testing",
+#     media_url="https://pub-582b7213209642b9b995c96c95a30381.r2.dev/flux-schnell-cf/prompt-1765086317630-41419.png",
+#     hashtags=["Testing", "Automation"],
 # )
 
 # # Facebook
-fb.post_text(message="We're hiring!", link="https://careers.example.com", hashtags=["NowHiring"])
-# fb.post_photo(message="Morning coffee ritual ",image="https://pub-582b7213209642b9b995c96c95a30381.r2.dev/flux-schnell-cf/prompt-1764858989983-291517.png",hashtags=["CoffeeLover", "MorningRoutine"])
+# fb.post_text(message="We're hiring!", link="https://careers.example.com", hashtags=["NowHiring"])
+# fb.post_media(message="Morning coffee ritual ",media="https://pub-582b7213209642b9b995c96c95a30381.r2.dev/flux-schnell-cf/prompt-1765086317630-41419.png",hashtags=["CoffeeLover", "MorningRoutine"])
+#

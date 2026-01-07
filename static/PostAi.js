@@ -23,7 +23,6 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
     }
   }
 
-  // --- Helper 2: Generate Image HTML with Loading Spinner ---
   function getImageHtmlWithLoader(url, alt, imgClasses = 'h-full w-full object-cover') {
     if (!url) {
         return `
@@ -65,8 +64,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
     `;
 }
 
-  let currentDraftOffset = 0;
-  const DRAFT_LIMIT = 4; 
+
   
   function getGridColsClass(count) {
       if (count >= 5) return 'grid-cols-5';
@@ -77,56 +75,32 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
       return 'grid-cols-2'; 
   }
   
+  let currentDraftOffset = 0;
+  const DRAFT_LIMIT = 4; 
+  
   async function loadDrafts(offset = 0) {
        const grid = document.getElementById('draftsGrid');
-       grid.className = `grid gap-6 grid-cols-3`; 
-       grid.innerHTML="";
-       grid.innerHTML=`
-                        <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 animate-pulse">
-                                <div class="relative h-56 sm:h-64 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
-                                <div class="flex flex-1 flex-col justify-between p-5 sm:p-6">
-                                    <div>
-                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
-                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
-                                    </div>
-                                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                                        <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
-                                        <div class="flex items-center gap-1.5">
-                                            <div class="h-9 w-20 bg-gray-200 dark:bg-slate-700 rounded-xl skeletonPlatform-loader"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+       // Responsive grid for better mobile
+       grid.className = `grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`; 
+       grid.innerHTML = "";
+       // Show 4 loading skeletons for consistency
+       const loadingCard = (i) => `
                             <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 animate-pulse">
-                                <div class="relative h-56 sm:h-64 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
-                                <div class="flex flex-1 flex-col justify-between p-5 sm:p-6">
+                                <div class="relative h-48 sm:h-56 lg:h-64 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
+                                <div class="flex flex-1 flex-col justify-between p-4 sm:p-5 lg:p-6">
                                     <div>
-                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
-                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
+                                        <div class="h-4 sm:h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-2 sm:mb-3 skeletonPlatform-loader"></div>
+                                        <div class="h-4 sm:h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
                                     </div>
-                                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                                        <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
+                                    <div class="flex items-center justify-between mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-100 dark:border-slate-700">
+                                        <div class="h-3 sm:h-4 bg-gray-200 dark:bg-slate-700 rounded w-16 sm:w-20 skeletonPlatform-loader"></div>
                                         <div class="flex items-center gap-1.5">
-                                            <div class="h-9 w-20 bg-gray-200 dark:bg-slate-700 rounded-xl skeletonPlatform-loader"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 animate-pulse">
-                                <div class="relative h-56 sm:h-64 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
-                                <div class="flex flex-1 flex-col justify-between p-5 sm:p-6">
-                                    <div>
-                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-3 skeletonPlatform-loader"></div>
-                                        <div class="h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
-                                    </div>
-                                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                                        <div class="h-4 bg-gray-200 dark:bg-slate-700 rounded w-20 skeletonPlatform-loader"></div>
-                                        <div class="flex items-center gap-1.5">
-                                            <div class="h-9 w-20 bg-gray-200 dark:bg-slate-700 rounded-xl skeletonPlatform-loader"></div>
+                                            <div class="h-8 sm:h-9 w-16 sm:w-20 bg-gray-200 dark:bg-slate-700 rounded-xl skeletonPlatform-loader"></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>`;
+       grid.innerHTML = Array(4).fill().map(loadingCard).join('');
       
         currentDraftOffset = offset;
       try {
@@ -155,33 +129,31 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
           }
           noDrafts.classList.add('hidden');
           PaginBtns.classList.remove('hidden');
-  
-          const newColClass = getGridColsClass(tasks.length);
 
-          grid.className = `grid gap-6 ${newColClass}`; 
+          grid.className = `grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`; 
 
           grid.innerHTML = tasks.map(task => `
             <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 transition-all duration-300 cursor-pointer overflow-hidden shadow-sm hover:shadow-xl"
                  onclick="openPostUiModalGfr('${task.task_id}')">
                 
-                <div class="relative h-56 sm:h-64 w-full overflow-hidden bg-slate-100 dark:bg-slate-700">
+                <div class="relative h-48 sm:h-56 lg:h-64 w-full overflow-hidden bg-slate-100 dark:bg-slate-700">
                     ${getImageHtmlWithLoader(task.media_url, 'Post Preview', 'h-full w-full object-cover transition-transform duration-500 group-hover:scale-105')}
                 </div>
                 
-                <div class="flex flex-1 flex-col justify-between p-5 sm:p-6">
+                <div class="flex flex-1 flex-col justify-between p-4 sm:p-5 lg:p-6">
                     <div>
-                        <h3 class="text-base sm:text-lg font-semibold text-slate-900 dark:text-white line-clamp-2 mb-2">
+                        <h3 class="text-sm sm:text-base lg:text-lg font-semibold text-slate-900 dark:text-white line-clamp-2 mb-2">
                             ${task.caption_preview || task.title || 'Untitled Draft'}
                         </h3>
                     </div>
                     
-                    <div class="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                        <span class="text-sm font-medium text-slate-500 dark:text-slate-400">
+                    <div class="flex items-center justify-between mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-100 dark:border-slate-700">
+                        <span class="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
                             ${new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                         <button id="editBtnDrf-${task.task_id}" 
-                                class="text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 transition-all duration-200 inline-flex items-center gap-2 hover:shadow-md">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                class="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 transition-all duration-200 inline-flex items-center gap-2 hover:shadow-md">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" sm:width="16" sm:height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                             </svg>
@@ -192,9 +164,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
             </div>
         `).join('');
           
-          // --- Handle Pagination Buttons (Updated Logic) ---
-  
-          // Previous Button (Newer Drafts)
+
           if (data.prev_offset !== null) {
               // Found a previous page, so ENABLE the button
               prevButton.removeAttribute('disabled');
@@ -266,19 +236,33 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
     const genBtnSpan = document.getElementById("genBtnSpan");
     const genBtnBtn = document.getElementById("genBtnBtn");
 
+    const numDrafts = parseInt(formData.get('num_drafts')) || 1;
     const originalBtnText = genBtnSpan.innerText; 
-    genBtnSpan.innerText = 'Generating...';
+    genBtnSpan.innerText = `Generating ${numDrafts} draft${numDrafts > 1 ? 's' : ''}...`;
     genBtnBtn.disabled = true;
     genBtnBtn.style.cursor = 'not-allowed'; 
 
     loading.classList.remove('hidden');
     preview.classList.add('hidden');
+    loading.innerHTML = `
+        <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-gray-600 transition ease-in-out duration-150 cursor-not-allowed">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Crafting your ${numDrafts > 1 ? 'posts' : 'post'}...
+        </div>
+    `;
 
     try {
         const res = await fetch('/generate-preview', { method: 'POST', body: formData });
         const data = await res.json();
-        if (data.success) {
-            renderPreview(data);
+        if (data.success && data.drafts && data.drafts.length > 0) {
+            if (numDrafts === 1) {
+                renderPreview(data.drafts[0]);
+            } else {
+                renderMultiplePreviews(data);
+            }
             preview.classList.remove('hidden');
             loadDrafts();
         } else {
@@ -324,95 +308,130 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
     `;
   }
 
+  function renderMultiplePreviews(data) {
+    const num = data.drafts.length;
+    const previews = data.drafts.slice(0, 4).map(d => `
+      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div class="prose prose-sm prose-slate dark:prose-invert max-w-none mb-3">
+          <p class="line-clamp-3">${d.result.caption}</p>
+        </div>
+        <div class="flex flex-wrap gap-1 mb-2">
+          ${d.result.hashtags.slice(0, 3).map(tag => 
+            `<span class="text-xs px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">${tag}</span>`
+          ).join('')}
+        </div>
+        ${d.generate_image && d.result.image_prompt ? `
+          <div class="text-xs text-slate-500 italic mt-2">${d.result.image_prompt.substring(0, 80)}...</div>
+        ` : ''}
+      </div>
+    `).join('');
 
-
-const modalCacheDfd = new WeakMap();
-
-async function openPostUiModalGfr(taskId) {
-  const modalDfd = document.getElementById('postUiModalOverlayGfr');
-  if (!modalDfd) return;
-
-  // Prevent double-opening on fast clicks
-  if (modalDfd.dataset.loading === 'true') return;
-  modalDfd.dataset.loading = 'true';
-
-  toggleLoading(`editBtnDrf-${taskId}`, true, 'Opening...');
-
-  try {
-    const res = await fetch(`/tasks/${taskId}`);
-    if (!res.ok) throw new Error('Network error');
-    const data = await res.json();
-
-    const content = data.content || {};
-    const mediaUrl = data.media_url;
-    const status = data.task?.status || 'unknown';
-
-    // === CACHE ALL DOM ELEMENTS ONCE (Gfr IDs, Dfd cache) ===
-    let elsDfd = modalCacheDfd.get(modalDfd);
-    if (!elsDfd) {
-      elsDfd = {
-        taskIdEl:      document.getElementById('modalTaskIdGfr'),
-        caption:       document.getElementById('captionGfr'),
-        hashtags:      document.getElementById('hashtagsGfr'),
-        imagePrompt:   document.getElementById('imagePromptGfr'),
-        taskStatus:    document.getElementById('taskStatusGfr'),
-        imagePreview:  document.getElementById('imagePreviewGfr'),
-        approveBtn:    document.getElementById('btnApproveGfr'),
-        saveBtn:       document.getElementById('btnSaveGfr'),
-        regenBtn:      document.getElementById('btnRegenGfr'),
-        deleteBtn:     document.getElementById('btnDeleteGfr'),
-      };
-      modalCacheDfd.set(modalDfd, elsDfd);
-    }
-
-    elsDfd.taskIdEl.textContent = taskId;
-
-    elsDfd.caption.value = content.caption || '';
-    
-    elsDfd.hashtags.value = JSON.stringify(content.hashtags || []);
-
-    elsDfd.imagePrompt.value = content.image_prompt || '';
-    elsDfd.taskStatus.textContent = status;
-
-    elsDfd.imagePreview.innerHTML = getImageHtmlWithLoader(
-      mediaUrl,
-      'Preview',
-      'w-full h-full object-contain'
-    );
-
-    elsDfd.approveBtn.classList.toggle('hidden', status !== 'draft');
-
-    const rewireBtnDfd = (btn, handler) => {
-      const newBtn = btn.cloneNode(true);
-      newBtn.onclick = () => handler(taskId);
-      btn.parentNode.replaceChild(newBtn, btn);
-      return newBtn;
-    };
-
-    elsDfd.approveBtn = rewireBtnDfd(elsDfd.approveBtn, approveDraft);
-    elsDfd.saveBtn    = rewireBtnDfd(elsDfd.saveBtn,    savePostDraft);
-    elsDfd.regenBtn   = rewireBtnDfd(elsDfd.regenBtn,   saveAndRegenerateImage);
-    elsDfd.deleteBtn  = rewireBtnDfd(elsDfd.deleteBtn,  deleteDraft);
-
-
-    const updateRegenVisibilityDfd = () => {
-      elsDfd.regenBtn.classList.toggle('hidden', elsDfd.imagePrompt.value.trim() === '');
-    };
-
-    elsDfd.imagePrompt.oninput = null;
-    elsDfd.imagePrompt.addEventListener('input', updateRegenVisibilityDfd);
-    updateRegenVisibilityDfd(); 
-
-
-    modalDfd.classList.remove('hidden');
-
-  } catch (err) {
-    console.error('openPostUiModalGfr error:', err);
-    alert('Failed to load post. Please try again.');
-  } finally {
-    toggleLoading(`editBtnDrf-${taskId}`, false);
-    modalDfd.dataset.loading = 'false';
+    document.getElementById('preview').innerHTML = `
+      <div class="bg-gray-50 dark:bg-slate-700/50 p-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+          <h3 class="text-lg font-bold text-gray-700 dark:text-gray-300">Generated ${num} Drafts</h3>
+          <button onclick="document.getElementById('preview').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+      </div>
+      <div class="p-4">
+        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">Check your library below for all variations. Here's a quick preview of the first few:</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4">
+          ${previews}
+        </div>
+        ${num > 4 ? `<p class="text-center text-sm text-slate-500">And ${num - 4} more in your library...</p>` : ''}
+        <div class="mt-4 flex justify-center">
+          <p class="text-sm text-slate-500">Drafts saved automatically.</p>
+        </div>
+      </div>
+    `;
   }
+
+
+  const modalCacheDfd = new WeakMap();
+
+  async function openPostUiModalGfr(taskId) {
+    const modalDfd = document.getElementById('postUiModalOverlayGfr');
+    if (!modalDfd) return;
+  
+    // Prevent double-opening on fast clicks
+    if (modalDfd.dataset.loading === 'true') return;
+    modalDfd.dataset.loading = 'true';
+  
+    toggleLoading(`editBtnDrf-${taskId}`, true, 'Opening...');
+  
+    try {
+      const res = await fetch(`/tasks/${taskId}`);
+      if (!res.ok) throw new Error('Network error');
+      const data = await res.json();
+  
+      const content = data.content || {};
+      const mediaUrl = data.media_url;
+      const status = data.task?.status || 'unknown';
+  
+      // === CACHE ALL DOM ELEMENTS ONCE (Gfr IDs, Dfd cache) ===
+      let elsDfd = modalCacheDfd.get(modalDfd);
+      if (!elsDfd) {
+        elsDfd = {
+          taskIdEl:      document.getElementById('modalTaskIdGfr'),
+          caption:       document.getElementById('captionGfr'),
+          hashtags:      document.getElementById('hashtagsGfr'),
+          imagePrompt:   document.getElementById('imagePromptGfr'),
+          taskStatus:    document.getElementById('taskStatusGfr'),
+          imagePreview:  document.getElementById('imagePreviewGfr'),
+          approveBtn:    document.getElementById('btnApproveGfr'),
+          saveBtn:       document.getElementById('btnSaveGfr'),
+          regenBtn:      document.getElementById('btnRegenGfr'),
+          deleteBtn:     document.getElementById('btnDeleteGfr'),
+        };
+        modalCacheDfd.set(modalDfd, elsDfd);
+      }
+  
+      elsDfd.taskIdEl.textContent = taskId;
+  
+      elsDfd.caption.value = content.caption || '';
+      
+      elsDfd.hashtags.value = JSON.stringify(content.hashtags || []);
+  
+      elsDfd.imagePrompt.value = content.image_prompt || '';
+      elsDfd.taskStatus.textContent = status;
+  
+      elsDfd.imagePreview.innerHTML = getImageHtmlWithLoader(
+        mediaUrl,
+        'Preview',
+        'w-full h-full object-cover'
+      );
+  
+      elsDfd.approveBtn.classList.toggle('hidden', status !== 'draft');
+  
+      const rewireBtnDfd = (btn, handler) => {
+        const newBtn = btn.cloneNode(true);
+        newBtn.onclick = () => handler(taskId);
+        btn.parentNode.replaceChild(newBtn, btn);
+        return newBtn;
+      };
+  
+      elsDfd.approveBtn = rewireBtnDfd(elsDfd.approveBtn, approveDraft);
+      elsDfd.saveBtn    = rewireBtnDfd(elsDfd.saveBtn,    savePostDraft);
+      elsDfd.regenBtn   = rewireBtnDfd(elsDfd.regenBtn,   saveAndRegenerateImage);
+      elsDfd.deleteBtn  = rewireBtnDfd(elsDfd.deleteBtn,  deleteDraft);
+  
+  
+      const updateRegenVisibilityDfd = () => {
+        elsDfd.regenBtn.classList.toggle('hidden', elsDfd.imagePrompt.value.trim() === '');
+      };
+  
+      elsDfd.imagePrompt.oninput = null;
+      elsDfd.imagePrompt.addEventListener('input', updateRegenVisibilityDfd);
+      updateRegenVisibilityDfd(); 
+  
+  
+      modalDfd.classList.remove('hidden');
+  
+    } catch (err) {
+      console.error('openPostUiModalGfr error:', err);
+      alert('Failed to load post. Please try again.');
+    } finally {
+      toggleLoading(`editBtnDrf-${taskId}`, false);
+      modalDfd.dataset.loading = 'false';
+    }
 }
 
 function closePostUiModalGfr() {
@@ -495,8 +514,11 @@ function closePostUiModalGfr() {
         try {
             const success = await doSave(taskId, true);
             if (success) {
+                const formData = new FormData();
+                formData.append('model', document.getElementById('geminiModelSelect')?.value || 'gemini-2.5-flash-image');  // Assume you add <select id="geminiModelSelect">
+                formData.append('watermark_position', document.getElementById('watermarkPos')?.value || null);  // Assume <select id="watermarkPos">
                 
-                const generateRes = await fetch(`/tasks/${taskId}/generate-image`, { method: 'POST' });
+                const generateRes = await fetch(`/tasks/${taskId}/generate-image`, { method: 'POST' ,body: formData });
                 const generateData = await generateRes.json();
                 
                 if (generateData.success) { 

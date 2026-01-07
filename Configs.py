@@ -13,7 +13,6 @@ SEARCH_API_KEY = os.getenv("SEARCH_API_KEY")
 PROXY_URL= 'http://brd-customer-hl_83b644bf-zone-residential_proxy1:905n1aurl3vy@brd.superproxy.io:33335'
 if not OPENAI_API_KEY:
     raise RuntimeError("Set OPENAI_API_KEY in .env")
-
 # LLM CLIENTS
 
 client = AsyncOpenAI(api_key=OPENAI_API_KEY)

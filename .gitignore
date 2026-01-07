@@ -1,5 +1,15 @@
 __pycache__/
 .env
+
+# Database files - don't overwrite on deployment
+*.db
+app.db
+celerymq.db
+celery_results.db
+
+# Azure credentials
+AZURE_CREDENTIALS.json
+azure-env-settings.json
 LongLiveAccesTokenGenerator.py
 instatester.py
 INstweb.py
@@ -10,3 +20,4 @@ xpost.py
 xfetch.py
 imgdwn.py
 ytD.py
+logoadder.py

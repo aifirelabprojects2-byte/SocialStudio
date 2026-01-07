@@ -1,6 +1,5 @@
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, Field, field_validator, ValidationError
 import ManageTheme
 import MediaSnag
 import Referencer
@@ -9,28 +8,19 @@ import ManualPost
 import TextFormatter
 import UsageTracker
 import PostGen
+import ImageEditor
 # import TaskScheduler
+import SocialConnect
 import ManagePlatform
 import ErrorLogs
-import Accounts
+import Accounts  # Force reload 2025-12-30
 import ScheduledTasks
 import VideoTempBuilder
-import os
-from starlette.status import HTTP_303_SEE_OTHER
-from datetime import datetime
-from typing import List, AsyncGenerator, Dict, Any, Annotated, Optional, Literal, Tuple
 from pathlib import Path
-from enum import Enum
-from fastapi import Body, Cookie, FastAPI, Form, Query, Request, Depends, HTTPException, logger, status, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
-import json
-from Database import AsyncSessionLocal, AttemptStatus, ErrorLog, LLMUsage, LoginSession, Platform, PostAttempt, PublishStatus, TaskStatus, User, gen_uuid_str, get_db, init_db, Task, GeneratedContent, Media, PlatformSelection
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, select, update, delete,desc
-from sqlalchemy.orm import selectinload,joinedload
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, Request, Depends, HTTPException, status
+from fastapi.responses import HTMLResponse, RedirectResponse
+from Database import init_db
 from fastapi.middleware.cors import CORSMiddleware
-import pytz
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -50,6 +40,17 @@ app.mount("/media", StaticFiles(directory="static/media"), name="media")
 
 templates = Jinja2Templates(directory="templates")
 
+app.mount("/designs", StaticFiles(directory="designs"), name="designs")
+
+
+LOGO_DB = [
+    {"name": "FireLab Logo Light", "filename": "logo_dark.png"},
+    {"name": "FireLab Logo Dark", "filename": "logo_light.png"}
+]
+
+@app.get("/api/logos")
+async def get_logos():
+    return LOGO_DB
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health_check():
@@ -65,17 +66,17 @@ async def unauthorized_handler(request: Request, exc: HTTPException):
         return RedirectResponse(url="/login", status_code=status.HTTP_303_SEE_OTHER)
     raise exc
 
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request, _=Depends(Accounts.get_current_user)):
-    return templates.TemplateResponse("index.html", {"request": request})
+# @app.get("/", response_class=HTMLResponse)
+# async def home(request: Request, _=Depends(Accounts.get_current_user)):
+#     return templates.TemplateResponse("social_dashboard.html", {"request": request})
 
 @app.get("/setting", response_class=HTMLResponse)
 async def settings(request: Request, _=Depends(Accounts.get_current_user)):
     return templates.TemplateResponse("settings.html", {"request": request})
 
-@app.get("/session", response_class=HTMLResponse)
+@app.get("/design", response_class=HTMLResponse)
 async def settings(request: Request, _=Depends(Accounts.get_current_user)):
-    return templates.TemplateResponse("session.html", {"request": request})
+    return templates.TemplateResponse("designstudio.html", {"request": request})
 
 
 PostGen.init(app)    
@@ -91,4 +92,6 @@ ErrorLogs.init(app)
 ManualPost.init(app)
 ScheduledTasks.init(app)
 VideoTempBuilder.init(app)
+ImageEditor.init(app)
+SocialConnect.init(app)
 # TaskScheduler.init(app)

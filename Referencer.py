@@ -11,17 +11,16 @@ import io
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from urllib.parse import urlparse
-from PIL import Image, UnidentifiedImageError
 import aiohttp
 import requests
-import instaloader
+from apify_client import ApifyClient  
 from dotenv import load_dotenv
 from sqlalchemy import select
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from fastapi import Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from openai import AsyncOpenAI
+from PIL import Image, UnidentifiedImageError, ImageEnhance, ImageStat
 from google import genai
 from google.genai import types
 
@@ -31,6 +30,7 @@ from Database import GeneratedContent, ImageTheme, LLMUsage, Media, Task, TaskSt
 
 load_dotenv()
 
+# --- Config & Environment ---
 
 def gen_uuid_str() -> str:
     return str(uuid.uuid4())
@@ -38,32 +38,16 @@ def gen_uuid_str() -> str:
 media_dir = Path("static/media")
 
 class Config:
-    INSTAGRAM_RATE_LIMIT_DELAY_MIN: float = 1.0
-    INSTAGRAM_RATE_LIMIT_DELAY_MAX: float = 3.0
-    INSTAGRAM_RETRY_ATTEMPTS: int = 3
+    # Kept for general usage, though Instaloader specific retries are removed
+    RETRY_ATTEMPTS: int = 3
 
-X_BEARER_TOKEN = os.getenv("X_BEARER_TOKEN")
+# Updated API Keys
+APIFY_KEY = os.getenv("APIFY_KEY")
 IMG_BB_API_KEY = os.getenv("IMGBB_API")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GenaiClient = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-
-HEADERS_CYCLE = itertools.cycle([  # Assuming import itertools
-    {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": "https://www.instagram.com/",
-    },
-    {
-        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Referer": "https://www.instagram.com/",
-    }
-])
-
-def get_headers() -> Dict[str, str]:
-    return next(HEADERS_CYCLE)
+# --- Helper Functions ---
 
 def detect_platform(url: str) -> str:
     parsed = urlparse(url.lower())
@@ -74,115 +58,10 @@ def detect_platform(url: str) -> str:
         return "x"
     return "unknown"
 
-INSTAGRAM_SHORTCODE_PATTERN = re.compile(r'/p/([A-Za-z0-9_-]{11})')
-
-def extract_instagram_shortcode(post_url: str) -> str:
-    post_url = post_url.split('?')[0].rstrip('/')
-    match = INSTAGRAM_SHORTCODE_PATTERN.search(post_url)
-    if not match:
-        raise ValueError("Invalid Instagram URL—no shortcode found.")
-    return match.group(1)
-
-@retry(
-    stop=stop_after_attempt(Config.INSTAGRAM_RETRY_ATTEMPTS),
-    wait=wait_exponential(multiplier=1, min=4, max=10),
-    retry=retry_if_exception_type(instaloader.exceptions.ConnectionException)
-)
-async def fetch_instagram_post(shortcode: str) -> Optional[instaloader.Post]:
-    loop = asyncio.get_event_loop()
-
-    def _sync_fetch():
-        L = instaloader.Instaloader(
-            download_video_thumbnails=False,
-            download_geotags=False,
-            download_comments=False,
-            save_metadata=False,
-            compress_json=False,
-            post_metadata_txt_pattern="",
-            request_timeout=30,
-        )
-        session = L.context._session
-        session.headers.update(get_headers())
-        return instaloader.Post.from_shortcode(L.context, shortcode)
-
-    try:
-        return await loop.run_in_executor(None, _sync_fetch)
-    except instaloader.exceptions.LoginRequiredException:
-        raise
-    except instaloader.exceptions.ConnectionException as e:
-        if "429" in str(e) or "rate limit" in str(e).lower():
-            await asyncio.sleep(random.uniform(60, 300))
-        raise
-
-def extract_instagram_media_urls(post: instaloader.Post) -> List[str]:
-    media_urls = []
-    if post.typename == 'GraphVideo':
-        media_urls.append(post.video_url)
-    elif post.typename == 'GraphImage':
-        media_urls.append(post.url)
-    elif post.typename == 'GraphSidecar':
-        for node in post.get_sidecar_nodes():
-            media_urls.append(node.video_url if node.is_video else node.display_url)
-    else:
-        media_urls.append(post.url or post.video_url)
-    return [url for url in media_urls if url]
-
-X_TWEET_PATTERN = re.compile(
-    r"(?:https?://)?(?:www\.)?(?:twitter\.com|x\.com)/[^/]+/status/(\d+)"
-)
-
-def extract_x_tweet_id(url: str) -> Optional[str]:
-    match = X_TWEET_PATTERN.search(url.strip())
-    return match.group(1) if match else None
-
-def fetch_x_tweet(tweet_id: str) -> Optional[Dict[str, Any]]:
-    if not X_BEARER_TOKEN:
-        return {"error": "X_BEARER_TOKEN not set in environment."}
-
-    url = f"https://api.twitter.com/2/tweets/{tweet_id}"
-    params = {
-        "expansions": "attachments.media_keys,author_id",
-        "media.fields": "url,type,preview_image_url",
-        "tweet.fields": "text",
-    }
-    headers = {"Authorization": f"Bearer {X_BEARER_TOKEN}"}
-
-    try:
-        response = requests.get(url, headers=headers, params=params, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-
-        if "data" not in data:
-            return {"error": "No tweet data", "details": data}
-
-        tweet = data["data"]
-        text = tweet.get("text", "")
-
-        media_urls = []
-        if "includes" in data and "media" in data["includes"]:
-            for media in data["includes"]["media"]:
-                if media["type"] == "photo" and media.get("url"):
-                    media_urls.append(media["url"] + "?format=jpg&name=orig")
-                elif media["type"] in ["video", "animated_gif"]:
-                    media_urls.append(media.get("preview_image_url", ""))
-
-        return {
-            "caption": text.strip(),
-            "media_urls": [url for url in media_urls if url]
-        }
-
-    except requests.exceptions.HTTPError as e:
-        response = e.response  # Assuming e.response available
-        error_detail = response.json() if response.content else str(e)
-        return {"error": f"HTTP {response.status_code}", "details": error_detail}
-    except Exception as e:
-        return {"error": str(e)}
-
 async def download_file(session: aiohttp.ClientSession, url: str, filepath: Path) -> bool:
     try:
         async with session.get(url, timeout=30) as resp:
             if resp.status == 200:
-                # Ensure parent directory exists (though it should)
                 filepath.parent.mkdir(parents=True, exist_ok=True)
                 with open(filepath, "wb") as f:
                     async for chunk in resp.content.iter_chunked(1024 * 1024):
@@ -196,93 +75,173 @@ async def download_file(session: aiohttp.ClientSession, url: str, filepath: Path
         print(f"Failed to download {url}: {str(e)}")
         return False
 
+# --- Apify Fetching Logic (Synchronous) ---
+
+def fetch_instagram_apify(post_url: str) -> Dict[str, Any]:
+    """
+    Fetches Instagram post data using Apify actor shu8hvrXbJbY3Eb9W.
+    """
+    if not APIFY_KEY:
+        return {"error": "APIFY_KEY not set."}
+
+    try:
+        client = ApifyClient(APIFY_KEY)
+        run_input = {
+            "directUrls": [post_url],
+            "resultsType": "posts",
+            "resultsLimit": 1,
+            "searchLimit": 1,
+        }
+
+        # Run the actor
+        run = client.actor("shu8hvrXbJbY3Eb9W").call(run_input=run_input)
+        
+        # Iterate results
+        dataset_items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
+        
+        if not dataset_items:
+            return {"error": "No data found for this Instagram URL."}
+
+        item = dataset_items[0]
+        media_url = item.get("videoUrl") if item.get("videoUrl") else item.get("displayUrl")
+        caption = item.get("caption", "")
+
+        return {
+            "caption": caption,
+            "media_url": media_url, # Single URL
+            "type": "video" if item.get("videoUrl") else "image"
+        }
+    except Exception as e:
+        return {"error": f"Apify Instagram Error: {str(e)}"}
+
+def fetch_x_apify(tweet_url: str) -> Dict[str, Any]:
+    """
+    Fetches X/Twitter data using Apify actor kaitoeasyapi/twitter-x-data-tweet-scraper-pay-per-result-cheapest.
+    """
+    if not APIFY_KEY:
+        return {"error": "APIFY_KEY not set."}
+
+    try:
+        client = ApifyClient(APIFY_KEY)
+        
+        # Clean URL to get ID
+        try:
+            tweet_id = tweet_url.split("/")[-1].split("?")[0]
+        except Exception:
+            return {"error": "Could not parse Tweet ID from URL"}
+
+        run_input = {
+            "tweetIDs": [tweet_id],
+            "maxItems": 1
+        }
+
+        run = client.actor(
+            "kaitoeasyapi/twitter-x-data-tweet-scraper-pay-per-result-cheapest"
+        ).call(run_input=run_input)
+
+        items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
+        
+        if not items:
+            return {"error": "Tweet not found or private."}
+
+        item = items[0]
+        caption = item.get("text") or ""
+
+        # Process media
+        media_url = None
+        media_entities = item.get("extendedEntities", {}).get("media", []) or []
+
+        if media_entities:
+            media = media_entities[0]  # Grab first media item
+            media_type = media.get("type", "")
+
+            if media_type == "photo":
+                media_url = media.get("media_url_https") or media.get("url") or media.get("media_url")
+            
+            elif media_type in ("video", "animated_gif"):
+                video_info = media.get("video_info", {})
+                variants = video_info.get("variants", [])
+                
+                # Filter for MP4s and sort by bitrate to get best quality
+                mp4s = [
+                    v for v in variants
+                    if isinstance(v, dict) and v.get("content_type") == "video/mp4" and "bitrate" in v
+                ]
+                
+                if mp4s:
+                    media_url = max(mp4s, key=lambda x: x.get("bitrate", 0)).get("url")
+                else:
+                    # Fallback
+                    for v in variants:
+                        if isinstance(v, dict) and "url" in v:
+                            media_url = v["url"]
+                            break
+                    media_url = media_url or media.get("videoUrl") or media.get("url")
+
+        if not media_url and caption == "":
+             return {"error": "No content found in tweet."}
+
+        return {
+            "caption": caption,
+            "media_url": media_url,
+            "type": "video" if media_url and ".mp4" in media_url else "image"
+        }
+
+    except Exception as e:
+        return {"error": f"Apify X Error: {str(e)}"}
+
+
+# --- Main Async Fetcher ---
+
 async def fetch_social_post(url: str) -> Dict[str, Any]:
     platform = detect_platform(url)
+    loop = asyncio.get_event_loop()
+    
+    # 1. Fetch metadata using Apify (Offload sync calls to thread)
+    fetched_data = {}
+    
+    if platform == "instagram":
+        fetched_data = await loop.run_in_executor(None, fetch_instagram_apify, url)
+    elif platform == "x":
+        fetched_data = await loop.run_in_executor(None, fetch_x_apify, url)
+    else:
+        return {"error": "Unsupported platform. Only Instagram and X/Twitter are supported."}
 
-    async with aiohttp.ClientSession() as session:
-        saved_media_paths: List[str] = []
+    if "error" in fetched_data:
+        return fetched_data
 
-        if platform == "instagram":
-            try:
-                shortcode = extract_instagram_shortcode(url)
-                post = await fetch_instagram_post(shortcode)
-                media_urls = extract_instagram_media_urls(post)
-                caption = (post.caption or "").strip()
+    # 2. Extract Data
+    caption = fetched_data.get("caption", "").strip()
+    remote_media_url = fetched_data.get("media_url")
+    
+    # 3. Download Media Locally (Maintain compatibility with rest of app)
+    saved_media_paths: List[str] = []
+    
+    if remote_media_url:
+        async with aiohttp.ClientSession() as session:
+            # Determine extension
+            ext = remote_media_url.split("?")[0].split(".")[-1].lower()
+            if len(ext) > 4 or ext not in ["jpg", "jpeg", "png", "mp4", "gif"]:
+                # Basic fallback based on type hint if extension parsing fails
+                ext = "mp4" if fetched_data.get("type") == "video" else "jpg"
 
-                # Download each media, only add if successful
-                for media_url in media_urls:
-                    # Determine extension
-                    ext = media_url.split("?")[0].split(".")[-1].lower()
-                    if ext not in ["jpg", "jpeg", "png", "mp4"]:
-                        ext = "mp4" if "video" in media_url.lower() or media_url.endswith("/mp4") else "jpg"
+            filename = f"{gen_uuid_str()}.{ext}"
+            filepath = media_dir / filename
+            local_url = f"/media/{filename}"
 
-                    filename = f"{gen_uuid_str()}.{ext}"
-                    filepath = media_dir / filename
-                    local_url = f"/media/{filename}"
+            if await download_file(session, remote_media_url, filepath):
+                saved_media_paths.append(local_url)
+    
+    # Return structure matching what your frontend expects
+    return {
+        "platform": platform,
+        "caption": caption,
+        "media_urls": saved_media_paths  # List of local paths
+    }
 
-                    if await download_file(session, media_url, filepath):
-                        saved_media_paths.append(local_url)
 
-                result = {
-                    "platform": "instagram",
-                    "caption": caption,
-                    "media_urls": saved_media_paths  # Only successful local downloads
-                }
+# --- Image Processing & Utils ---
 
-                await asyncio.sleep(random.uniform(Config.INSTAGRAM_RATE_LIMIT_DELAY_MIN, Config.INSTAGRAM_RATE_LIMIT_DELAY_MAX))
-                return result
-
-            except ValueError as e:
-                return {"error": str(e)}
-            except instaloader.exceptions.LoginRequiredException:
-                return {"error": "Instagram post is private or requires login."}
-            except Exception as e:
-                return {"error": f"Instagram fetch failed: {str(e)}"}
-
-        elif platform == "x":
-            tweet_id = extract_x_tweet_id(url)
-            if not tweet_id:
-                return {"error": "Invalid X/Twitter URL."}
-            
-            tweet_data = fetch_x_tweet(tweet_id)  # Assuming this returns dict with 'text' and 'media_urls'
-            
-            if "error" in tweet_data:
-                return tweet_data
-
-            caption = tweet_data.get("text", "").strip()
-            original_media_urls = tweet_data.get("media_urls", [])
-
-            # Process each media URL from X (try to get highest quality)
-            for media_url in original_media_urls:
-                # Upgrade to original quality if possible
-                if ":large" in media_url:
-                    media_url = media_url.replace(":large", ":orig")
-                elif "?format=" in media_url and "&name=large" in media_url:
-                    media_url = media_url.replace("&name=large", "&name=orig")
-
-                # Guess extension
-                ext = media_url.split(".")[-1].split("?")[0].lower()
-                if ext not in ["jpg", "jpeg", "png", "mp4", "gif"]:
-                    ext = "jpg"  # default fallback
-
-                filename = f"{gen_uuid_str()}.{ext}"
-                filepath = media_dir / filename
-                local_url = f"/media/{filename}"
-
-                if await download_file(session, media_url, filepath):
-                    saved_media_paths.append(local_url)
-
-            result = {
-                "platform": "x",
-                "caption": caption,
-                "media_urls": saved_media_paths  
-            }
-            return result
-
-        else:
-            return {"error": "Unsupported platform. Only Instagram and X/Twitter are supported."}
-        
-        
 def upload_to_imgbb(file_path: str, mime_type: str = "image/jpeg") -> Optional[str]:
     if not IMG_BB_API_KEY:
         return None
@@ -300,6 +259,68 @@ def upload_to_imgbb(file_path: str, mime_type: str = "image/jpeg") -> Optional[s
         print(f"ImgBB upload failed: {e}")
     return None
 
+def add_watermark(
+    image_path: str,
+    position: str = "bottom-right",         
+    light_logo_path: str = "logo_light.png",
+    dark_logo_path: str = "logo_dark.png",
+    margin: int = 13,                      
+    opacity: float = 1.0,                  
+    scale_factor: float = 0.16,            
+    min_logo_size: int = 120                
+) -> Image.Image:
+
+    img = Image.open(image_path).convert("RGBA")
+    width, height = img.size
+
+    logo_width = max(min_logo_size, int(width * scale_factor))
+    gray = img.convert("L")
+    stat = ImageStat.Stat(gray)
+    brightness = stat.mean[0] 
+    logo_path = light_logo_path if brightness > 115 else dark_logo_path
+
+    if not os.path.exists(logo_path):
+        raise FileNotFoundError(f"Logo not found: {logo_path}")
+    logo = Image.open(logo_path).convert("RGBA")
+    logo_w, logo_h = logo.size
+    ratio = logo_w / logo_h
+    
+    new_logo_w = logo_width
+    new_logo_h = int(new_logo_w / ratio)
+    logo = logo.resize((new_logo_w, new_logo_h), Image.Resampling.LANCZOS)
+
+    if opacity < 1.0:
+        alpha = logo.split()[3]
+        alpha = ImageEnhance.Brightness(alpha).enhance(opacity)
+        logo.putalpha(alpha)
+
+    pos = position.lower()
+
+    if pos in ["br", "bottom-right", "bottom_right"]:
+        paste_x = width - new_logo_w - margin
+        paste_y = height - new_logo_h - margin
+
+    elif pos in ["tl", "top-left", "top_left"]:
+        paste_x = margin
+        paste_y = margin
+
+    elif pos in ["bl", "bottom-left", "bottom_left"]:
+        paste_x = margin
+        paste_y = height - new_logo_h - margin
+
+    elif pos in ["tr", "top-right", "top_right"]:
+        paste_x = width - new_logo_w - margin
+        paste_y = margin
+    else:
+        raise ValueError("Position must be one of: 'top-left', 'bottom-right', 'top-right', 'bottom-left'")
+
+    paste_x = max(0, min(paste_x, width - new_logo_w))
+    paste_y = max(0, min(paste_y, height - new_logo_h))
+
+    img.paste(logo, (paste_x, paste_y), logo)
+
+    return img
+
 
 class FetchRequest(BaseModel):
     url: str
@@ -307,10 +328,11 @@ class FetchRequest(BaseModel):
 class CreateRequest(BaseModel):
     rephrase_prompt: str
     image_suggestion: str
-    theme_id: str
+    theme_id: Optional[str] = None
     model: str = "gemini-2.5-flash-image"
-    imgpath:str
-    caption:str
+    imgpath: str
+    caption: str
+    watermark_position: Optional[str] = None  # None, top-left, bottom-right, top-right, bottom-left
     
 def init(app):
     @app.post("/api/fetch-post-details")
@@ -332,13 +354,17 @@ def init(app):
             raise HTTPException(status_code=404, detail=f"Image not found: {clean_path}")
 
         pil_img = Image.open(image_path)
-        result = await db.execute(select(ImageTheme).where(ImageTheme.theme_id == request.theme_id))
-        theme = result.scalar_one_or_none()
-        if not theme:
-            raise HTTPException(status_code=404, detail="Image theme not found.")
-
-        theme_name = theme.name
-        theme_desc = theme.description or ""
+        theme_name = ""
+        theme_desc = ""
+        if request.theme_id:
+            result = await db.execute(select(ImageTheme).where(ImageTheme.theme_id == request.theme_id))
+            theme = result.scalar_one_or_none()
+            if theme:
+                theme_name = theme.name
+                theme_desc = theme.description or ""
+            else:
+                # Optional, so log warning but proceed without theme
+                print(f"Warning: Image theme not found for theme_id: {request.theme_id}")
 
         # Create task
         task_id = gen_uuid_str()
@@ -357,8 +383,10 @@ def init(app):
             raise HTTPException(status_code=500, detail="OPENAI_API_KEY not set.")
         openai_client = AsyncOpenAI(api_key=OPENAI_API_KEY)
 
-        image_prompt = f"{request.image_suggestion}. Apply the theme: {theme_name} - {theme_desc}"
-        rephrase_full = f"{request.rephrase_prompt}. Original caption: '{original_caption}'. Incorporate the image theme."
+        image_prompt = request.image_suggestion
+        if theme_name:
+            image_prompt += f". Apply the theme: {theme_name} - {theme_desc}"
+        rephrase_full = f"{request.rephrase_prompt}. Original caption: '{original_caption}'. Incorporate the image theme." if theme_name else f"{request.rephrase_prompt}. Original caption: '{original_caption}'."
 
         try:
             response = await openai_client.chat.completions.create(
@@ -421,6 +449,7 @@ def init(app):
             image_data = None
             mime_type_edited = "image/png"
             edited_path = media_dir / f"{task_id}_edited.png"
+            edited_image = None
             for candidate in gen_response.candidates:
                 for part in candidate.content.parts:
                     if part.inline_data is not None:
@@ -436,6 +465,24 @@ def init(app):
 
             if not image_data:
                 raise ValueError("No image generated by Gemini")
+
+            # Apply watermark if requested
+            if request.watermark_position and edited_image:
+                try:
+                    watermarked_image = add_watermark(
+                        str(edited_path),
+                        position=request.watermark_position
+                    )
+                    watermarked_image = watermarked_image.convert("RGB")
+                    edited_path = media_dir / f"{task_id}_edited_watermarked.jpg"
+                    watermarked_image.save(edited_path, "JPEG", quality=95)
+                    mime_type_edited = "image/jpeg"
+                    edited_image = watermarked_image  # Update for metadata
+                    print(f"Watermark applied and saved as {edited_path}")
+                except Exception as wm_error:
+                    print(f"Watermark application failed: {wm_error}")
+                    # Proceed without watermark
+
         except Exception as e:
             latency_ms = int((time.time() - start) * 1000)
             db.add(LLMUsage(
@@ -453,7 +500,6 @@ def init(app):
                 raise e 
             raise HTTPException(status_code=500, detail=f"Image editing failed: {str(e)}")
 
-        edited_image.save(edited_path, "PNG")
         storage_path_edited = str(edited_path)
         size_bytes_edited = edited_path.stat().st_size
         with open(storage_path_edited, 'rb') as f:
@@ -488,8 +534,8 @@ def init(app):
             storage_path=Path(storage_path_edited).name,
             mime_type=mime_type_edited,
             img_url=img_url_edited,
-            width=edited_image.width,
-            height=edited_image.height,
+            width=edited_image.width if edited_image else 0,
+            height=edited_image.height if edited_image else 0,
             size_bytes=size_bytes_edited,
             checksum=checksum_edited,
             is_generated=True

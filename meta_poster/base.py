@@ -18,8 +18,8 @@ class BaseMetaPoster:
         page_id: Optional[str] = None,
         access_token: Optional[str] = None
     ):
-        self.page_id = page_id or os.getenv("PAGE_ID")
-        self.access_token = access_token or os.getenv("FB_LONG_LIVED_USER_ACCESS_TOKEN")
+        self.page_id = page_id 
+        self.access_token = access_token 
 
         if not self.page_id or not self.access_token:
             raise ValueError("PAGE_ID and FB_LONG_LIVED_USER_ACCESS_TOKEN are required")

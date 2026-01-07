@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>SocialStudio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                DEFAULT: "#EA4335", // Blaze Red
+                hover: "#D33828",
+                light: "#FCE8E6",
+              },
+              dark: {
+                bg: "#09090b", // Zinc 950
+                surface: "#18181b", // Zinc 900
+                border: "#27272a", // Zinc 800
+              }
+            },
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+            },
+            boxShadow: {
+              'subtle': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              'card': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+            }
+          },
+        },
+      };
+    </script>
+    <style>
+        /* Smooth transitions */
+        body { transition: background-color 0.2s, color 0.2s; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #e4e4e7; border-radius: 3px; }
+        .dark ::-webkit-scrollbar-thumb { background-color: #3f3f46; }
+        
+        /* Hide sections by default, show active */
+        .view-section { display: none; animation: fadeIn 0.3s ease-out; }
+        .view-section.active { display: flex; flex-direction: column; height: 100%; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-dark-bg text-gray-900 dark:text-gray-100 font-sans h-screen flex overflow-hidden">
+
+    <aside class="w-64 bg-white dark:bg-dark-surface border-r border-gray-200 dark:border-dark-border flex flex-col flex-shrink-0 z-20">
+        <div class="h-16 flex items-center px-6 border-b border-gray-100 dark:border-dark-border">
+            <div class="flex items-center gap-2 font-bold text-xl tracking-tight text-gray-900 dark:text-white">
+                <div class="p-1.5 bg-brand text-white rounded-lg">
+                    <i data-lucide="zap" class="w-5 h-5 fill-current"></i>
+                </div>
+                BLAZE
+            </div>
+        </div>
+
+        <div class="p-4">
+            <button class="w-full group bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 hover:border-brand dark:hover:border-brand text-gray-700 dark:text-gray-200 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md">
+                <i data-lucide="plus" class="w-4 h-4 text-brand group-hover:scale-110 transition-transform"></i>
+                <span>Create New</span>
+            </button>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto px-3 space-y-0.5" id="sidebar-nav">
+            
+            <a href="#" onclick="switchView('home', this)" class="nav-item flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors group">
+                <i data-lucide="layout-dashboard" class="w-5 h-5 group-hover:text-brand transition-colors"></i>
+                <span class="font-medium text-sm">Home</span>
+            </a>
+
+            <a href="#" onclick="switchView('calendar', this)" class="nav-item active flex items-center gap-3 px-3 py-2 bg-brand-light/50 dark:bg-brand/10 text-brand dark:text-brand rounded-lg transition-colors">
+                <i data-lucide="calendar" class="w-5 h-5"></i>
+                <span class="font-medium text-sm">Calendar</span>
+            </a>
+
+            <a href="#" onclick="switchView('ads', this)" class="nav-item flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors group">
+                <i data-lucide="megaphone" class="w-5 h-5 group-hover:text-brand transition-colors"></i>
+                <span class="font-medium text-sm">Paid Ads</span>
+            </a>
+
+            <a href="#" onclick="switchView('content', this)" class="nav-item flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors group">
+                <i data-lucide="kanban" class="w-5 h-5 group-hover:text-brand transition-colors"></i>
+                <span class="font-medium text-sm">Content Plan</span>
+            </a>
+
+            <a href="#" onclick="switchView('brand', this)" class="nav-item flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors group">
+                <i data-lucide="palette" class="w-5 h-5 group-hover:text-brand transition-colors"></i>
+                <span class="font-medium text-sm">Brand Kit</span>
+            </a>
+
+            <div class="pt-6 pb-2 px-3 flex items-center justify-between">
+                <span class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Workspace</span>
+                <i data-lucide="plus" class="w-3.5 h-3.5 text-gray-400 cursor-pointer hover:text-brand"></i>
+            </div>
+
+            <a href="#" class="flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors">
+                <i data-lucide="folder" class="w-4 h-4"></i>
+                <span class="text-sm">Q1 Marketing</span>
+            </a>
+            <a href="#" class="flex items-center gap-3 px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-zinc-800/50 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors">
+                <i data-lucide="folder-open" class="w-4 h-4"></i>
+                <span class="text-sm">Brand Assets</span>
+            </a>
+        </nav>
+
+        <div class="p-3 border-t border-gray-200 dark:border-dark-border space-y-1">
+            <a href="#" class="flex items-center gap-3 px-3 py-2 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors text-sm">
+                <i data-lucide="users" class="w-4 h-4"></i>
+                Invite Team
+            </a>
+            <a href="#" class="flex items-center gap-3 px-3 py-2 text-gray-500 hover:text-gray-900 dark:hover:text-white rounded-lg transition-colors text-sm">
+                <i data-lucide="life-buoy" class="w-4 h-4"></i>
+                Help & Support
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-dark-bg relative">
+        
+        <header class="h-16 flex items-center justify-between px-6 bg-white dark:bg-dark-surface border-b border-gray-200 dark:border-dark-border z-10 sticky top-0">
+            <div class="relative w-96 hidden md:block group">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i data-lucide="search" class="w-4 h-4 text-gray-400 group-focus-within:text-brand transition-colors"></i>
+                </span>
+                <input class="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-zinc-700 rounded-lg leading-5 bg-gray-50 dark:bg-zinc-800/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:bg-white dark:focus:bg-zinc-900 focus:ring-1 focus:ring-brand focus:border-brand sm:text-sm transition-all" placeholder="Search tasks, events, or files..." type="text"/>
+                <div class="absolute inset-y-0 right-0 pr-2 flex items-center pointer-events-none">
+                    <span class="text-gray-400 text-xs border border-gray-200 dark:border-zinc-700 rounded px-1.5 py-0.5">⌘K</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button class="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors" onclick="document.documentElement.classList.toggle('dark')">
+                    <i data-lucide="moon" class="w-5 h-5 hidden dark:block"></i>
+                    <i data-lucide="sun" class="w-5 h-5 block dark:hidden"></i>
+                </button>
+                
+                <button class="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-zinc-800 rounded-full transition-colors relative">
+                    <i data-lucide="bell" class="w-5 h-5"></i>
+                    <span class="absolute top-2 right-2.5 h-2 w-2 bg-brand rounded-full ring-2 ring-white dark:ring-dark-surface"></span>
+                </button>
+                
+                <div class="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs cursor-pointer shadow-sm ring-2 ring-white dark:ring-zinc-800 hover:ring-brand transition-all">
+                    JD
+                </div>
+            </div>
+        </header>
+
+        <section id="calendar" class="view-section active overflow-hidden">
+            <div class="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-dark-surface border-b border-gray-200 dark:border-dark-border">
+                <div class="flex items-center gap-4">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">January 2026</h1>
+                    <div class="flex items-center bg-gray-100 dark:bg-zinc-800 rounded-lg p-1">
+                        <button class="p-1 hover:bg-white dark:hover:bg-zinc-700 rounded-md transition-all shadow-sm text-gray-500">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        </button>
+                        <button class="px-3 text-sm font-medium text-gray-700 dark:text-gray-300">Today</button>
+                        <button class="p-1 hover:bg-white dark:hover:bg-zinc-700 rounded-md transition-all shadow-sm text-gray-500">
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                
+            </div>
+
+            
+        </section>
+
+        <section id="home" class="view-section items-center justify-center h-full text-center p-10">
+            <div class="max-w-md">
+                <div class="bg-white dark:bg-zinc-800 p-4 rounded-2xl inline-block mb-4 shadow-sm">
+                    <i data-lucide="layout-dashboard" class="w-12 h-12 text-brand"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Home Dashboard</h2>
+                <p class="text-gray-500 dark:text-gray-400">This is a placeholder view. You can inject your dashboard widgets, stats, and overview charts here.</p>
+                <button class="mt-6 px-6 py-2 bg-brand text-white rounded-lg hover:bg-brand-hover transition-colors">Initialize Dashboard</button>
+            </div>
+        </section>
+
+        <section id="ads" class="view-section items-center justify-center h-full text-center p-10">
+             <div class="max-w-md">
+                <div class="bg-white dark:bg-zinc-800 p-4 rounded-2xl inline-block mb-4 shadow-sm">
+                    <i data-lucide="megaphone" class="w-12 h-12 text-blue-500"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Paid Ads Manager</h2>
+                <p class="text-gray-500 dark:text-gray-400">Manage Facebook, Google, and LinkedIn ad campaigns here.</p>
+            </div>
+        </section>
+
+        <section id="content" class="view-section items-center justify-center h-full text-center p-10">
+             <div class="max-w-md">
+                <div class="bg-white dark:bg-zinc-800 p-4 rounded-2xl inline-block mb-4 shadow-sm">
+                    <i data-lucide="kanban" class="w-12 h-12 text-purple-500"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Content Pipeline</h2>
+                <p class="text-gray-500 dark:text-gray-400">Drag and drop Kanban board for content production.</p>
+            </div>
+        </section>
+        
+        <section id="brand" class="view-section items-center justify-center h-full text-center p-10">
+             <div class="max-w-md">
+                <div class="bg-white dark:bg-zinc-800 p-4 rounded-2xl inline-block mb-4 shadow-sm">
+                    <i data-lucide="palette" class="w-12 h-12 text-pink-500"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Brand Assets</h2>
+                <p class="text-gray-500 dark:text-gray-400">Logos, colors, fonts and media library.</p>
+            </div>
+        </section>
+
+        <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md border border-gray-200 dark:border-zinc-700 rounded-full shadow-card p-1.5 flex items-center gap-1 z-30 ring-1 ring-black/5">
+            <button class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 text-sm font-medium transition-colors">
+                <i data-lucide="sparkles" class="w-4 h-4 text-brand"></i>
+                Ask AI
+            </button>
+            <div class="w-px h-5 bg-gray-200 dark:bg-zinc-600 mx-1"></div>
+            <button class="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-700 text-gray-700 dark:text-gray-200 text-sm font-medium transition-colors">
+                <i data-lucide="wand-2" class="w-4 h-4 text-purple-500"></i>
+                Auto-Schedule
+            </button>
+        </div>
+
+    </main>
+
+    <script>
+        lucide.createIcons();
+        function switchView(viewId, element) {
+            document.querySelectorAll('.view-section').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            const target = document.getElementById(viewId);
+            if(target) target.classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('active', 'bg-brand-light/50', 'dark:bg-brand/10', 'text-brand', 'dark:text-brand');
+                el.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-50', 'dark:hover:bg-zinc-800/50');
+                
+                // Reset icon color in inactive state
+                const icon = el.querySelector('svg');
+                if(icon) icon.classList.remove('text-brand');
+            });
+
+            element.classList.remove('text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-50', 'dark:hover:bg-zinc-800/50');
+            element.classList.add('active', 'bg-brand-light/50', 'dark:bg-brand/10', 'text-brand', 'dark:text-brand');
+        }
+    </script>
+</body>
+</html>

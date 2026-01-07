@@ -1,0 +1,128 @@
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.nav-pill { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.nav-pill.active {
+    background-color: #f1f1f1;
+    color: #434343;
+    border-color: #d9d9d9;
+}
+.nav-pill.active svg { fill: white; }
+.nav-pill.active .status-indicator { background-color: #10b981; border-color: #0f172a; }
+.nav-pill:not(.active):hover {
+    border-color: #cbd5e1;
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    transform: scale(1.01);
+}
+.fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+/* Card Hover Effects */
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+}
+
+@property --angle {
+    syntax: "<angle>";
+    initial-value: 0deg;
+    inherits: false;
+}
+  
+@keyframes rotate-worm {
+to { --angle: 360deg; }
+}
+
+.worm-border-animate {
+--border-thickness: 2px;
+--worm-color: #a855f7; /* Purple worm */
+
+position: relative;
+}
+
+.worm-border-animate::before {
+content: "";
+position: absolute;
+inset: calc(var(--border-thickness) * -1); 
+padding: var(--border-thickness);
+border-radius: 9999px; 
+background: conic-gradient(
+    from var(--angle),
+    transparent 75%,
+    var(--worm-color) 90%,
+    white 98%,
+    transparent 100%
+);
+-webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+-webkit-mask-composite: xor;
+mask-composite: exclude;
+
+animation: rotate-worm 3s linear infinite;
+pointer-events: none; 
+}
+body, html {
+font-family: "Plus Jakarta Sans", "system-ui", "sans-serif";
+font-feature-settings: "cv11", "ss01";
+font-weight: 400;
+background: radial-gradient(circle at 50% 50%, #ffffff 0%, #eef1f5 100%);
+transition: background-color 0.2s, color 0.2s;
+height: 100vh;
+overflow: hidden;
+color: var(--text-main);
+width: 100%;
+}
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background-color: #e4e4e7; border-radius: 3px; }
+.dark ::-webkit-scrollbar-thumb { background-color: #3f3f46; }
+
+.view-section { display: none; animation: fadeIn 0.3s ease-out; }
+.view-section.active { display: flex; flex-direction: column; height: 100%; overflow-y: auto; }
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+}
+
+@keyframes guide-flow {
+    0%, 100% { height: 1.5rem; opacity: 0.5; }
+    50% { height: 3rem; opacity: 1; }
+}
+
+.animate-guide-flow-1 { animation: guide-flow 1.2s infinite ease-in-out; }
+.animate-guide-flow-2 { animation: guide-flow 1.2s infinite ease-in-out 0.2s; }
+.animate-guide-flow-3 { animation: guide-flow 1.2s infinite ease-in-out 0.4s; }
+
+.animate-spin-slow {
+    animation: spin 6s linear infinite;
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Use your brand color specifically for the guide border */
+#howToUseContainer .relative {
+    border-color: #111827; /* Replace with your specific brand hex if different */
+}

@@ -85,13 +85,28 @@ function renderTable(tasks) {
         
         const dateStr = t.created_at ? new Date(t.created_at).toLocaleDateString() : '-';
         
-        // Thumbnail Logic
+        // --- UPDATED THUMBNAIL LOGIC ---
         let mediaHtml = '';
-        if(t.has_image && t.media_url) {
-            mediaHtml = `<img src="${t.media_url}" class="h-10 w-10 rounded-lg object-cover border border-gray-200 group-hover:border-gray-300">`;
+        const url = t.media_url || '';
+        const isVideo = url.toLowerCase().match(/\.(mp4|webm|ogg|mov)$/) || t.has_video;
+    
+        if (isVideo) {
+            // Video Icon Placeholder
+            mediaHtml = `
+                <div class="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200 group-hover:border-gray-300 text-gray-500">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                </div>`;
+        } else if (t.has_image && url) {
+            // Standard Image Thumbnail
+            mediaHtml = `<img src="${url}" class="h-10 w-10 rounded-lg object-cover border border-gray-200 group-hover:border-gray-300">`;
         } else {
+            // Text/Default Placeholder
             mediaHtml = `<div class="h-10 w-10 rounded bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-400 border border-gray-200">TXT</div>`;
         }
+        // --- END UPDATED LOGIC ---
+    
         tr.innerHTML = `
             <td class="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
                 <div class="flex items-center">
@@ -99,22 +114,21 @@ function renderTable(tasks) {
                         ${mediaHtml}
                     </div>
                     <div class="ml-4">
-                        <div class="font-sembold text-gray-900">${escapeHtml(t.title || 'Untitled')}</div>
+                        <div class="font-semibold text-gray-900">${escapeHtml(t.title || 'Untitled')}</div>
                         <div class="text-gray-500 text-xs truncate max-w-[200px]">${escapeHtml(t.caption_preview || '')}</div>
                     </div>
                 </div>
             </td>
             <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">${dateStr}</td>
             <td class="whitespace-nowrap px-3 py-4 text-sm">
-              <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 dark:bg-green-700 text-green-800 dark:text-green-200">Approved</span>  
+              <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800 border border-green-200">Approved</span>  
             </td>
             <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                
-            <button id="viewBtnApr-${t.task_id}" class="text-xs inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:shadow-sm" onclick="openDetail('${t.task_id}')">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-              View
-              </button>
-          </td>
+                <button id="viewBtnApr-${t.task_id}" class="text-xs inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:shadow-sm" onclick="openDetail('${t.task_id}')">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    View
+                </button>
+            </td>
         `;
         els.tbody.appendChild(tr);
     });
@@ -147,6 +161,7 @@ content: document.getElementById('modalContentText'),
 hashtags: document.getElementById('modalHashtags'),
 time: document.getElementById('modalTime'),
 img: document.getElementById('modalImg'),
+video: document.getElementById('modalVideo'),
 noImg: document.getElementById('modalNoImg'),
 imageDownloadBtn: document.getElementById('imageDownloadBtn'),
 copyCaptionBtn: document.getElementById('copyCaptionBtn'),
@@ -159,6 +174,15 @@ notes: document.getElementById('notesInput'),
 closeBtn: document.getElementById('closeModalBtn'),
 inswarn: document.getElementById('inswarn')
 };
+
+function isVideoFile(url) {
+    if (!url) return false;
+    const cleanUrl = url.split('?')[0].toLowerCase();
+    return cleanUrl.endsWith('.mp4') || 
+           cleanUrl.endsWith('.mov') || 
+           cleanUrl.endsWith('.webm') || 
+           cleanUrl.endsWith('.ogg');
+}
 
 async function openDetail(taskId) {
     toggleLoading(`viewBtnApr-${taskId}`, true, 'Opening');
@@ -178,18 +202,37 @@ async function openDetail(taskId) {
         els.hashtags.textContent = tags.map(t => `#${t}`).join(' ');
         els.time.textContent = gc.suggested_posting_time || "Not scheduled";
 
-        // Handle Image
-        if (d.preview_image) {
-            els.img.src = d.preview_image;
-            els.img.style.display = 'block';
+        // --- UPDATED MEDIA LOGIC START ---
+        
+        // Reset both
+        els.img.style.display = 'none';
+        els.img.src = '';
+        els.video.style.display = 'none';
+        els.video.src = '';
+        els.video.pause(); // Ensure audio stops if previously playing
+
+        const mediaUrl = d.preview_image || d.media_url; // Handle potential naming differences
+
+        if (mediaUrl) {
             els.noImg.classList.add('hidden');
             els.imageDownloadBtn.classList.remove('hidden');
+
+            if (isVideoFile(mediaUrl)) {
+                // It is a video
+                els.video.src = mediaUrl;
+                els.video.style.display = 'block';
+            } else {
+                // It is an image
+                els.img.src = mediaUrl;
+                els.img.style.display = 'block';
+            }
         } else {
-            els.img.style.display = 'none';
+            // No media
             els.noImg.classList.remove('hidden');
             els.noImg.style.display = 'flex'; 
             els.imageDownloadBtn.classList.add('hidden');
         }
+        // --- UPDATED MEDIA LOGIC END ---
 
         // Define getFullCaptionText for caption actions
         const getFullCaptionText = () => {
@@ -199,20 +242,24 @@ async function openDetail(taskId) {
             return `${now}\n\nCaption:\n${content}\n\nHashtags:\n${hashtags}`;
         };
 
-        // Add event listeners for new buttons
+        // --- UPDATED DOWNLOAD BUTTON LOGIC START ---
         els.imageDownloadBtn.onclick = (e) => {
             e.stopPropagation();
-            console.log('Image download button clicked');
-            if (els.img.src) {
+            
+            // Determine which source is active
+            const activeSrc = els.video.style.display === 'block' ? els.video.src : els.img.src;
+            
+            if (activeSrc) {
+                const isVid = isVideoFile(activeSrc);
+                const ext = isVid ? 'mp4' : 'jpg'; // Default extensions
+                
                 const a = document.createElement('a');
-                a.href = els.img.src;
-                a.download = `task-image-${Date.now()}.jpg`;
+                a.href = activeSrc;
+                a.download = `task-media-${Date.now()}.${ext}`;
+                a.target = "_blank"; // Good practice for some browsers to force download
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                console.log('Image download initiated');
-            } else {
-                console.log('No image src available');
             }
         };
 
@@ -313,123 +360,216 @@ async function openDetail(taskId) {
         toggleLoading(`viewBtnApr-${taskId}`, false);
     }
 }
+// 1. Define Platform Icons & Colors (derived from your reference)
+const PLATFORM_ICONS = {
+    instagram: {
+        color: "text-pink-600",
+        path: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"
+    },
+    facebook: {
+        color: "text-blue-600",
+        path: "M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036c-2.148 0-2.797 1.66-2.797 3.54v1.237h3.362l-.294 3.667h-3.068v7.98H9.101z"
+    },
+    linkedin: {
+        color: "text-sky-700",
+        path: "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.202 24 24 23.227 24 22.271V1.729C24 .774 23.202 0 22.222 0h.003z"
+    },
+    twitter: {
+        color: "text-gray-900",
+        path: "M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"
+    },
+    x: { // Handle both naming conventions
+        color: "text-gray-900",
+        path: "M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"
+    },
+    threads: {
+        color: "text-black",
+        path: "M9.4815 9.024c-.405-.27-1.749-1.203-1.749-1.203 1.134-1.6215 2.6295-2.253 4.698-2.253 1.4625 0 2.7045.4905 3.591 1.422.8865.9315 1.392 2.2635 1.5075 3.966q.738.3105 1.3575.726c1.6635 1.1175 2.5785 2.79 2.5785 4.7055 0 4.074-3.339 7.6125-9.384 7.6125C6.891 24 1.5 20.9805 1.5 11.991 1.5 3.051 6.723 0 12.066 0c2.469 0 8.259.3645 10.434 7.554l-2.04.5295C18.774 2.961 15.2445 2.145 12.009 2.145c-5.3475 0-8.373 3.2565-8.373 10.185 0 6.2145 3.381 9.5145 8.445 9.5145 4.1655 0 7.2705-2.1645 7.2705-5.334 0-2.157-1.812-3.1905-1.905-3.1905-.354 1.851-1.302 4.965-5.466 4.965-2.427 0-4.5195-1.677-4.5195-3.873 0-3.135 2.976-4.2705 5.325-4.2705.879 0 1.941.06 2.4945.171 0-.9555-.81-2.592-2.85-2.592-1.875 0-2.349.6075-2.9505 1.302ZM13.074 12.285c-3.06 0-3.456 1.305-3.456 2.124 0 1.317 1.5645 1.752 2.4 1.752 1.53 0 3.1005-.423 3.348-3.6345a9.3 9.3 0 0 0-2.292-.2415"
+    }
+};
 
 function populatePlatforms(platforms) {
-    els.platforms.innerHTML = ''; // Clear previous content
+    els.platforms.innerHTML = ''; 
 
-    if (platforms.length === 0) {
-        els.platforms.classList.remove(
-            "grid",
-            "grid-cols-1",
-            "sm:grid-cols-2",
-            "gap-3"
-          );
-        els.inswarn.classList.add('hidden');
-          
+    // 1. Empty State
+    if (!platforms || platforms.length === 0) {
+        els.platforms.classList.remove("grid", "grid-cols-1", "sm:grid-cols-2", "gap-3");
         els.platforms.classList.add('flex');
+        
         const emptyMessage = document.createElement('div');
+        emptyMessage.className = "w-full";
         emptyMessage.innerHTML = `
-            <div class="max-w-md mx-auto rounded-xl border px-7 py-4 border-gray-100">
-                <div class="flex justify-center items-center gap-2">
-                    <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <h3 class="text-lg font-medium text-gray-900">
-                        No Connected Platforms
-                    </h3>
-                </div>
-
-                <p class="mt-2 text-sm text-gray-600 leading-relaxed">
-                    There are currently no social media platforms connected to your account.
-                    To begin publishing or managing content, please connect a platform from
-                    <span class="font-medium text-gray-700">Settings → Setup</span>.
-                </p>
+            <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50/50 p-6 text-center">
+                <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No Platforms Connected</h3>
+                <p class="mt-1 text-xs text-gray-500">Go to Settings to connect an account.</p>
             </div>
         `;
-
         els.platforms.appendChild(emptyMessage);
+        els.inswarn.classList.add('hidden');
         return;
     }
 
-    // Normal case: render platform toggles
-    platforms.forEach(platform => {
-        const platformId = platform.platform_id;
+    // 2. Restore Grid Layout
+    els.platforms.classList.add("grid", "grid-cols-1", "sm:grid-cols-2", "gap-3");
+    els.platforms.classList.remove('flex');
+
+    // 3. Render Platform Cards
+    platforms.forEach(p => {
+        const platformId = p.platform_id;
+        const apiName = p.api_name || 'unknown';
+        const accName = p.account_name || 'Connected Account';
+        const photoUrl = p.profile_photo_url;
+        
+        const iconData = PLATFORM_ICONS[apiName.toLowerCase()] || { path: '', color: 'text-gray-400' };
+        const initials = accName.substring(0, 2).toUpperCase();
+
         const div = document.createElement('div');
+        div.className = 'relative group';
+        
+        let avatarHtml = '';
+        if (photoUrl) {
+            avatarHtml = `<img src="${photoUrl}" alt="${accName}" class="h-full w-full object-cover">`;
+        } else {
+            const colors = {
+                'instagram': 'bg-pink-100 text-pink-700',
+                'facebook': 'bg-blue-100 text-blue-700',
+                'linkedin': 'bg-sky-100 text-sky-700',
+                'twitter': 'bg-gray-100 text-gray-700',
+                'x': 'bg-gray-100 text-gray-700'
+            };
+            const colorClass = colors[apiName.toLowerCase()] || 'bg-gray-100 text-gray-600';
+            avatarHtml = `<div class="${colorClass} w-full h-full flex items-center justify-center text-xs font-bold">${initials}</div>`;
+        }
 
-        div.className = 'relative flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-gray-500 transition-all cursor-pointer';
-
+        // --- KEY CHANGES BELOW ---
+        // 1. We add specific classes: 'checkbox-circle' and 'check-icon'
+        // 2. The main container uses `peer-checked:[&_.checkbox-circle]:bg-gray-900` to force the styling down to the child
         div.innerHTML = `
-            <label for="platform-toggle-${platformId}" class="text-sm font-medium text-gray-900 select-none cursor-pointer">
-                ${platform.name}
-            </label>
+            <input type="checkbox" id="platform-toggle-${platformId}" value="${platformId}" class="peer sr-only">
             
-            <input type="checkbox" id="platform-toggle-${platformId}" value="${platformId}" 
-                   class="sr-only peer"> 
-            
-            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-800"></div>
-            
+            <div class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-white transition-all cursor-pointer
+                        hover:border-gray-300 hover:shadow-sm
+                        peer-checked:border-gray-900 peer-checked:bg-gray-50 peer-checked:ring-1 peer-checked:ring-gray-900
+                        peer-checked:[&_.checkbox-circle]:bg-gray-900 peer-checked:[&_.checkbox-circle]:border-gray-900
+                        peer-checked:[&_.check-icon]:opacity-100 peer-checked:[&_.check-icon]:scale-100">
+                
+                <div class="relative shrink-0">
+                    <div class="h-10 w-10 overflow-hidden rounded-full border border-gray-100 shadow-sm">
+                        ${avatarHtml}
+                    </div>
+                    ${iconData.path ? `
+                    <div class="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border border-gray-100 bg-white shadow-sm ring-1 ring-white">
+                        <svg class="h-3 w-3 ${iconData.color}" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="${iconData.path}" />
+                        </svg>
+                    </div>
+                    ` : ''}
+                </div>
+
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-gray-900 truncate leading-tight">
+                        ${escapeHtml(accName)}
+                    </p>
+                    <p class="text-[11px] font-medium text-gray-500 capitalize leading-tight mt-0.5">
+                        ${apiName}
+                    </p>
+                </div>
+
+                <div class="checkbox-circle h-5 w-5 shrink-0 rounded-full border border-gray-300 bg-white flex items-center justify-center transition-all duration-200">
+                    <svg class="check-icon w-3 h-3 text-white opacity-0 transform scale-50 transition-all duration-200" 
+                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                </div>
+            </div>
+
             <label for="platform-toggle-${platformId}" class="absolute inset-0 cursor-pointer"></label>
         `;
         
         els.platforms.appendChild(div);
     });
-}
-async function handleSchedule(taskId) {
-const platformCheckboxes = document.querySelectorAll('#platformsList input[type="checkbox"]:checked');
-const platformIds = Array.from(platformCheckboxes).map(cb => cb.value);
 
-if (platformIds.length === 0) {
-    ShowNoti('info', 'Please select at least one platform');
-    return;
+    const inputs = els.platforms.querySelectorAll('input[type="checkbox"]');
+    inputs.forEach(input => {
+        input.addEventListener('change', checkPlatformWarnings);
+    });
 }
 
-const scheduledAtStr = els.scheduledInput.value;
-if (!scheduledAtStr) {
-    ShowNoti('info', 'Please select a scheduled date and time');
-    return;
-}
-
-// Convert local input to ISO string for backend
-// Assuming backend expects UTC or explicit offset
-const scheduledAt = new Date(scheduledAtStr).toISOString();
-
-const notes = els.notes.value.trim();
-
-const requestBody = {
-    task_id: taskId,
-    platform_ids: platformIds,
-    scheduled_at: scheduledAt,
-    notes: notes || undefined
-};
-
-// UI: Show loading state
-const originalBtnText = els.scheduleBtn.innerText;
-els.scheduleBtn.innerText = 'Scheduling...';
-els.scheduleBtn.disabled = true;
-
-try {
-    const res = await fetch('/schedule-task', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
+// Helper to show/hide the Instagram image warning
+function checkPlatformWarnings() {
+    const checked = Array.from(els.platforms.querySelectorAll('input:checked'));
+    const hasInsta = checked.some(cb => {
+        const container = cb.closest('.group'); 
+        return container.innerHTML.toLowerCase().includes('instagram');
     });
 
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || 'Failed to schedule task');
+    const hasMedia = els.img.src && els.img.style.display !== 'none' || els.video.style.display === 'block';
+
+    if (hasInsta && !hasMedia) {
+        els.inswarn.classList.remove('hidden');
+    } else {
+        els.inswarn.classList.add('hidden');
     }
-    const data = await res.json();
-    alert(`Task scheduled successfully!`);
-    
-    closeModal();
-} catch (e) {
-    console.error(e);
-    alert(`Error: ${e.message}`);
-} finally {
-    els.scheduleBtn.innerText = originalBtnText;
-    els.scheduleBtn.disabled = false;
 }
+async function handleSchedule(taskId) {
+    const platformCheckboxes = document.querySelectorAll('#platformsList input[type="checkbox"]:checked');
+    const platformIds = Array.from(platformCheckboxes).map(cb => cb.value);
+
+    if (platformIds.length === 0) {
+        ShowNoti('info', 'Please select at least one platform');
+        return;
+    }
+
+    const scheduledAtStr = els.scheduledInput.value;
+    if (!scheduledAtStr) {
+        ShowNoti('info', 'Please select a scheduled date and time');
+        return;
+    }
+
+    // Convert local input to ISO string for backend
+    // Assuming backend expects UTC or explicit offset
+    const scheduledAt = new Date(scheduledAtStr).toISOString();
+
+    const notes = els.notes.value.trim();
+
+    const requestBody = {
+        task_id: taskId,
+        platform_ids: platformIds,
+        scheduled_at: scheduledAt,
+        notes: notes || undefined
+    };
+
+    // UI: Show loading state
+    const originalBtnText = els.scheduleBtn.innerText;
+    els.scheduleBtn.innerText = 'Scheduling...';
+    els.scheduleBtn.disabled = true;
+
+    try {
+        const res = await fetch('/schedule-task', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to schedule task');
+        }
+        const data = await res.json();
+        alert(`Task scheduled successfully!`);
+        
+        closeModal();
+    } catch (e) {
+        console.error(e);
+        alert(`Error: ${e.message}`);
+    } finally {
+        els.scheduleBtn.innerText = originalBtnText;
+        els.scheduleBtn.disabled = false;
+        fetchData()
+    }
 }
 
 function closeModal() {

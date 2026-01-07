@@ -83,7 +83,7 @@ async function loadThemesRfx() {
         const themes = await response.json();
         
         const select = document.getElementById('theme_idRfx');
-        select.innerHTML = '<option value="">Select a theme</option>';
+        select.innerHTML = '<option value="">No theme</option>';
         themes.forEach(theme => {
             const option = document.createElement('option');
             option.value = theme.theme_id; 
@@ -97,9 +97,10 @@ async function loadThemesRfx() {
 
 loadThemesRfx();
 
-// --- Fetch Post Logic ---
+
 fetchFormRfx.addEventListener('submit', async (e) => {
     e.preventDefault();
+    howToUseContainer.classList.add('hidden');
     const urlVal = document.getElementById('urlRfx').value.trim();
 
     const fetchBtn = document.getElementById('fetchBtnRfx');
@@ -191,7 +192,7 @@ fetchFormRfx.addEventListener('submit', async (e) => {
     }
 });
 
-// --- Create Task Logic ---
+
 createFormRfx.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -199,27 +200,17 @@ createFormRfx.addEventListener('submit', async (e) => {
     const imgpathVal = document.getElementById('fetched_imgpathRfx').value;
     const rephrase_promptVal = document.getElementById('rephrase_promptRfx').value.trim();
     const image_suggestionVal = document.getElementById('image_suggestionRfx').value.trim();
-    const theme_idVal = document.getElementById('theme_idRfx').value;
+    const theme_idVal = document.getElementById('theme_idRfx').value; 
     const modelVal = document.getElementById('modelRfx').value;
+    const watermark_positionVal = document.getElementById('watermark_positionRfx').value;
 
     if (!imgpathVal) {
         statusRfx.innerHTML = '<p class="text-red-600 bg-red-50 p-3 rounded-2xl border border-red-200 text-sm">No image found in the post. Cannot proceed.</p>';
         return;
     }
-
-    if (!theme_idVal) {
-        statusRfx.innerHTML = '<p class="text-red-600 bg-red-50 p-3 rounded-2xl border border-red-200 text-sm">Please select a theme.</p>';
-        return;
-    }
-
-    // Lock UI
     createSubmitBtnRfx.disabled = true;
     statusRfx.innerHTML = '';
-    
-    // KEY REQUEST LOGIC: Hide fetched content container during animation
     fetchedDetailsRfx.classList.add('hidden');
-    
-    // Start Animation
     startShimmerAnimationRfx();
 
     try {
@@ -230,10 +221,11 @@ createFormRfx.addEventListener('submit', async (e) => {
             body: JSON.stringify({
                 rephrase_prompt: rephrase_promptVal,
                 image_suggestion: image_suggestionVal,
-                theme_id: theme_idVal,
+                theme_id: theme_idVal || null,                 // Send null if empty
                 model: modelVal,
                 imgpath: imgpathVal,
-                caption: captionVal
+                caption: captionVal,
+                watermark_position: watermark_positionVal || null // Send null if empty/no watermark
             })
         });
         const data = await response.json();
@@ -254,7 +246,6 @@ createFormRfx.addEventListener('submit', async (e) => {
                 </div>
             `;
             createFormRfx.reset();
-            // Keep fetchedDetailsRfx hidden (as previously requested)
             // Reset hidden fields
             document.getElementById('fetched_captionRfx').value = '';
             document.getElementById('fetched_imgpathRfx').value = '';
@@ -274,3 +265,17 @@ createFormRfx.addEventListener('submit', async (e) => {
         createSubmitBtnRfx.disabled = false;
     }
 });
+
+// ... existing constants ...
+const howToUseContainer = document.getElementById('howToUseContainer');
+const howToToggle = document.getElementById('howToToggle');
+
+// Toggle Guide visibility
+howToToggle.addEventListener('click', () => {
+    howToUseContainer.classList.toggle('hidden');
+    // Smooth scroll to guide if opening
+    if (!howToUseContainer.classList.contains('hidden')) {
+        howToUseContainer.scrollIntoView({ behavior: 'smooth' });
+    }
+});
+

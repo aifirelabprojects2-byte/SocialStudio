@@ -1,4 +1,3 @@
-# meta_poster/threads.py
 import time
 import logging
 import requests
@@ -14,12 +13,13 @@ class ThreadsPoster:
     TIMEOUT = 60
     MAX_RETRIES = 3
     RATE_LIMIT_BACKOFF = 65  # seconds
+    VIDEO_PROCESSING_DELAY = 30  # seconds to wait for video processing
 
     def __init__(
         self,
         threads_user_id: str,
         access_token: str,
-        username: str = "_pablo_dev_"  # for generating final URL
+        username: str
     ):
         self.threads_user_id = str(threads_user_id).strip()
         self.access_token = access_token.strip()
@@ -70,19 +70,28 @@ class ThreadsPoster:
     def post(
         self,
         text: str,
-        image_url: Optional[str] = None,
-        video_url: Optional[str] = None,
+        media_url: Optional[str] = None,
         hashtags: Optional[List[str]] = None,
         topic_tag: Optional[str] = None,
         spoiler: bool = False,
     ) -> str:
 
-        
-
-        if not text and not (image_url or video_url):
+        if not text and not media_url:
             raise ValueError("text or media is required")
 
         final_text = build_caption(text, hashtags or [])
+        
+        image_url = None
+        video_url = None
+
+        if media_url:
+            # Common video extensions to check against
+            video_extensions = ('.mp4', '.mov', '.avi', '.wmv', '.flv', '.mkv')
+            
+            if media_url.lower().endswith(video_extensions):
+                video_url = media_url
+            else:
+                image_url = media_url
 
         # Step 1: Create container
         media_type = "TEXT"
@@ -109,7 +118,12 @@ class ThreadsPoster:
         container = self._request("POST", f"{self.BASE_URL}/{self.threads_user_id}/threads", data=payload)
         container_id = container["id"]
 
-        # Step 2: Publish
+        # Step 2: Wait for video processing if applicable (images/text process faster)
+        if video_url:
+            logger.info(f"Waiting {self.VIDEO_PROCESSING_DELAY}s for video processing...")
+            time.sleep(self.VIDEO_PROCESSING_DELAY)
+
+        # Step 3: Publish
         logger.info(f"Publishing container {container_id}")
         publish = self._request(
             "POST",
