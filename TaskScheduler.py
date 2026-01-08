@@ -23,6 +23,52 @@ class ScheduleTaskRequest(BaseModel):
 
 
 def init(app):
+    @app.post("/task/post-now-scheduled/{task_id}")
+    async def post_now_scheduled(
+        task_id: str,
+        db: AsyncSession = Depends(get_db),
+        _=Depends(Accounts.get_current_user)
+    ):
+        stmt = (
+            select(Task)
+            .where(Task.task_id == task_id)
+            .with_for_update()
+            .options(selectinload(Task.platform_selections))
+        )
+
+        result = await db.execute(stmt)
+        task = result.scalar_one_or_none()
+
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+
+        if task.status != TaskStatus.scheduled:
+            raise HTTPException(
+                status_code=400,
+                detail="Only scheduled tasks can be posted immediately"
+            )
+
+        now = datetime.now(ist)
+
+        task.status = TaskStatus.queued
+        task.scheduled_at = now
+        task.updated_at = now
+
+        for sel in task.platform_selections:
+            if sel.publish_status == PublishStatus.scheduled:
+                sel.scheduled_at = now
+
+        await db.commit()
+
+        execute_posting.delay(task.task_id)
+
+        return {
+            "status": "success",
+            "message": "Scheduled task posted",
+            "task_id": task.task_id,
+            "executed_at": now.isoformat(),
+        }
+
     @app.post("/task/post-now")
     async def post_now(
         request: ScheduleTaskRequest, 

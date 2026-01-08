@@ -275,8 +275,6 @@ async function viewTaskShd(taskId) {
             timeZoneEl.classList.add('hidden');
         }
 
-
-        // SECTION 5: ATTEMPTS
         const attemptsBody = document.getElementById('attemptsTableBodyShd');
         const noAttempts = document.getElementById('noAttemptsShd');
         attemptsBody.innerHTML = '';
@@ -290,7 +288,7 @@ async function viewTaskShd(taskId) {
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-neutral-50 transition-all duration-200';
                 const aBadge = getStatusBadgeClass(pa.status);
-                const platformName = pa.platform ? pa.platform.name : (pa.platform_id || 'Unknown');
+                const platformName = pa.platform ? pa.platform.api_name : (pa.platform_id || 'Unknown');
                 row.innerHTML = `
                     <td class="px-5 py-4 whitespace-nowrap text-sm text-neutral-600 font-medium">${platformName}</td>
                     <td class="px-5 py-4 whitespace-nowrap"><span class="px-3 py-1 rounded-full text-xs border font-semibold ${aBadge}">${pa.status}</span></td>

@@ -2,7 +2,7 @@
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .nav-pill { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .nav-pill.active {
-    background-color: #ffcac62e;
+    background-color: #ffcac624;
     color: #ea4335;
     border-color: #ea433545;
 }

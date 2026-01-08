@@ -726,6 +726,10 @@ const loadingMessages = [
 // 1. Reusable helper to handle the task submission
 const handleTaskSubmission = (isDraft = false) => {
     if (!state.currentPlatform) return alert('Select a platform');
+    if (!elements.caption.value || elements.caption.value.trim() === '') {
+        ShowNoti('info', 'Please Fill The Caption');
+        return;
+    }
 
     // UI Feedback: Determine which button we are working with
     const btn = isDraft ? elements.saveAsDraftBtn : elements.submitBtn;

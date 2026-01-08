@@ -4,7 +4,7 @@ from PlatformTokenGen import get_platform_credentials_sync
 from meta_poster import InstagramPoster, ThreadsPoster, FacebookPoster
 import os
 
-# InsTkn=get_platform_credentials_sync("instagram")
+# ThrTkn=get_platform_credentials_sync("facebook")
 # poster = InstagramPoster(
 #     page_id="",
 #     access_token=""
@@ -12,17 +12,21 @@ import os
 
 
 # fb = FacebookPoster(
-#     page_id=InsTkn.page_id, #Facebook Page ID
-#     page_access_token=InsTkn.page_access_token
+#     page_id=ThrTkn.account_id, #Facebook Page ID
+#     page_access_token=ThrTkn.access_token
 #     )
 
 
 
-# threads = ThreadsPoster(
-#     threads_user_id=InsTkn.threads_user_id, #thread user id
-#     access_token=InsTkn.ll_user_access_token, #long-lived token
-#     username=InsTkn.threads_username   #optional        
-#     )
+# poster = ThreadsPoster(
+#                     threads_user_id=ThrTkn.account_id,
+#                     access_token=ThrTkn.meta.get("THREADS_LONG_LIVE_TOKEN"),
+#                     username=ThrTkn.account_name,
+#                     )
+
+# poster.post(
+#                             text="testing #12984",
+#                             hashtags=["Testing"],)
 
 # threads.post(
 #     text="Just realized how fast 2025 is going...",

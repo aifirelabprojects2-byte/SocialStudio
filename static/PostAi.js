@@ -1,27 +1,43 @@
-function toggleLoading(btnId, isLoading, loadingText = 'Processing...', originalText = '', originalIconHtml = '') {
+function toggleLoading(btnId, isLoading, loadingText = 'Processing...') {
     const btn = document.getElementById(btnId);
     if (!btn) return;
+
+    const preserveHtml = btn.dataset.preserveHtml === "true";
+
     if (isLoading) {
-        if (!btn.dataset.originalText) btn.dataset.originalText = btn.innerText.trim();
-        if (!btn.dataset.originalIcon) btn.dataset.originalIcon = btn.querySelector('svg')?.outerHTML || '';
-        
+        if (!btn.dataset.originalHtml && preserveHtml) {
+            btn.dataset.originalHtml = btn.innerHTML;
+        }
+        if (!btn.dataset.originalText && !preserveHtml) {
+            btn.dataset.originalText = btn.innerText.trim();
+            btn.dataset.originalIcon = btn.querySelector('svg')?.outerHTML || '';
+        }
+
         btn.disabled = true;
         btn.classList.add('opacity-75', 'cursor-not-allowed');
+
         btn.innerHTML = `
-            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-current inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <path class="opacity-75" fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
             </svg>
-            ${loadingText}
+            <span class="text-xs">${loadingText}</span>
         `;
     } else {
         btn.disabled = false;
         btn.classList.remove('opacity-75', 'cursor-not-allowed');
-        const icon = originalIconHtml || btn.dataset.originalIcon;
-        const text = originalText || btn.dataset.originalText;
-        btn.innerHTML = `${icon} ${text}`;
+
+        if (preserveHtml && btn.dataset.originalHtml) {
+            btn.innerHTML = btn.dataset.originalHtml;
+        } else {
+            const text = btn.dataset.originalText || '';
+            const icon = btn.dataset.originalIcon || '';
+            btn.innerHTML = `${text} ${icon}`;
+        }
     }
-  }
+}
+
 
   function getImageHtmlWithLoader(url, alt, imgClasses = 'h-full w-full object-cover') {
     if (!url) {
@@ -153,11 +169,8 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...', original
                         </span>
                         <button id="editBtnDrf-${task.task_id}" 
                                 class="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 transition-all duration-200 inline-flex items-center gap-2 hover:shadow-md">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" sm:width="16" sm:height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
-                            Edit
+                                Edit
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-line-icon lucide-pencil-line"><path d="M13 21h8"/><path d="m15 5 4 4"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
                         </button>
                     </div>
                 </div>

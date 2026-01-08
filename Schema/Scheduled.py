@@ -30,9 +30,8 @@ class ErrorLogListResponse(BaseModel):
 
 class PlatformOut(BaseModel):
     platform_id: str
-    name: str
+    api_name: str
     api_name: Optional[str]
-    meta: Optional[Dict]
     created_at: datetime
 
     class Config:

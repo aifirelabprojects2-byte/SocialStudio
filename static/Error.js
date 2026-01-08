@@ -108,6 +108,7 @@
      `;
      return;
    }
+   console.log(logs);
 
    tbody.innerHTML = logs.map(log => {
      const formattedDate = formatDateErr(log.created_at);
@@ -119,7 +120,7 @@
      return `
        <tr class="hover:bg-gray-50 transition-colors duration-200">
          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${log.error_id.substring(0, 6)}..</td>
-         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${log.task_id.substring(0, 6) || '-'}</td>
+         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${log.task_id?.substring(0, 6) || '-'}</td>
          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">${log.platform_id.substring(0, 6) || '-'}</td>
          <td class="px-6 py-4 whitespace-nowrap">
            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${typeColor}">
@@ -195,10 +196,8 @@
    }
  });
 
- // View details placeholder
  function viewDetailsErr(errorId) {
    alert(`Viewing details for ${errorId}`); // Replace with modal or redirect
  }
 
- // Initial load
  fetchErrorLogsErr();

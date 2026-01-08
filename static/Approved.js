@@ -1,148 +1,4 @@
-let state = {
-    limit: 10,     
-    nextOffset: null,
-    prevOffset: null,
-    currentOffset: 0
-};
 
-document.addEventListener('DOMContentLoaded', () => {
-    fetchData(0);
-
-    els.btnPrev.addEventListener('click', () => {
-        if (state.prevOffset !== null) {
-            fetchData(state.prevOffset);
-        }
-    });
-
-    els.btnNext.addEventListener('click', () => {
-        if (state.nextOffset !== null) {
-            fetchData(state.nextOffset);
-        }
-    });
-
-});
-
-async function fetchData(offset = 0) {
-    setLoading(true);
-    try {
-        state.currentOffset = offset;
-
-        const res = await fetch(`/api/tasks/approved?limit=${state.limit}&offset=${offset}`);
-        if (!res.ok) throw new Error("API Failed");
-        
-        const data = await res.json();
-
-        state.nextOffset = data.next_offset; 
-        state.prevOffset = data.prev_offset;
-
-        if (data.limit) state.limit = data.limit;
-
-        renderTable(data.tasks);
-        renderPagination(data);
-        
-    } catch (err) {
-        console.error(err);
-        els.tbody.innerHTML = '';
-        els.error.classList.remove('hidden');
-        els.empty.classList.add('hidden');
-    } finally {
-        setLoading(false);
-    }
-}
-
-function renderPagination(data) {
-    const total = data.total_count || 0;
-    const count = data.tasks ? data.tasks.length : 0;
-    
-    // Calculate "Showing X - Y"
-    const start = count === 0 ? 0 : state.currentOffset + 1;
-    const end = state.currentOffset + count;
-    
-    els.lblStart.textContent = start;
-    els.lblEnd.textContent = end;
-    els.lblTotal.textContent = total;
-
-    els.btnPrev.disabled = (state.prevOffset === null);
-    els.btnNext.disabled = (state.nextOffset === null);
-}
-
-function renderTable(tasks) {
-    els.tbody.innerHTML = '';
-    els.error.classList.add('hidden');
-
-    if (!tasks || tasks.length === 0) {
-        els.empty.classList.remove('hidden');
-        els.empty.classList.add('flex');
-        return;
-    }
-    
-    els.empty.classList.add('hidden');
-    els.empty.classList.remove('flex');
-
-    tasks.forEach(t => {
-        const tr = document.createElement('tr');
-        tr.className = "hover:bg-gray-50 transition-colors duration-150 group";
-        
-        const dateStr = t.created_at ? new Date(t.created_at).toLocaleDateString() : '-';
-        
-        // --- UPDATED THUMBNAIL LOGIC ---
-        let mediaHtml = '';
-        const url = t.media_url || '';
-        const isVideo = url.toLowerCase().match(/\.(mp4|webm|ogg|mov)$/) || t.has_video;
-    
-        if (isVideo) {
-            // Video Icon Placeholder
-            mediaHtml = `
-                <div class="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200 group-hover:border-gray-300 text-gray-500">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                </div>`;
-        } else if (t.has_image && url) {
-            // Standard Image Thumbnail
-            mediaHtml = `<img src="${url}" class="h-10 w-10 rounded-lg object-cover border border-gray-200 group-hover:border-gray-300">`;
-        } else {
-            // Text/Default Placeholder
-            mediaHtml = `<div class="h-10 w-10 rounded bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-400 border border-gray-200">TXT</div>`;
-        }
-        // --- END UPDATED LOGIC ---
-    
-        tr.innerHTML = `
-            <td class="whitespace-nowrap py-4 pl-4 pr-3 sm:pl-6">
-                <div class="flex items-center">
-                    <div class="h-10 w-10 flex-shrink-0">
-                        ${mediaHtml}
-                    </div>
-                    <div class="ml-4">
-                        <div class="font-semibold text-gray-900">${escapeHtml(t.title || 'Untitled')}</div>
-                        <div class="text-gray-500 text-xs truncate max-w-[200px]">${escapeHtml(t.caption_preview || '')}</div>
-                    </div>
-                </div>
-            </td>
-            <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">${dateStr}</td>
-            <td class="whitespace-nowrap px-3 py-4 text-sm">
-              <span class="text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800 border border-green-200">Approved</span>  
-            </td>
-            <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-                <button id="viewBtnApr-${t.task_id}" class="text-xs inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:shadow-sm" onclick="openDetail('${t.task_id}')">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5s8.268 2.943 9.542 7c-1.274 4.057-5.065 7-9.542 7S3.732 16.057 2.458 12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-                    View
-                </button>
-            </td>
-        `;
-        els.tbody.appendChild(tr);
-    });
-}
-
-function setLoading(bool) {
-    if(bool) {
-        skeletonDraft.classList.remove('hidden')
-        els.tbody.classList.add('hidden'); 
-    } else {
-        skeletonDraft.classList.add('hidden')
-        els.tbody.classList.remove('hidden');
-    }
-}
 
 
 const els = {
@@ -175,8 +31,18 @@ notes: document.getElementById('notesInput'),
 closeBtn: document.getElementById('closeModalBtn'),
 inswarn: document.getElementById('inswarn'),
 InstaPostType: document.getElementById('InstaPstTyp')
+
 };
 
+function setLoading(bool) {
+    if(bool) {
+        skeletonDraft.classList.remove('hidden')
+        els.tbody.classList.add('hidden'); 
+    } else {
+        skeletonDraft.classList.add('hidden')
+        els.tbody.classList.remove('hidden');
+    }
+}
 function isVideoFile(url) {
     if (!url) return false;
     const cleanUrl = url.split('?')[0].toLowerCase();
@@ -216,7 +82,9 @@ async function openDetail(taskId) {
         const mediaUrl = d.preview_image || d.media_url; // Handle potential naming differences
 
         if (mediaUrl) {
+            console.log(mediaUrl);
             els.noImg.classList.add('hidden');
+            els.noImg.style.display = 'none'; 
             els.imageDownloadBtn.classList.remove('hidden');
 
             if (isVideoFile(mediaUrl)) {
@@ -352,6 +220,7 @@ async function openDetail(taskId) {
         els.scheduleBtn = newBtn; 
         
         els.scheduleBtn.onclick = () => handleSchedule(task_id);
+        els.postNowBtn.onclick = () => handlePostNow(task_id);
 
         els.overlaymodal.classList.remove('hidden');
     } catch (e) {
@@ -472,7 +341,7 @@ function populatePlatforms(platforms) {
                     <p class="text-sm font-semibold text-gray-900 truncate leading-tight">
                         ${escapeHtml(accName)}
                     </p>
-                    <p class="text-[11px] font-medium text-gray-500 capitalize leading-tight mt-0.5">
+                    <p data-platform="${apiName}" class="text-[11px] font-medium text-gray-500 capitalize leading-tight mt-0.5">
                         ${apiName}
                     </p>
                 </div>
@@ -496,21 +365,29 @@ function populatePlatforms(platforms) {
         input.addEventListener('change', checkPlatformWarnings);
     });
 }
-
-
 function checkPlatformWarnings() {
     const checked = Array.from(els.platforms.querySelectorAll('input:checked'));
+    
     const hasInsta = checked.some(cb => {
         const container = cb.closest('.group'); 
-        return container.innerHTML.toLowerCase().includes('instagram');
+        const platformEl = container.querySelector('[data-platform]');
+        const platformName = platformEl ? platformEl.dataset.platform.toLowerCase() : '';
+        return platformName === 'instagram';
     });
+    const isImgVisible = els.img.src && els.img.style.display !== 'none';
+    const isVideoVisible = els.video.style.display === 'block' && 
+                        (els.video.src || els.video.querySelector('source'));
 
-    const hasMedia = els.img.src && els.img.style.display !== 'none' || els.video.style.display === 'block';
-
-    if (hasInsta && !hasMedia) {
-        els.inswarn.classList.remove('hidden');
+    const hasMedia = isImgVisible || isVideoVisible;
+    els.InstaPostType.classList.toggle('hidden', !hasInsta);
+    els.inswarn.classList.toggle('hidden', !(hasInsta && !hasMedia));
+}
+function getSelectedInstaPostType() {
+    const selected = document.querySelector('input[name="InspostType"]:checked');
+    if (selected) {
+        return selected.value;  
     } else {
-        els.inswarn.classList.add('hidden');
+        return null; 
     }
 }
 async function handleSchedule(taskId) {
@@ -527,19 +404,16 @@ async function handleSchedule(taskId) {
         ShowNoti('info', 'Please select a scheduled date and time');
         return;
     }
-
     const scheduledAt = new Date(scheduledAtStr).toISOString();
 
-    const notes = els.notes.value.trim();
+    const notes = getSelectedInstaPostType();
 
     const requestBody = {
         task_id: taskId,
         platform_ids: platformIds,
         scheduled_at: scheduledAt,
-        notes: notes || undefined
+        notes: notes || null
     };
-
-    // UI: Show loading state
     const originalBtnText = els.scheduleBtn.innerText;
     els.scheduleBtn.innerText = 'Scheduling...';
     els.scheduleBtn.disabled = true;
@@ -556,20 +430,20 @@ async function handleSchedule(taskId) {
             throw new Error(err.detail || 'Failed to schedule task');
         }
         const data = await res.json();
-        alert(`Task scheduled successfully!`);
-        
-        closeModal();
+        ShowNoti('success', 'Task scheduled successfully!');
+        closeModalSch();
     } catch (e) {
         console.error(e);
         alert(`Error: ${e.message}`);
     } finally {
         els.scheduleBtn.innerText = originalBtnText;
         els.scheduleBtn.disabled = false;
-        fetchData()
+        fetchPostsBlz()
     }
 }
 
 async function handlePostNow(taskId) {
+    console.log(`handle post triggered ${taskId}`)
     const platformCheckboxes = document.querySelectorAll('#platformsList input[type="checkbox"]:checked');
     const platformIds = Array.from(platformCheckboxes).map(cb => cb.value);
 
@@ -586,7 +460,7 @@ async function handlePostNow(taskId) {
 
     const scheduledAt = new Date(scheduledAtStr).toISOString();
 
-    const notes = els.notes.value.trim();
+    const notes = getSelectedInstaPostType();
 
     const requestBody = {
         task_id: taskId,
@@ -594,6 +468,8 @@ async function handlePostNow(taskId) {
         scheduled_at: scheduledAt,
         notes: notes || undefined
     };
+    console.warn(requestBody);
+    
 
     const originalBtnText = els.postNowBtn.innerText;
     els.postNowBtn.innerText = 'Posting...';
@@ -611,32 +487,30 @@ async function handlePostNow(taskId) {
             throw new Error(err.detail || 'Failed to schedule task');
         }
         const data = await res.json();
-        closeModal();
+        closeModalSch();
     } catch (e) {
         console.error(e);
         alert(`Error: ${e.message}`);
     } finally {
         els.postNowBtn.innerText = originalBtnText;
         els.postNowBtn.disabled = false;
-        fetchData()
+        fetchPostsBlz();
     }
 }
 
-function closeModal() {
-els.overlaymodal.classList.add('hidden');
 
-els.scheduleSection.classList.add('hidden');
-els.scheduleBtn.classList.add('hidden');
-els.platforms.innerHTML = '';
-els.notes.value = '';
-els.scheduledInput.value = '';
-els.img.src = '';
-els.imageDownloadBtn.classList.add('hidden');
-
-// Re-attach event listeners? No need, will be re-set on next openDetail
+function closeModalSch() {
+    els.overlaymodal.classList.add('hidden');
+    els.scheduleSection.classList.add('hidden');
+    els.scheduleBtn.classList.add('hidden');
+    els.platforms.innerHTML = '';
+    els.notes.value = '';
+    els.scheduledInput.value = '';
+    els.img.src = '';
+    els.imageDownloadBtn.classList.add('hidden');
 }
 
-els.closeBtn.onclick = closeModal;
+els.closeBtn.onclick = closeModalSch;
 
 function escapeHtml(text) {
     if (!text) return "";

@@ -39,6 +39,12 @@ def execute_posting(self, task_id: str) -> None:
             selectinload(Task.platform_selections).selectinload(PlatformSelection.platform),
             selectinload(Task.generated_contents).selectinload(GeneratedContent.media),
         ).filter(Task.task_id == task_id).first()
+        if task.status in (
+            TaskStatus.posted,
+            TaskStatus.failed,
+            TaskStatus.cancelled,
+        ):
+            return
        
         if not task:
             self.retry(countdown=300)  

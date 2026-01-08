@@ -158,7 +158,22 @@ async def exchange_long_lived(short_token: str):
         r.raise_for_status()
         return r.json()
 
-
+async def get_threads_long_lived_token(short_lived_token: str, platform: str):
+    client_id, client_secret = get_client_creds(platform)
+    
+    async with httpx.AsyncClient(timeout=15) as c:
+        r = await c.get(
+            "https://graph.threads.net/access_token",
+            params={
+                "grant_type": "th_exchange_token",
+                "client_secret": client_secret,
+                "access_token": short_lived_token,
+            },
+        )
+        if r.status_code != 200:
+            raise HTTPException(status_code=400, detail="Failed to get long-lived token")
+        
+        return r.json()
 
 async def handle_callback(req: Request, db: AsyncSession, platform: str, redirect_uri: str):
     code = req.query_params.get("code")
@@ -173,13 +188,23 @@ async def handle_callback(req: Request, db: AsyncSession, platform: str, redirec
             token = await exchange_code(code, redirect_uri, platform)
             long_token = await exchange_long_lived(token["access_token"])
 
+            # Updated to include 'picture' in fields to get the DP
             pages = await client.get(
                 f"https://graph.facebook.com/{GRAPH_VERSION}/me/accounts",
-                params={"access_token": long_token["access_token"]},
+                params={
+                    "access_token": long_token["access_token"],
+                    "fields": "id,name,access_token,picture.type(large)" # 'large' gets a high-res DP
+                },
             )
             pages.raise_for_status()
 
-            page = pages.json()["data"][0]
+            # Get the first page from the list
+            page_data = pages.json().get("data", [])
+            if not page_data:
+                raise HTTPException(status_code=404, detail="No Facebook pages found for this account")
+            
+            page = page_data[0]
+            profile_pic_url = page.get("picture", {}).get("data", {}).get("url")
 
             conn = Platform(
                 api_name="facebook",
@@ -190,7 +215,7 @@ async def handle_callback(req: Request, db: AsyncSession, platform: str, redirec
                 meta={
                     "PAGE_ID": page["id"],
                     "PAGE_ACCESS_TOKEN": page["access_token"],
-                    "PROFILE_PHOTO_URL": None,
+                    "PROFILE_PHOTO_URL": profile_pic_url,
                 },
             )
             db.add(conn)
@@ -235,12 +260,16 @@ async def handle_callback(req: Request, db: AsyncSession, platform: str, redirec
                     break
 
         elif platform == "threads":
-            token = await exchange_code(code, redirect_uri, platform)
+            short_token_data = await exchange_code(code, redirect_uri, platform)
+            short_token = short_token_data["access_token"]
+            long_token_data = await get_threads_long_lived_token(short_token, platform)
+            long_access_token = long_token_data["access_token"]
+            expires_in = long_token_data.get("expires_in", 5184000) 
 
             me = await client.get(
                 "https://graph.threads.net/me",
                 params={
-                    "access_token": token["access_token"],
+                    "access_token": long_access_token,
                     "fields": "id,username,threads_profile_picture_url",
                 },
             )
@@ -251,12 +280,12 @@ async def handle_callback(req: Request, db: AsyncSession, platform: str, redirec
                 api_name="threads",
                 account_id=profile.get("id"),
                 account_name=profile.get("username"),
-                access_token=token["access_token"],
-                expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
+                access_token=long_access_token,
+                expires_at=datetime.now(timezone.utc) + timedelta(seconds=expires_in),
                 meta={
                     "THREADS_USER_ID": profile.get("id"),
                     "THREAD_USERNAME": profile.get("username"),
-                    "THREADS_LONG_LIVE_TOKEN": token["access_token"],
+                    "THREADS_LONG_LIVE_TOKEN": long_access_token,
                     "PROFILE_PHOTO_URL": profile.get("threads_profile_picture_url"),
                 },
             )
@@ -655,6 +684,7 @@ def init(app):
                 scheduled_count += 1
             
             data.append({
+                "task_id": t.task_id,
                 "title": t.title or "Untitled Post",
                 "status": t.status.value,
                 "created_at": t.created_at.strftime("%b %d, %I:%M %p") if t.created_at else "",
