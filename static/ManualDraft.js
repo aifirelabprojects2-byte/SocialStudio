@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
         content: document.getElementById('modalContentMnl'),
         closeBtn: document.getElementById('closeBtnMnl'),
         submitBtn: document.getElementById('submitBtnMnl'),
+        saveAsDraftBtn: document.getElementById('saveAsDraftBtn'),
         fileInput: document.getElementById('fileInputMnl'),
         caption: document.getElementById('captionMnl'),
         preview: document.getElementById('previewMnl'),
@@ -707,50 +708,94 @@ if (platformName === 'linkedin') {
         elements.submitBtn.textContent = 'Schedule Post';
         elements.submitBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
         elements.submitBtn.classList.add('bg-gray-900');
+        elements.saveAsDraftBtn.textContent ='Save as draft'
+        elements.saveAsDraftBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+        elements.saveAsDraftBtn.classList.add('bg-white');
     }
 
-    // Submit Logic (Updated for multiple files)
-    elements.submitBtn.addEventListener('click', () => {
-        if (!state.currentPlatform) return alert('Select a platform');
-        
-        const formData = new FormData();
-        formData.append('caption', elements.caption.value);
-        formData.append('hashtags', document.getElementById('hashtagsMnl').value);
-        formData.append('notes', document.getElementById('notesMnl').value);
-        formData.append('platform_id', state.currentPlatform.platform_id);
-        
-        // Append all files
-        if (state.rawFiles.length > 0) {
-            state.rawFiles.forEach((file) => {
-                formData.append('files', file); // Use 'files' (plural) for list handling or 'file' and repeat
-            });
-        }
+let messageIndex = 0;
+const loadingMessages = [
+    'Locking it in..',
+    'Cooking..',
+    'Sending fr..',
+    'Almost ready..',
+    'Sec..',
+    'Finalizing..'
+];
 
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/manual-tasks', true);
+// 1. Reusable helper to handle the task submission
+const handleTaskSubmission = (isDraft = false) => {
+    if (!state.currentPlatform) return alert('Select a platform');
 
-        elements.submitBtn.disabled = true;
-        elements.submitBtn.textContent = 'Uploading...';
-        elements.submitBtn.classList.remove('bg-gray-900');
-        elements.submitBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+    // UI Feedback: Determine which button we are working with
+    const btn = isDraft ? elements.saveAsDraftBtn : elements.submitBtn;
+    const originalText = btn.textContent;
+    const currentMsg = loadingMessages[messageIndex] || loadingMessages[loadingMessages.length - 1];
 
-        xhr.addEventListener('load', () => {
-            if (xhr.status === 200) {
-                elements.submitBtn.textContent = 'Post Created!';
-                setTimeout(closeModal, 1500);
-            } else {
-                elements.submitBtn.textContent = 'Try Again';
-                elements.submitBtn.disabled = false;
-                elements.submitBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
-                elements.submitBtn.classList.add('bg-red-600');
+    if (messageIndex < loadingMessages.length - 1) messageIndex++;
+
+    // Prepare Data
+    const formData = new FormData();
+    const now = new Date();
+    const dateString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const timeString = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    
+    formData.append('title', `Task - ${dateString} ${timeString}`);
+    formData.append('caption', elements.caption.value);
+    formData.append('hashtags', document.getElementById('hashtagsMnl').value);
+    formData.append('notes', document.getElementById('notesMnl').value);
+    formData.append('status', isDraft ? 'draft' : 'published'); // Pass status to backend
+
+    if (state.rawFiles.length > 0) {
+        state.rawFiles.forEach(file => formData.append('files', file));
+    }
+
+    // Update UI to Loading State
+    btn.disabled = true;
+    btn.textContent = currentMsg;
+    btn.classList.remove('bg-gray-900');
+    btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/manual-tasks', true);
+
+    xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+            try {
+                const response = JSON.parse(xhr.responseText);
+                btn.textContent = isDraft ? 'Drafted' : 'Opening';
+                setTimeout(() => {
+                    closeModal();
+                    // ONLY open detail if it's NOT a draft
+                    if (!isDraft && typeof openDetail === 'function') {
+                        openDetail(response.task_id);
+                    }
+                }, 1000);
+            } catch (e) {
+                btn.textContent = 'bad response.';
             }
-        });
-
-        xhr.addEventListener('error', () => {
-            elements.submitBtn.textContent = 'Network Error';
-            elements.submitBtn.disabled = false;
-        });
-
-        xhr.send(formData);
+            finally{
+                fetchPostsBlz();
+            }
+        } else {
+            handleError(btn);
+        }
+        
     });
+
+    xhr.addEventListener('error', () => handleError(btn));
+    xhr.send(formData);
+};
+
+const handleError = (btn) => {
+    btn.textContent = 'try again.';
+    btn.disabled = false;
+    btn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+    btn.classList.add('bg-red-600');
+};
+
+
+elements.submitBtn.addEventListener('click', () => handleTaskSubmission(false));
+elements.saveAsDraftBtn.addEventListener('click', () => handleTaskSubmission(true));
+
 });

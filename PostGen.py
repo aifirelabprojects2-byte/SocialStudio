@@ -3,27 +3,36 @@ import hashlib
 import io
 import os
 import time
+import json
+from datetime import datetime
+from typing import List, Optional, Literal, Tuple, Any
+from pathlib import Path
+from functools import partial
+
+from fastapi import Form, Query, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 import requests
-import Accounts
-from CostCalc import calculate_image_cost, calculate_llm_cost
-from datetime import datetime
-from typing import List, Optional, Literal
-from pathlib import Path
-from fastapi import Form, Query, Depends, HTTPException, status
-from fastapi.responses import  JSONResponse
-import json
-from Database import LLMUsage, TaskStatus, gen_uuid_str, get_db, Task, GeneratedContent, Media
+from PIL import Image, UnidentifiedImageError, ImageEnhance, ImageStat
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, select, update, delete
 from sqlalchemy.orm import selectinload
-from Configs import  IMG_BB_API_KEY, client
-from PIL import Image, UnidentifiedImageError, ImageEnhance, ImageStat
+from sqlalchemy.exc import SQLAlchemyError
 from google import genai
 from google.genai import types
 
+# Local Imports
+import Accounts
+from CostCalc import calculate_image_cost, calculate_llm_cost
+from Database import LLMUsage, TaskStatus, gen_uuid_str, get_db, Task, GeneratedContent, Media
+from Configs import IMG_BB_API_KEY, client
+
+# Constants
 media_dir = Path("static/media")
 GenaiClient = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+DEFAULT_LIMIT = 4
+
+# --- Helper Functions ---
 
 def upload_to_imgbb(file_path: str, mime_type: str = "image/jpeg") -> Optional[str]:
     if not IMG_BB_API_KEY:
@@ -42,7 +51,6 @@ def upload_to_imgbb(file_path: str, mime_type: str = "image/jpeg") -> Optional[s
         print(f"ImgBB upload failed: {e}")
     return None
 
-
 def add_watermark(
     image_path: str,
     position: str = "bottom-right",         
@@ -53,7 +61,6 @@ def add_watermark(
     scale_factor: float = 0.16,            
     min_logo_size: int = 120                
 ) -> Image.Image:
-
     img = Image.open(image_path).convert("RGBA")
     width, height = img.size
 
@@ -79,19 +86,15 @@ def add_watermark(
         logo.putalpha(alpha)
 
     pos = position.lower()
-
     if pos in ["br", "bottom-right", "bottom_right"]:
         paste_x = width - new_logo_w - margin
         paste_y = height - new_logo_h - margin
-
     elif pos in ["tl", "top-left", "top_left"]:
         paste_x = margin
         paste_y = margin
-
     elif pos in ["bl", "bottom-left", "bottom_left"]:
         paste_x = margin
         paste_y = height - new_logo_h - margin
-
     elif pos in ["tr", "top-right", "top_right"]:
         paste_x = width - new_logo_w - margin
         paste_y = margin
@@ -102,10 +105,7 @@ def add_watermark(
     paste_y = max(0, min(paste_y, height - new_logo_h))
 
     img.paste(logo, (paste_x, paste_y), logo)
-
     return img
-
-
 
 class GeneratedContentResponse(BaseModel):
     caption: str = Field(..., max_length=2000)
@@ -113,8 +113,7 @@ class GeneratedContentResponse(BaseModel):
     image_prompt: Optional[str] = Field(None, max_length=1000)
     suggested_posting_time: str 
 
-# Constants for Pagination
-DEFAULT_LIMIT = 4
+# --- Routes ---
 
 def init(app):
     @app.get("/api/tasks")
@@ -124,10 +123,8 @@ def init(app):
         offset: int = 0,
         _=Depends(Accounts.get_current_user)
     ):
-        # Ensure limit is reasonable (e.g., max 5 drafts)
         limit = min(limit, DEFAULT_LIMIT)
         
-        # 1. Fetch the Paginated Tasks
         stmt = (
             select(Task)
             .where(Task.status == TaskStatus.draft)
@@ -136,18 +133,16 @@ def init(app):
                 selectinload(Task.media)
             )
             .order_by(Task.created_at.desc())
-            .limit(limit)  # Apply the limit
-            .offset(offset)  # Apply the offset
+            .limit(limit)
+            .offset(offset)
         )
         result = await db.execute(stmt)
         tasks = result.scalars().all()
         
-        # 2. Count Total Drafts (for pagination logic)
         count_stmt = select(func.count()).select_from(Task).where(Task.status == TaskStatus.draft)
         total_count_result = await db.execute(count_stmt)
         total_drafts = total_count_result.scalar_one()
 
-        # 3. Process Tasks (your existing logic)
         task_list = []
         for task in tasks:
             content = None
@@ -182,8 +177,6 @@ def init(app):
             "prev_offset": offset - limit if offset > 0 else None,
         }
         
-
-
     @app.post("/generate-preview")
     async def generate_preview(
         prompt: str = Form(...),
@@ -197,8 +190,6 @@ def init(app):
             raise HTTPException(status_code=400, detail="Number of drafts must be between 1 and 10")
         
         want_image = generate_image == "yes"
-
-        # Map friendly names to better prompt phrasing
         style_mapping = {
             "realistic": "realistic photo",
             "cinematic": "cinematic scene with dramatic lighting",
@@ -211,156 +202,167 @@ def init(app):
         }
         style_prompt = style_mapping.get(image_style, "realistic photo")
 
-        async def generate_one(i: int):
+        # 1. PURE LOGIC FUNCTION (NO DB ACCESS)
+        # This function runs in parallel without touching the shared session
+        async def generate_content_data(i: int):
             start = time.time()
+            user_content = f"""Topic: {prompt} - Generate variation {i + 1}
+Include image prompt: {want_image}
+Image style: {style_prompt if want_image else "N/A"}
+Generate the JSON now."""
+            
             try:
-                user_content = f"""Topic: {prompt} - Generate variation {i + 1}
-
-        Include image prompt: {want_image}
-        Image style: {style_prompt if want_image else "N/A"}
-
-        Generate the JSON now."""
-                
                 completion = await client.beta.chat.completions.parse(
                     model="gpt-4o-mini",
                     messages=[
                         {
                             "role": "system",
                             "content": """You are a professional social media manager. 
-
-        Generate engaging social media content for the given topic. 
-
-        Output ONLY valid JSON matching this exact structure - no explanations, no markdown, no extra text:
-
-        {
-        "caption": "The full post caption text (1-3 sentences, engaging, with emojis if appropriate). Max 2000 chars.",
-        "hashtags": ["tag1", "tag2", "tag3"],
-        "image_prompt": "Detailed description for AI image generation (if requested). Max 1000 chars.",
-        "suggested_posting_time": "Best time to post: e.g., 'Weekdays 8-10 AM EST' or 'Weekends 6-8 PM PST' based on typical engagement for this content type."
-        }
-
-        Rules:
-        - For image_prompt: Start with the chosen style (e.g., 'A realistic photo of...') and make it highly detailed and vivid.
-        - Only include image_prompt if requested.
-        - Hashtags: 3-10 relevant, lowercase, no # symbol."""
+Generate engaging social media content for the given topic. 
+Output ONLY valid JSON matching this exact structure:
+{
+"caption": "The full post caption text (1-3 sentences, engaging, with emojis if appropriate). Max 2000 chars.",
+"hashtags": ["tag1", "tag2", "tag3"],
+"image_prompt": "Detailed description for AI image generation (if requested). Max 1000 chars.",
+"suggested_posting_time": "Best time to post: e.g., 'Weekdays 8-10 AM EST'."
+}
+Rules:
+- For image_prompt: Start with the chosen style and make it highly detailed.
+- Only include image_prompt if requested.
+- Hashtags: 3-10 relevant, lowercase, no # symbol."""
                         },
-                        {
-                            "role": "user",
-                            "content": user_content,
-                        },
+                        {"role": "user", "content": user_content},
                     ],
                     temperature=0.8,
                     response_format=GeneratedContentResponse,
                 )
-                
+
                 latency_ms = int((time.time() - start) * 1000)
                 usage = completion.usage
-                input_tokens = usage.prompt_tokens
-                output_tokens = usage.completion_tokens
-                total_tokens = usage.total_tokens
-                cost_usd = calculate_llm_cost(model="gpt-4o-mini",input_tokens=input_tokens,output_tokens=output_tokens)
-                usage_row = LLMUsage(
-                        feature="generate_post",
-                        model="gpt-4o-mini",
-                        input_tokens=input_tokens,
-                        output_tokens=output_tokens,
-                        total_tokens=total_tokens,
-                        cost_usd=cost_usd,
-                        latency_ms=latency_ms,
-                        status="success"
-                    )
-                db.add(usage_row)
+                
+                # Usage Data (Dict)
+                usage_data = {
+                    "feature": "generate_post",
+                    "model": "gpt-4o-mini",
+                    "input_tokens": usage.prompt_tokens,
+                    "output_tokens": usage.completion_tokens,
+                    "total_tokens": usage.total_tokens,
+                    "cost_usd": calculate_llm_cost("gpt-4o-mini", usage.prompt_tokens, usage.completion_tokens),
+                    "latency_ms": latency_ms,
+                    "status": "success"
+                }
 
+                # Result Data (Dict)
                 result = completion.choices[0].message.parsed.model_dump()
-
+                
+                # Post-process tags
                 result["hashtags"] = [
                     tag.strip().lstrip("#").lower() for tag in result["hashtags"] 
                     if tag.strip() and not tag.strip().startswith("#")
                 ]
-                result["hashtags"] = list(dict.fromkeys(result["hashtags"]))[:10] 
-
+                result["hashtags"] = list(dict.fromkeys(result["hashtags"]))[:10]
+                
                 if not result["suggested_posting_time"]:
-                    result["suggested_posting_time"] = "Weekdays 9-11 AM local time (high engagement for most audiences)"
-
-                task = Task(
-                    title=prompt[:40] + "..." if len(prompt) > 40 else prompt,
-                    status="draft",
-                    time_zone="UTC",
-                )
-                db.add(task)
-                await db.flush()  
-
-                gen = GeneratedContent(
-                    task_id=task.task_id,
-                    prompt=prompt,
-                    caption=result["caption"],
-                    hashtags=result["hashtags"],
-                    image_prompt=result["image_prompt"] if want_image else None,
-                    suggested_posting_time=result["suggested_posting_time"],
-                    image_generated=False,
-                    meta={
-                    "model": "gpt-4o-mini",
-                    "structured": True,
-                    "image_style": image_style if want_image else None  
-                },
-                )
-                db.add(gen)
-                await db.commit()
+                    result["suggested_posting_time"] = "Weekdays 9-11 AM local time"
 
                 return {
-                    "task_id": task.task_id,
-                    "gen_id": gen.gen_id,
-                    "result": result,
-                    "prompt": prompt,
-                    "generate_image": want_image,
-                    "image_style": image_style if want_image else None,
+                    "success": True,
+                    "usage": usage_data,
+                    "result": result
                 }
 
             except Exception as e:
                 latency_ms = int((time.time() - start) * 1000)
-                db.add(LLMUsage(
-                    feature="generate_post",
-                    model="gpt-4o-mini",
-                    input_tokens=0,
-                    output_tokens=0,
-                    total_tokens=0,
-                    cost_usd=0,
-                    latency_ms=latency_ms,
-                    status="error",
-                ))
-                await db.commit()
-                # Return None on individual failure to filter later
-                return None
+                # Failure Usage Data
+                usage_data = {
+                    "feature": "generate_post",
+                    "model": "gpt-4o-mini",
+                    "input_tokens": 0, "output_tokens": 0, "total_tokens": 0,
+                    "cost_usd": 0, "latency_ms": latency_ms,
+                    "status": "error"
+                }
+                return {
+                    "success": False,
+                    "usage": usage_data,
+                    "error": str(e)
+                }
 
-        start = time.time()
+        # 2. RUN PARALLEL GENERATION
+        coros = [generate_content_data(i) for i in range(num_drafts)]
+        results_data = await asyncio.gather(*coros)
+
+        # 3. SEQUENTIAL DB WRITES (High Scale Optimization)
+        # We process all DB operations in one go to avoid race conditions.
+        
+        successful_drafts = []
+        db_objects_to_add = []
+
         try:
-            if num_drafts == 1:
-                draft = await generate_one(0)
-                drafts = [draft] if draft else []
-            else:
-                coros = [generate_one(i) for i in range(num_drafts)]
-                results = await asyncio.gather(*coros, return_exceptions=True)
-                drafts = [r for r in results if r is not None and not isinstance(r, Exception)]
-
-            latency_ms = int((time.time() - start) * 1000)
-            
-            # Log overall usage if needed, but per-call already logged
-            
-            if not drafts:
-                raise ValueError("All generations failed")
+            for data in results_data:
+                # Add Usage Log (Success or Fail)
+                usage_row = LLMUsage(**data["usage"])
+                db.add(usage_row) # Add to session, but don't commit yet
                 
+                if data["success"]:
+                    res = data["result"]
+                    
+                    # Create Task
+                    new_task = Task(
+                        title=prompt[:40] + "..." if len(prompt) > 40 else prompt,
+                        status=TaskStatus.draft,
+                        time_zone="UTC",
+                    )
+                    db.add(new_task)
+                    
+                    # Create GeneratedContent (Linked via object reference)
+                    gen_content = GeneratedContent(
+                        task=new_task, # SQLAlchemy handles the ID assignment automatically upon flush
+                        prompt=prompt,
+                        caption=res["caption"],
+                        hashtags=res["hashtags"],
+                        image_prompt=res["image_prompt"] if want_image else None,
+                        suggested_posting_time=res["suggested_posting_time"],
+                        image_generated=False,
+                        meta={
+                            "model": "gpt-4o-mini",
+                            "structured": True,
+                            "image_style": image_style if want_image else None  
+                        },
+                    )
+                    db.add(gen_content)
+                    
+                    # For response
+                    successful_drafts.append({
+                        "task_id": "pending", # We don't have ID yet, but front-end usually reloads list
+                        "result": res,
+                        "prompt": prompt,
+                        "generate_image": want_image
+                    })
+
+            if not successful_drafts:
+                # Commit usages even if all failed
+                await db.commit()
+                raise ValueError("All generations failed.")
+
+            # Single atomic commit for everything
+            await db.commit()
+            
+            # Note: IDs are populated in the objects after commit if you need to return them, 
+            # but usually for 'preview' just returning success is enough or reloading the list.
+            
             return JSONResponse({
                 "success": True,
-                "drafts": drafts,
+                "drafts": successful_drafts, # Contains the data to show immediately
+                "message": f"Generated {len(successful_drafts)} drafts successfully."
             })
 
+        except ValueError as ve:
+             # Already committed usages, just raise
+            raise HTTPException(status_code=500, detail=str(ve))
         except Exception as e:
-            latency_ms = int((time.time() - start) * 1000)
-            await db.commit()  # Ensure any partial usages are committed
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Generation failed: {str(e)}"
-            )
+            await db.rollback()
+            raise HTTPException(status_code=500, detail=f"Database commit failed: {str(e)}")
+
 
     @app.get("/tasks/{task_id}")
     async def get_task(task_id: str, db: AsyncSession = Depends(get_db),_=Depends(Accounts.get_current_user)):
@@ -372,7 +374,6 @@ def init(app):
         task = result.scalar_one_or_none()
         if not task:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-
 
         gen_content = task.generated_contents[0] if task.generated_contents else None
         media = task.media[0] if task.media else None
@@ -393,9 +394,6 @@ def init(app):
             "media_url": f"/media/{media.storage_path}" if media and media.storage_path else None,
         })
         
-        
-    from sqlalchemy.exc import SQLAlchemyError
-
     @app.post("/tasks/{task_id}/approve")
     async def approve_task(task_id: str, db: AsyncSession = Depends(get_db),_=Depends(Accounts.get_current_user)):
         try:
@@ -420,11 +418,10 @@ def init(app):
         except HTTPException:
             raise
         except SQLAlchemyError as e:
-            # print("Database error approving task %s: %s", task_id, e)
             try:
                 await db.rollback()
             except Exception:
-                print("Rollback failed")
+                pass
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                                 detail="Failed to approve task due to a database error")
 
@@ -440,7 +437,7 @@ def init(app):
     async def update_task(
         task_id: str,
         caption: str = Form(None),
-        hashtags: str = Form(None),  # JSON string
+        hashtags: str = Form(None),
         image_prompt: str = Form(None),
         db: AsyncSession = Depends(get_db),
         _=Depends(Accounts.get_current_user)
@@ -459,7 +456,6 @@ def init(app):
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-
     @app.delete("/tasks/{task_id}")
     async def delete_task(task_id: str, db: AsyncSession = Depends(get_db),_=Depends(Accounts.get_current_user)):
         stmt = delete(Task).where(Task.task_id == task_id)
@@ -467,21 +463,19 @@ def init(app):
         await db.commit()
         return JSONResponse({"success": True, "message": "Deleted successfully"})
 
-
     @app.post("/tasks/{task_id}/generate-image")
     async def generate_image_for_task(
         task_id: str,
-        model: str = Form("gemini-2.5-flash-image", description="Gemini model: 'gemini-2.5-flash-image' or 'gemini-3-pro-image-preview'"),
-        watermark_position: Optional[str] = Form(None, description="Watermark position: e.g., 'bottom-right', 'top-left'"),
+        model: str = Form("gemini-2.5-flash-image", description="Gemini model"),
+        watermark_position: Optional[str] = Form(None),
         db: AsyncSession = Depends(get_db),
         _=Depends(Accounts.get_current_user)
     ):
-        # 1. PRE-CHECK & DATA FETCHING (Fast)
+        # 1. PRE-CHECK & DATA FETCHING
         allowed_models = ["gemini-2.5-flash-image", "gemini-3-pro-image-preview"]
         if model not in allowed_models:
             raise HTTPException(status_code=400, detail=f"Invalid model.")
 
-        # Fetch data and store required values in local variables immediately
         stmt = select(GeneratedContent).join(Task).where(Task.task_id == task_id)
         result = await db.execute(stmt)
         gen_content = result.scalar_one_or_none()
@@ -489,7 +483,7 @@ def init(app):
         if not gen_content or not gen_content.image_prompt:
             raise HTTPException(status_code=400, detail="No image prompt available")
 
-        # Capture values into local variables to avoid DetachedInstanceErrors later
+        # Capture values into local variables to avoid DetachedInstanceErrors
         target_gen_id = gen_content.gen_id
         image_prompt = gen_content.image_prompt
 
@@ -497,73 +491,98 @@ def init(app):
         media_result = await db.execute(media_stmt)
         existing_media = media_result.scalar_one_or_none()
         
+        # Load existing image in thread pool to avoid blocking
+        loop = asyncio.get_running_loop()
         input_image = None
+        
         if existing_media and existing_media.storage_path:
             input_image_path = media_dir / existing_media.storage_path
             if input_image_path.is_file():
                 try:
-                    input_image = Image.open(input_image_path).convert("RGB")
+                    # Run IO/Image processing in executor
+                    input_image = await loop.run_in_executor(
+                        None, 
+                        lambda: Image.open(input_image_path).convert("RGB")
+                    )
                 except Exception as e:
                     print(f"Failed to load existing image: {e}")
 
-        # ---------------------------------------------------------
-        # 2. HEAVY LIFTING (Outside of active transaction context)
-        # ---------------------------------------------------------
+        # 2. GENERATE (Heavy Lifting)
         start = time.time()
         try:
             contents = [image_prompt]
             if input_image:
                 contents.append(input_image)
             
-            # This is the 20-30 second bottleneck
-            response = GenaiClient.models.generate_content(
-                model=model,
-                contents=contents,
-                config=types.GenerateContentConfig(response_modalities=["IMAGE"]),
+            # Call Gemini API
+            response = await loop.run_in_executor(
+                None,
+                partial(
+                    GenaiClient.models.generate_content,
+                    model=model,
+                    contents=contents,
+                    config=types.GenerateContentConfig(response_modalities=["IMAGE"])
+                )
             )
             
             image_data = None
-            for candidate in response.candidates:
-                for part in candidate.content.parts:
-                    if part.inline_data:
-                        image_data = part.inline_data.data
-                        break
-                if image_data: break
+            if response.candidates:
+                for candidate in response.candidates:
+                    if candidate.content and candidate.content.parts:
+                        for part in candidate.content.parts:
+                            if part.inline_data:
+                                image_data = part.inline_data.data
+                                break
+                    if image_data: break
             
             if not image_data:
                 raise ValueError("No image generated by Gemini")
 
-            # Local File Processing
-            generated_image = Image.open(io.BytesIO(image_data))
-            filename = f"{task_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-            filepath = media_dir / filename
-            generated_image.save(filepath, "PNG")
-            
-            final_image = generated_image
-            mime_type = "image/png"
-            
-            if watermark_position:
-                try:
-                    watermarked_image = add_watermark(str(filepath), position=watermark_position)
-                    final_image = watermarked_image.convert("RGB")
-                    filename = f"{task_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_watermarked.jpg"
-                    filepath = media_dir / filename
-                    final_image.save(filepath, "JPEG", quality=95)
-                    mime_type = "image/jpeg"
-                except Exception as wm_error:
-                    print(f"Watermark failed: {wm_error}")
+            # Process Image Saving in Executor (CPU Bound)
+            def save_and_process_image(data_bytes):
+                generated_img = Image.open(io.BytesIO(data_bytes))
+                f_name = f"{task_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+                f_path = media_dir / f_name
+                generated_img.save(f_path, "PNG")
+                
+                final_img = generated_img
+                m_type = "image/png"
+                
+                if watermark_position:
+                    try:
+                        watermarked = add_watermark(str(f_path), position=watermark_position)
+                        final_img = watermarked.convert("RGB")
+                        f_name = f"{task_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_watermarked.jpg"
+                        f_path = media_dir / f_name
+                        final_img.save(f_path, "JPEG", quality=95)
+                        m_type = "image/jpeg"
+                    except Exception as wm_error:
+                        print(f"Watermark failed: {wm_error}")
 
-            size_bytes = filepath.stat().st_size
-            checksum = hashlib.sha256(filepath.read_bytes()).hexdigest()
+                return f_name, f_path, final_img.width, final_img.height, m_type
+
+            filename, filepath, width, height, mime_type = await loop.run_in_executor(
+                None, save_and_process_image, image_data
+            )
+
+            # Get File Stats
+            stat = await loop.run_in_executor(None, filepath.stat)
+            size_bytes = stat.st_size
             
-            # External API Upload (Another slow network call)
-            img_url = upload_to_imgbb(str(filepath), mime_type)
+            # Checksum (CPU Bound)
+            def calculate_checksum():
+                return hashlib.sha256(filepath.read_bytes()).hexdigest()
+            checksum = await loop.run_in_executor(None, calculate_checksum)
+            
+            # Upload to ImgBB (Network I/O - wrap in executor just in case)
+            img_url = await loop.run_in_executor(
+                None, upload_to_imgbb, str(filepath), mime_type
+            )
+            
             latency_ms = int((time.time() - start) * 1000)
 
-            # ---------------------------------------------------------
-            # 3. FINAL DATABASE PERSISTENCE (Fast Writes)
-            # ---------------------------------------------------------
-            # Re-check for media inside this final block
+            # 3. DB PERSISTENCE
+            # Re-check for media inside this final block for update vs insert
             existing_gen_stmt = select(Media).where(Media.task_id == task_id, Media.is_generated == True)
             existing_gen_res = await db.execute(existing_gen_stmt)
             existing_gen_media = existing_gen_res.scalar_one_or_none()
@@ -573,8 +592,8 @@ def init(app):
                 existing_gen_media.size_bytes = size_bytes
                 existing_gen_media.img_url = img_url
                 existing_gen_media.mime_type = mime_type
-                existing_gen_media.width = final_image.width
-                existing_gen_media.height = final_image.height
+                existing_gen_media.width = width
+                existing_gen_media.height = height
                 existing_gen_media.checksum = checksum
             else:
                 new_media = Media(
@@ -585,8 +604,8 @@ def init(app):
                     mime_type=mime_type,
                     size_bytes=size_bytes,
                     img_url=img_url,
-                    width=final_image.width,
-                    height=final_image.height,
+                    width=width,
+                    height=height,
                     checksum=checksum,
                     is_generated=True,
                 )
@@ -615,8 +634,7 @@ def init(app):
             })
 
         except Exception as e:
-            # Cleanup and Error Logging
-            await db.rollback() # Ensure no partial data is left
+            await db.rollback()
             latency_ms = int((time.time() - start) * 1000)
             
             error_usage = LLMUsage(
@@ -625,8 +643,12 @@ def init(app):
                 input_tokens=0, output_tokens=0, total_tokens=0,
                 cost_usd=0, latency_ms=latency_ms, status="error"
             )
-            db.add(error_usage)
-            await db.commit()
+            try:
+                # New transaction for logging error
+                db.add(error_usage)
+                await db.commit()
+            except:
+                pass
             
             print(f"Error in generate_image_for_task: {e}")
             raise HTTPException(status_code=500, detail=str(e))
@@ -660,7 +682,6 @@ def init(app):
         for task in tasks:
             content = None
             if task.generated_contents:
-                # pick the latest generated content for preview
                 content = max(task.generated_contents, key=lambda x: x.created_at)
 
             media_url = None
@@ -693,7 +714,6 @@ def init(app):
             "prev_offset": offset - limit if offset > 0 else None,
         }
 
-
     @app.get("/api/tasks/approved/{task_id}", status_code=200)
     async def get_approved_draft_detail(task_id: str, db: AsyncSession = Depends(get_db),_=Depends(Accounts.get_current_user)):
         stmt = (
@@ -706,12 +726,10 @@ def init(app):
         if not task:
             raise HTTPException(status_code=404, detail="Approved draft not found")
 
-        # Latest generated content (if any)
         content = None
         if task.generated_contents:
             content = max(task.generated_contents, key=lambda x: x.created_at)
 
-        # pick an image/media URL if available
         media_url = None
         media_items = []
         for m in task.media or []:

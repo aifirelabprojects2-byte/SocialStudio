@@ -9,7 +9,7 @@ import TextFormatter
 import UsageTracker
 import PostGen
 import ImageEditor
-# import TaskScheduler
+import TaskScheduler
 import SocialConnect
 import ManagePlatform
 import ErrorLogs
@@ -94,4 +94,4 @@ ScheduledTasks.init(app)
 VideoTempBuilder.init(app)
 ImageEditor.init(app)
 SocialConnect.init(app)
-# TaskScheduler.init(app)
+TaskScheduler.init(app)

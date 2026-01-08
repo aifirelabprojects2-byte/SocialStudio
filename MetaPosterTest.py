@@ -5,10 +5,10 @@ from meta_poster import InstagramPoster, ThreadsPoster, FacebookPoster
 import os
 
 # InsTkn=get_platform_credentials_sync("instagram")
-poster = InstagramPoster(
-    page_id="905767789286116",
-    access_token="EAAaBgZB079rABQYExfnfVNjORbh75bhbT2eg3K4vNcuYReKagUG4CJAPFHZC4ZAZBmGsydNSfNnPlq2VIEyi3FrlZBkrXdJcEEi22G7Jh2iLV8TGc1o9hLeHs8qmD0h64zZBXmxA39UCgGBtibKuZANCRKBU2tkhwCuMTRRX3ymCnvPwIlePO1AAsEfWkeAFQg9ICTKkXTq189Mjvp1"
-)
+# poster = InstagramPoster(
+#     page_id="",
+#     access_token=""
+# )
 
 
 # fb = FacebookPoster(
@@ -42,6 +42,7 @@ poster = InstagramPoster(
 #     caption="Testing",
 #     media_url="https://pub-582b7213209642b9b995c96c95a30381.r2.dev/flux-schnell-cf/prompt-1765086317630-41419.png",
 #     hashtags=["Testing", "Automation"],
+#     post_type='story'
 # )
 
 # # Facebook

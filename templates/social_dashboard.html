@@ -369,19 +369,19 @@
                 <div>
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
                         <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                            <div class="bg-white border border-slate-200 rounded-lg flex p-1 shadow-sm">
-                                <button onclick="switchViewBlz('list')" id="btn-listBlz" class="p-2 rounded-md transition-all text-slate-500 hover:text-gray-700">
+                            <div class="bg-white border border-brand/10 rounded-xl flex p-1 shadow-xs">
+                                <button onclick="switchViewBlz('list')" id="btn-listBlz" class="p-2 rounded-md transition-all text-slate-500 hover:text-brand/30">
                                     <i data-lucide="list" class="w-4 h-4"></i>
                                 </button>
-                                <button onclick="switchViewBlz('grid')" id="btn-gridBlz" class="p-2 rounded-md transition-all text-slate-500 hover:text-gray-700">
+                                <button onclick="switchViewBlz('grid')" id="btn-gridBlz" class="p-2 rounded-md transition-all text-slate-500 hover:text-brand/30">
                                     <i data-lucide="layout-grid" class="w-4 h-4"></i>
                                 </button>
                             </div>
                             <div class="relative group">
-                                <button id="filter-btnBlz" class="flex items-center space-x-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition-all">
-                                    <i data-lucide="filter" class="w-4 h-4 text-slate-500"></i>
+                                <button id="filter-btnBlz" class="flex items-center space-x-2 px-4 py-2 bg-brand/5 border border-brand/10 rounded-xl text-sm font-medium text-brand/60 hover:bg-slate-50 shadow-sm transition-all">
+                                    <i data-lucide="filter" class="w-4 h-4 text-brand/60"></i>
                                     <span>Filters</span>
-                                    <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+                                    <i data-lucide="chevron-down" class="w-3 h-3 text-brand/60"></i>
                                 </button>
                                 
                                 <!-- Dropdown Content -->
@@ -405,11 +405,11 @@
                             <div class="border-l border-slate-300 h-6 mx-2 hidden sm:block"></div>
         
                             <!-- Quick Status Tabs -->
-                            <div class="flex space-x-1 bg-slate-200/50 p-1 rounded-lg" id="quick-tabsBlz">
-                                <button onclick="quickFilterBlz('all')" id="tab-allBlz" class="px-3 py-1.5 text-xs font-medium rounded-md bg-white text-gray-700 shadow-sm transition-all">All</button>
-                                <button onclick="quickFilterBlz('scheduled')" id="tab-scheduledBlz" class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:bg-white/50 transition-all">Scheduled</button>
-                                <button onclick="quickFilterBlz('draft_approved')" id="tab-draft_aprvBlz" class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:bg-white/50 transition-all">Approved</button>
-                                <button onclick="quickFilterBlz('posted')" id="tab-postedBlz" class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:bg-white/50 transition-all">Published</button>
+                            <div class="flex space-x-1 bg-white p-1.5 border border-gray-200 rounded-lg" id="quick-tabsBlz">
+                                <button onclick="quickFilterBlz('all')" id="tab-allBlz" class="px-3 py-1.5 text-xs font-medium rounded-md bg-brand/10 text-brand shadow-sm transition-all">All</button>
+                                <button onclick="quickFilterBlz('scheduled')" id="tab-scheduledBlz" class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:bg-gray-100 transition-all">Scheduled</button>
+                                <button onclick="quickFilterBlz('draft_approved')" id="tab-draft_approvedBlz" class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:bg-gray-100 transition-all">Approved</button>
+                                <button onclick="quickFilterBlz('posted')" id="tab-postedBlz" class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:bg-gray-100 transition-all">Published</button>
                             </div>
                         </div>
                     </div>
@@ -418,10 +418,7 @@
             <main class="flex-1 flex flex-col">
 
                 <div id="posts-containerBlz" class="flex-1 p-6 overflow-y-auto">
-                    <!-- Dynamic Content -->
-                    <div class="flex justify-center items-center h-64">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-700"></div>
-                    </div>
+
                 </div>
         
                 <!-- Pagination -->
@@ -835,7 +832,7 @@
                     </div>
                 </div>
             </div>
-            <section class="max-w-4xl mx-auto pt-[10%]" >
+            <section class="max-w-4xl mx-auto pt-10" >
                 <div class="text-center mb-8">
                     <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-slate-900 dark:text-white mb-3">
                       What video would you like to download?
@@ -849,14 +846,14 @@
               <div class="w-full max-w-4xl">
                 <form id="downloadFormYtb" class="relative group">
  
-                  <div class="bg-white border border-slate-200 rounded-3xl shadow-card p-2 transition-shadow duration-300 hover:shadow-lg hover:border-slate-300">
+                  <div class="bg-white border-2 border-brand/40 rounded-3xl shadow-card p-2 transition-shadow duration-300 hover:shadow-lg hover:border-brand/50">
 
                     <div class="p-4 bg-slate-50/50 rounded-2xl mb-2">
                       <textarea 
                         id="urlYtb" 
                         required
                         placeholder="Paste your video link here..." 
-                        class="w-full h-24 bg-transparent border-none focus:ring-0 text-lg text-slate-800 placeholder-slate-400 resize-none p-2"
+                        class="w-full h-24 bg-brand/5 rounded-2xl border-none focus:ring-0 text-lg text-slate-600 placeholder-slate-400 resize-none p-2"
                       ></textarea>
                     </div>
             
@@ -870,8 +867,8 @@
                             </span>
                             <div class="relative ml-3">
                                 <input type="checkbox" id="audioOnlyYtb" name="audioOnly" value="no" class="sr-only peer">
-                                <div class="w-11 h-6 bg-gray-300 rounded-full transition peer-checked:bg-gray-800 dark:bg-slate-700"></div>
-                                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition 
+                                <div class="w-11 h-6 bg-brand/10 rounded-full transition peer-checked:bg-brand/40 dark:bg-slate-700"></div>
+                                <div class="absolute top-0.5 left-0.5 w-5 h-5 bg-brand/80 rounded-full transition 
                                             peer-checked:translate-x-5 shadow"></div>
                             </div>
                           </label>
@@ -879,7 +876,7 @@
                         <div class="hidden md:block w-px h-6 bg-slate-200"></div>
 
                         <div class="relative w-full md:w-auto">
-                          <select id="qualityYtb" class="appearance-none bg-white border border-slate-200 text-slate-700 text-sm font-medium py-2 pl-4 pr-10 rounded-full cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all w-full md:w-auto">
+                          <select id="qualityYtb" class="appearance-none bg-white border-2 border-brand/10 text-slate-700 text-sm font-medium py-2 pl-4 pr-10 rounded-full cursor-pointer hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all w-full md:w-auto">
                             <option value="best">Best Quality</option>
                             <option value="1080p">1080p HD</option>
                             <option value="720p">720p</option>
@@ -895,9 +892,9 @@
             
                       <button type="submit" 
                         id="submitBtnYtb"
-                        class="w-full md:w-auto text-sm bg-[#0F172A] hover:bg-[#1E293B] text-white px-7 py-2 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-slate-900/10"
+                        class="w-full md:w-auto text-sm bg-brand/10 hover:bg-brand/20 text-brand px-7 py-2.5 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-xs shadow-brand"
                       >
-                        <i class="ph ph-download-simple text-lg"></i>
+                        <i data-lucide="arrow-down-to-line" class="w-5 h-5"></i>
                         <span>Download</span>
                       </button>
             
@@ -944,7 +941,7 @@
                     </p>
                 </div>
         
-                <div class="bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5 transition-shadow duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+                <div class="bg-white dark:bg-slate-800 rounded-3xl border-2 border-brand/40 dark:border-slate-700 p-4 sm:p-5 transition-shadow duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
                     <form id="reviewFormRes" class="relative">
                         <div class="relative group">
                             <div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
@@ -956,7 +953,7 @@
                                 type="text"
                                 id="productCompanyInputRes"
                                 placeholder="e.g., Whatai developed by AI Firelab"
-                                class="w-full pl-12 pr-4 py-5 sm:py-6 bg-transparent text-lg sm:text-xl text-slate-800 dark:text-white placeholder-slate-400 outline-none rounded-2xl focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-600 transition-all"
+                                class="w-full pl-12 pr-4 py-5 sm:py-6 bg-transparent text-lg sm:text-xl text-slate-800 dark:text-white placeholder-slate-400 outline-none border border-brand/30 rounded-2xl transition-all"
                                 autocomplete="off"
                                 required
                             >
@@ -1015,7 +1012,7 @@
                             <button
                                 type="submit"
                                 id="submitButtonRes"
-                                class="w-full sm:w-auto flex items-center justify-center px-6 py-3 bg-slate-900 dark:bg-slate-700 text-white text-sm font-medium rounded-xl hover:bg-slate-800 dark:hover:bg-slate-600 focus:ring-4 focus:ring-slate-300 dark:focus:ring-slate-600 transition-all transform active:scale-95 shadow-lg shadow-slate-900/10"
+                                class="w-full sm:w-auto flex items-center justify-center px-6 py-3 bg-brand/10 dark:bg-slate-700 text-brand text-sm font-medium rounded-xl hover:bg-brand/20 dark:hover:bg-slate-600 focus:ring-4 focus:ring-slate-300 dark:focus:ring-slate-600 transition-all transform active:scale-95 shadow-xs shadow-slate-900/10"
                             >
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                                 Generate Report
@@ -1354,7 +1351,7 @@
                                 <svg fill="currentColor" class="w-5 h-5 text-gray-600" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22.71,6.29a1,1,0,0,0-1.42,0L20,7.59V2a1,1,0,0,0-2,0V7.59l-1.29-1.3a1,1,0,0,0-1.42,1.42l3,3a1,1,0,0,0,.33.21.94.94,0,0,0,.76,0,1,1,0,0,0,.33-.21l3-3A1,1,0,0,0,22.71,6.29ZM19,13a1,1,0,0,0-1,1v.38L16.52,12.9a2.79,2.79,0,0,0-3.93,0l-.7.7L9.41,11.12a2.85,2.85,0,0,0-3.93,0L4,12.6V7A1,1,0,0,1,5,6h8a1,1,0,0,0,0-2H5A3,3,0,0,0,2,7V19a3,3,0,0,0,3,3H17a3,3,0,0,0,3-3V14A1,1,0,0,0,19,13ZM5,20a1,1,0,0,1-1-1V15.43l2.9-2.9a.79.79,0,0,1,1.09,0l3.17,3.17,0,0L15.46,20Zm13-1a.89.89,0,0,1-.18.53L13.31,15l.7-.7a.77.77,0,0,1,1.1,0L18,17.21Z"/></svg>
                             </div>
                             
-                            <div id="modalNoImg" class="flex flex-col items-center justify-center text-gray-400 hidden p-6 text-center">
+                            <div id="modalNoImg" class="flex flex-col items-center justify-center text-gray-400 p-6 text-center">
                                 <span class="text-xs font-medium uppercase tracking-wide">No Media Preview</span>
                             </div>
                         </div>
@@ -1393,23 +1390,30 @@
                       </div>
                       <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
                           <div id="schedulingSection" class="hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
-                              <div class="mb-5 pb-4 border-b border-gray-100">
-                                  <h4 class="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                                      Configuration
-                                  </h4>
-                              </div>
-      
+                              <div class="mb-3 border-b border-gray-100"></div>
                               <div class="space-y-6">
-                                  <div class="px-4">
-                                      <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Select Platforms</label>
+                                    <div class="px-4">
+                                      <label class="block text-xs font-semibold text-gray-500 tracking-wider mb-3">Select Platforms</label>
                                       <div id="platformsList" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
-                                      <div id="inswarn" class="hidden text-sm text-yellow-500 mt-2"> Instagram posting requires an image. Text-only posts are not supported. </div>
-                                  </div>
+                                    </div>
+                                    <div id="InstaPstTyp" class="mt-3 hidden flex gap-4 text-sm font-medium text-gray-600">
+                                        <label class="block text-xs font-semibold text-gray-500 tracking-wider my-3">Select Post Type For Instagram</label>
+                                        <label class="flex items-center gap-2 cursor-pointer group">
+                                            <input type="radio" name="InspostType" value="Post" checked="" class="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800">
+                                            <span class="group-hover:text-gray-800 transition">Post</span>
+                                        </label><label class="flex items-center gap-2 cursor-pointer group">
+                                            <input type="radio" name="InspostType" value="Reel" class="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800">
+                                            <span class="group-hover:text-gray-800 transition">Reel</span>
+                                        </label><label class="flex items-center gap-2 cursor-pointer group">
+                                            <input type="radio" name="InspostType" value="Story" class="w-4 h-4 text-gray-800 border-gray-300 focus:ring-gray-800">
+                                            <span class="group-hover:text-gray-800 transition">Story</span>
+                                        </label>
+                                    </div>
       
                                   <div class="grid grid-cols-1 gap-5">
                                       <div>
                                           <div class="flex items-center gap-2 mt-1 text-xs text-gray-500">
-                                            <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Publish Date & Time (IST)</label>
+                                            <label class="block text-xs font-semibold text-gray-500 tracking-wider mb-2">Publish Date & Time (IST)</label>
                                             <svg class="w-4 h-4 mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                                             <span class="mb-2">AI Suggestion: <span id="modalTime" class="font-medium text-gray-700"></span></span>
                                           </div>
@@ -1421,11 +1425,9 @@
                                           </div>
                                       </div>
                                   </div>
-      
-                                  <!-- Notes -->
+                                <div id="inswarn" class="hidden text-sm text-amber-500 my-2"> Instagram posting requires an image. Text-only posts are not supported</div>
                                   <div>
-                                      <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Internal Notes</label>
-                                      <textarea id="notesInput" rows="3" class="block w-full rounded-lg border-gray-300 bg-white px-4 py-2 text-gray-900 shadow-sm focus:border-gray-500 focus:ring-gray-500 sm:text-sm resize-none transition-colors  " placeholder="Add specific instructions for the reviewer..."></textarea>
+                                  <div hidden id="notesInput"></div>
                                   </div>
                               </div>
                           </div>
@@ -1438,7 +1440,7 @@
                            <button type="button" id="closeModalBtn" class="inline-flex w-full justify-center rounded-xl bg-white px-5 py-2.5 text-sm font-semibold text-gray-700 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:w-auto transition-all">
                               Cancel
                           </button>
-                          <button disabled type="button" id="pstnwBtn" class="cursor-not-allowed w-full inline-flex gap-2 justify-center items-center rounded-xl bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 transition-all">
+                          <button type="button" id="postNowBtn" class="w-full inline-flex gap-2 justify-center items-center rounded-xl bg-gray-100 px-6 py-2.5 text-sm font-semibold text-gray-800 shadow-sm hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-600 transition-all">
                             Post Now
                             <i data-lucide="send-horizontal" class="w-4 h-4  mt-[2px]"></i>
                            </button>
@@ -1653,7 +1655,7 @@
                           </div>
       
                           <div class="border border-gray-200 rounded-xl shadow-sm focus-within:ring-0  transition-all">
-                              <textarea id="captionMnl" name="caption" rows="6" 
+                              <textarea required id="captionMnl" name="caption" rows="6" 
                                   class="w-full px-4 py-4 border-none text-gray-800 text-lg placeholder-gray-400 focus:outline-none resize-none rounded-t-xl bg-transparent"
                                   placeholder="What's on your mind?"></textarea>
       
@@ -1724,12 +1726,11 @@
                   <div class="flex items-center gap-4"></div>
                   
                   <div class="flex gap-0 shadow-sm rounded-lg">
-                      <button class="bg-white border border-gray-300 text-gray-700 px-4 py-2 text-sm font-medium rounded-l-lg hover:bg-gray-50 flex items-center gap-2">
+                      <button id="saveAsDraftBtn" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 text-sm font-medium rounded-l-lg hover:bg-gray-50 flex items-center gap-2">
                           Save as draft 
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                       </button>
                       <button id="submitBtnMnl" class="bg-gray-900 text-white px-6 py-2 text-sm font-medium rounded-r-lg hover:bg-black transition shadow-sm">
-                          Approve
+                          Schedule Post
                       </button>
                   </div>
               </div>
@@ -1774,7 +1775,6 @@
             }
         }
     </script>
-    <!-- Connection -->
 
     <script>
         const defaultPillId = {{ default_platform_pill_id | tojson }};
@@ -1871,67 +1871,62 @@
                             }
                             // Staggered animation delay
                             const delay = Math.min(index * 100, 1000); // Cap delay at 1s
-                            const html = `
-        <div class="task-card group bg-white border border-slate-200 rounded-3xl overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 mb-6" style="animation-delay: ${delay}ms; animation-fill-mode: backwards;">
-        
-        <div class="p-6 flex justify-between gap-6">
-            
-            <div class="flex flex-col justify-between flex-1">
-                <div>
-                    <div class="flex items-center gap-2 mb-6">
-                        <div class="relative">
-                            <img src="${profileImg}" class="w-10 h-10 rounded-full object-cover">
-                            <div class="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 border-2 border-white flex items-center justify-center w-5 h-5 text-white">
-                                <svg class="w-3 h-3 text-gray-800" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="${svgPath}" fill="currentColor"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <span class="font-bold text-slate-800 text-base">${accountName}</span>
-                    </div>
-        
-                    <div class="text-slate-800 text-[15px] font-normal leading-relaxed">
-                        ${task.caption || "No caption provided."}
-                    </div>
-                </div>
-            </div>
-        
-            <div class="shrink-0">
-                ${task.image_url 
-                    ? `<div class="w-48 h-48 rounded-lg overflow-hidden border border-slate-200 shadow-sm">
-                         <img src="${task.image_url}" class="w-full h-full object-cover">
-                       </div>`
-                    : `<div class="w-48 h-48 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center text-slate-300">
-                         <i class="fa-regular fa-image text-4xl opacity-50"></i>
-                       </div>`
-                }
-            </div>
-        </div>
-        
-        <div class="px-6 py-3 border-t border-slate-200 flex items-center justify-between">
-            <div class="text-sm text-slate-900 font-medium">
-                You created this <span class="font-normal text-slate-600">${task.created_at}</span>
-            </div>
-        
-            <div class="flex items-center gap-2">
-                <button class="flex items-center gap-2 px-4 py-1.5 border border-slate-300 rounded-md text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all">
-                ${statusIcon}${statusDisplay}
-                </button>
-            </div>
-        </div>
-        
-        </div>
-        `;
+                            const html = `<div class="task-card group bg-white border border-slate-200 rounded-3xl overflow-hidden transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 mb-6" style="animation-delay: ${delay}ms; animation-fill-mode: backwards;">
+                                          <div class="p-6 flex justify-between gap-6">
+                                            
+                                            <div class="flex flex-col justify-between flex-1">
+                                                <div>
+                                                    <div class="flex items-center gap-2 mb-6">
+                                                        <div class="relative">
+                                                            <img src="${profileImg}" class="w-10 h-10 rounded-full object-cover">
+                                                            <div class="absolute -bottom-1 -right-1 bg-white rounded-full p-0.5 border-2 border-white flex items-center justify-center w-5 h-5 text-white">
+                                                                <svg class="w-3 h-3 text-gray-800" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                                    <path d="${svgPath}" fill="currentColor"/>
+                                                                </svg>
+                                                            </div>
+                                                        </div>
+                                                        <span class="font-bold text-slate-800 text-base">${accountName}</span>
+                                                    </div>
+                                        
+                                                    <div class="text-slate-800 text-[15px] font-normal leading-relaxed">
+                                                        ${task.caption || "No caption provided."}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        
+                                            <div class="shrink-0">
+                                                ${task.image_url 
+                                                    ? `<div class="w-48 h-48 rounded-lg overflow-hidden border border-slate-200 shadow-sm">
+                                                        <img src="${task.image_url}" class="w-full h-full object-cover">
+                                                    </div>`
+                                                    : `<div class="w-48 h-48 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center text-slate-300">
+                                                        <i class="fa-regular fa-image text-4xl opacity-50"></i>
+                                                    </div>`
+                                                }
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="px-6 py-3 border-t border-slate-200 flex items-center justify-between">
+                                            <div class="text-sm text-slate-900 font-medium">
+                                                You created this <span class="font-normal text-slate-600">${task.created_at}</span>
+                                            </div>
+                                        
+                                            <div class="flex items-center gap-2">
+                                                <button class="flex items-center gap-2 px-4 py-1.5 border border-slate-300 rounded-md text-slate-700 text-sm font-semibold hover:bg-slate-50 transition-all">
+                                                ${statusIcon}${statusDisplay}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        </div>
+                                        `;
                             taskList.insertAdjacentHTML('beforeend', html);
                         });
                     }
                 }
-                // Initial render
                 renderTasks('all');
-                // Add filter listener
                 const filterSelect = document.getElementById('filterSelect');
                 filterSelect.addEventListener('change', () => renderTasks(filterSelect.value));
-                // 6. Reveal
                 loadingState.classList.add('hidden');
                 dataState.classList.remove('hidden');
             } catch (err) {
@@ -2039,16 +2034,15 @@
             currentViewBlz = view;
             const btnList = document.getElementById('btn-listBlz');
             const btnGrid = document.getElementById('btn-gridBlz');
-            
             if (view === 'list') {
-                btnList.classList.add('bg-slate-100', 'text-gray-700');
+                btnList.classList.add('bg-brand/10', 'text-brand');
                 btnList.classList.remove('text-slate-500');
-                btnGrid.classList.remove('bg-slate-100', 'text-gray-700');
+                btnGrid.classList.remove('bg-brand/10', 'text-brand');
                 btnGrid.classList.add('text-slate-500');
             } else {
-                btnGrid.classList.add('bg-slate-100', 'text-gray-700');
+                btnGrid.classList.add('bg-brand/10', 'text-brand');
                 btnGrid.classList.remove('text-slate-500');
-                btnList.classList.remove('bg-slate-100', 'text-gray-700');
+                btnList.classList.remove('bg-brand/10', 'text-brand');
                 btnList.classList.add('text-slate-500');
             }
 
@@ -2057,13 +2051,13 @@
             }
         }
         function quickFilterBlz(status) {
-            const tabs = ['all', 'scheduled', 'posted'];
+            const tabs = ['all', 'scheduled', 'posted','draft_approved'];
             tabs.forEach(t => {
                 const btn = document.getElementById(`tab-${t}Blz`);
                 if (status === t) {
-                    btn.className = "px-3 py-1.5 text-xs font-medium rounded-md bg-white text-gray-700 shadow-sm transition-all";
+                    btn.className = "px-3 py-1.5 text-xs font-medium rounded-md bg-brand/10 text-brand shadow-sm transition-all";
                 } else {
-                    btn.className = "px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:bg-white/50 transition-all";
+                    btn.className = "px-3 py-1.5 text-xs font-medium rounded-md text-slate-600 hover:bg-gray-100 transition-all";
                 }
             });
             if (status === 'all') {
@@ -2089,10 +2083,73 @@
             fetchPostsBlz();
             document.getElementById('filter-dropdownBlz').classList.add('hidden');
         }
+        function renderSkeletonBlz() {
+            const container = document.getElementById('posts-containerBlz');
+            
+            if (currentViewBlz === 'list') {
+                let rows = '';
+                for (let i = 0; i < 5; i++) {
+                    rows += `
+                        <tr class="animate-pulse">
+                            <td class="p-4"><div class="w-16 h-16 bg-slate-200 rounded-lg mx-auto"></div></td>
+                            <td class="p-4">
+                                <div class="h-4 bg-slate-200 rounded w-3/4 mb-2"></div>
+                                <div class="h-3 bg-slate-100 rounded w-1/2"></div>
+                            </td>
+                            <td class="p-4">
+                                <div class="h-4 bg-slate-200 rounded w-20 mb-2"></div>
+                                <div class="h-3 bg-slate-100 rounded w-12"></div>
+                            </td>
+                            <td class="p-4"><div class="h-6 bg-slate-100 rounded-full w-16 mx-auto"></div></td>
+                            <td class="p-4"><div class="h-8 bg-slate-200 rounded-full w-24 mx-auto"></div></td>
+                        </tr>`;
+                }
+                container.innerHTML = `
+                    <div class="bg-white rounded-xl overflow-hidden border border-slate-100">
+                        <table class="w-full">
+                            <tbody class="divide-y divide-slate-50">${rows}</tbody>
+                        </table>
+                    </div>`;
+            } else {
+                let cards = '';
+                for (let i = 0; i < 4; i++) {
+                    cards += `
+                        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden animate-pulse">
+                            <div class="h-40 bg-slate-200"></div>
+                            <div class="p-5">
+                                <div class="h-4 bg-slate-200 rounded w-3/4 mb-3"></div>
+                                <div class="h-3 bg-slate-100 rounded w-full mb-2"></div>
+                                <div class="h-3 bg-slate-100 rounded w-2/3"></div>
+                                <div class="mt-6 flex justify-between">
+                                    <div class="h-4 bg-slate-100 rounded w-20"></div>
+                                    <div class="h-4 bg-slate-100 rounded w-4"></div>
+                                </div>
+                            </div>
+                        </div>`;
+                }
+                container.innerHTML = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">${cards}</div>`;
+            }
+        }
+
+        function renderEmptyStateBlz() {
+            const container = document.getElementById('posts-containerBlz');
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-80 bg-white rounded-xl border-2 border-dashed border-slate-200">
+                    <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                        <i data-lucide="search-x" class="w-8 h-8 text-slate-400"></i>
+                    </div>
+                    <h3 class="text-lg font-semibold text-slate-800">No posts found</h3>
+                    <p class="text-slate-500 text-sm mt-1">Try adjusting your filters or search criteria.</p>
+                    <button onclick="resetFiltersBlz()" class="mt-4 text-sm font-medium text-brand hover:underline">
+                        Clear all filters
+                    </button>
+                </div>
+            `;
+            lucide.createIcons();
+        }
 
         async function fetchPostsBlz() {
-            const container = document.getElementById('posts-containerBlz');
-            container.innerHTML = `<div class="flex justify-center items-center h-64"> <div class="relative"><div class="w-12 h-12 border-4 border-slate-100 border-t-slate-900 rounded-full animate-spin"></div></div></div>`;
+            renderSkeletonBlz();
 
             const params = new URLSearchParams({
                 page: currentPageBlz,
@@ -2106,12 +2163,17 @@
                 if (!response.ok) throw new Error("API not found");
                 window.postsDataBlz = await response.json();
             } catch (error) {
+                // Slight delay so the user doesn't see a "flicker" if the error is instant
                 await new Promise(r => setTimeout(r, 400));
-                document.getElementById('posts-containerBlz').innerHTML = `<div class="flex justify-center items-center h-64"> <div class="relative">An Error Occured</div></div>`;
+                document.getElementById('posts-containerBlz').innerHTML = `
+                    <div class="flex justify-center items-center h-64 text-slate-500">
+                        <p>Failed to load posts. Please try again.</p>
+                    </div>`;
+                return; // Stop execution
             }
 
-            // Update Pagination Info
-            totalPagesBlz = Math.ceil(window.postsDataBlz.total / window.postsDataBlz.limit);
+            // Update Pagination Info (Existing logic)
+            totalPagesBlz = Math.ceil(window.postsDataBlz.total / window.postsDataBlz.limit) || 1;
             document.getElementById('page-infoBlz').textContent = `Page ${currentPageBlz} of ${totalPagesBlz}`;
             document.getElementById('prev-pageBlz').disabled = currentPageBlz === 1;
             document.getElementById('next-pageBlz').disabled = currentPageBlz === totalPagesBlz;
@@ -2122,9 +2184,9 @@
 
         function getStatusBadgeBlz(status) {
             const map = {
-                'posted': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-                'scheduled': 'bg-blue-100 text-blue-700 border-blue-200',
-                'draft_approved': 'bg-amber-100 text-amber-700 border-amber-200',
+                'posted': 'text-emerald-600 border-gray-200',
+                'scheduled': 'text-blue-600 border-gray-200',
+                'draft_approved': 'text-amber-500 border-gray-200',
             };
             const labelMap = {
                 'posted': 'Published',
@@ -2134,7 +2196,7 @@
             const classes = map[status] || 'bg-gray-100 text-gray-700 border-gray-200';
             const label = labelMap[status] || status;
             
-            return `<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold border ${classes}">${label}</span>`;
+            return `<span class="px-2.5 py-1.5 rounded-full bg-white/40 backdrop-blur-xs text-xs font-medium border border-gray-100 ${classes}">${label}</span>`;
         }
         
         function getActionButtonsBlz(status,task_id) {
@@ -2155,6 +2217,11 @@
         function renderPostsBlz(posts) {
             const container = document.getElementById('posts-containerBlz');
             container.innerHTML = '';
+
+            if (!posts || posts.length === 0) {
+                renderEmptyStateBlz();
+                return;
+            }
             
             if (currentViewBlz === 'list') {
                 const tableContainer = document.createElement('div');
@@ -2314,10 +2381,13 @@
         platforms: document.getElementById('platformsList'),
         scheduleSection: document.getElementById('schedulingSection'),
         scheduleBtn: document.getElementById('scheduleBtn'),
+        postNowBtn: document.getElementById('postNowBtn'),
         scheduledInput: document.getElementById('scheduledAtInput'),
         notes: document.getElementById('notesInput'),
         closeBtn: document.getElementById('closeModalBtn'),
-        inswarn: document.getElementById('inswarn')
+        inswarn: document.getElementById('inswarn'),
+        InstaPostType: document.getElementById('InstaPstTyp')
+        
         };
         
         function isVideoFile(url) {
@@ -2359,7 +2429,9 @@
                 const mediaUrl = d.preview_image || d.media_url; // Handle potential naming differences
         
                 if (mediaUrl) {
+                    console.log(mediaUrl);
                     els.noImg.classList.add('hidden');
+                    els.noImg.style.display = 'none'; 
                     els.imageDownloadBtn.classList.remove('hidden');
         
                     if (isVideoFile(mediaUrl)) {
@@ -2495,6 +2567,7 @@
                 els.scheduleBtn = newBtn; 
                 
                 els.scheduleBtn.onclick = () => handleSchedule(task_id);
+                els.postNowBtn.onclick = () => handlePostNow(task_id);
         
                 els.overlaymodal.classList.remove('hidden');
             } catch (e) {
@@ -2646,16 +2719,22 @@
                 const container = cb.closest('.group'); 
                 const platformEl = container.querySelector('[data-platform]');
                 const platformName = platformEl ? platformEl.dataset.platform.toLowerCase() : '';
-                
                 return platformName === 'instagram';
             });
-        
-            const hasMedia = els.img.src && els.img.style.display !== 'none' || els.video.style.display === 'block';
-        
-            if (hasInsta && !hasMedia) {
-                els.inswarn.classList.remove('hidden');
+            const isImgVisible = els.img.src && els.img.style.display !== 'none';
+            const isVideoVisible = els.video.style.display === 'block' && 
+                                (els.video.src || els.video.querySelector('source'));
+
+            const hasMedia = isImgVisible || isVideoVisible;
+            els.InstaPostType.classList.toggle('hidden', !hasInsta);
+            els.inswarn.classList.toggle('hidden', !(hasInsta && !hasMedia));
+        }
+        function getSelectedInstaPostType() {
+            const selected = document.querySelector('input[name="InspostType"]:checked');
+            if (selected) {
+                return selected.value;  
             } else {
-                els.inswarn.classList.add('hidden');
+                return null; 
             }
         }
         async function handleSchedule(taskId) {
@@ -2674,16 +2753,14 @@
             }
             const scheduledAt = new Date(scheduledAtStr).toISOString();
         
-            const notes = els.notes.value.trim();
+            const notes = getSelectedInstaPostType();
         
             const requestBody = {
                 task_id: taskId,
                 platform_ids: platformIds,
                 scheduled_at: scheduledAt,
-                notes: notes || undefined
+                notes: notes || null
             };
-        
-            // UI: Show loading state
             const originalBtnText = els.scheduleBtn.innerText;
             els.scheduleBtn.innerText = 'Scheduling...';
             els.scheduleBtn.disabled = true;
@@ -2702,18 +2779,75 @@
                 const data = await res.json();
                 alert(`Task scheduled successfully!`);
                 
-                closeModal();
+                closeModalSch();
             } catch (e) {
                 console.error(e);
                 alert(`Error: ${e.message}`);
             } finally {
                 els.scheduleBtn.innerText = originalBtnText;
                 els.scheduleBtn.disabled = false;
-                fetchData()
+                fetchPostsBlz()
             }
         }
+
+        async function handlePostNow(taskId) {
+            console.log(`handle post triggered ${taskId}`)
+            const platformCheckboxes = document.querySelectorAll('#platformsList input[type="checkbox"]:checked');
+            const platformIds = Array.from(platformCheckboxes).map(cb => cb.value);
+
+            if (platformIds.length === 0) {
+                ShowNoti('info', 'Please select at least one platform');
+                return;
+            }
+
+            const scheduledAtStr = els.scheduledInput.value;
+            if (!scheduledAtStr) {
+                ShowNoti('info', 'Please select a scheduled date and time');
+                return;
+            }
+
+            const scheduledAt = new Date(scheduledAtStr).toISOString();
+
+            const notes = getSelectedInstaPostType();
+
+            const requestBody = {
+                task_id: taskId,
+                platform_ids: platformIds,
+                scheduled_at: scheduledAt,
+                notes: notes || undefined
+            };
+            console.warn(requestBody);
+            
+
+            const originalBtnText = els.postNowBtn.innerText;
+            els.postNowBtn.innerText = 'Posting...';
+            els.postNowBtn.disabled = true;
+
+            try {
+                const res = await fetch('/task/post-now', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Failed to schedule task');
+                }
+                const data = await res.json();
+                closeModalSch();
+            } catch (e) {
+                console.error(e);
+                alert(`Error: ${e.message}`);
+            } finally {
+                els.postNowBtn.innerText = originalBtnText;
+                els.postNowBtn.disabled = false;
+                fetchPostsBlz();
+            }
+        }
+
         
-        function closeModal() {
+        function closeModalSch() {
         els.overlaymodal.classList.add('hidden');
         
         els.scheduleSection.classList.add('hidden');
@@ -2727,7 +2861,7 @@
         // Re-attach event listeners? No need, will be re-set on next openDetail
         }
         
-        els.closeBtn.onclick = closeModal;
+        els.closeBtn.onclick = closeModalSch;
         
         function escapeHtml(text) {
             if (!text) return "";
@@ -2930,22 +3064,6 @@
             }
         }
       
-        document.addEventListener('click', (e) => {
-            const floatingContainer = document.querySelector('.absolute.bottom-4.right-4.flex');
-      
-            if (!floatingContainer.contains(e.target)) {
-                if (menuState.inputMode || menuState.menuOpen) {
-                    if (menuState.inputMode) {
-                        chatInput.value = "";
-                    }
-                    resetToIdle();
-                }
-            }
-        });
-      
-        document.querySelector('.absolute.bottom-4.right-4.flex').addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
       </script>
       <script>
       

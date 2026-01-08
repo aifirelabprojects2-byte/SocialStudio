@@ -2,9 +2,9 @@
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .nav-pill { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
 .nav-pill.active {
-    background-color: #f1f1f1;
-    color: #434343;
-    border-color: #d9d9d9;
+    background-color: #ffcac62e;
+    color: #ea4335;
+    border-color: #ea433545;
 }
 .nav-pill.active svg { fill: white; }
 .nav-pill.active .status-indicator { background-color: #10b981; border-color: #0f172a; }
@@ -37,7 +37,7 @@ to { --angle: 360deg; }
 
 .worm-border-animate {
 --border-thickness: 2px;
---worm-color: #a855f7; /* Purple worm */
+--worm-color: #ea4335; /* Purple worm */
 
 position: relative;
 }

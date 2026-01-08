@@ -169,10 +169,12 @@ downloadCaptionBtn: document.getElementById('downloadCaptionBtn'),
 platforms: document.getElementById('platformsList'),
 scheduleSection: document.getElementById('schedulingSection'),
 scheduleBtn: document.getElementById('scheduleBtn'),
+postNowBtn: document.getElementById('postNowBtn'),
 scheduledInput: document.getElementById('scheduledAtInput'),
 notes: document.getElementById('notesInput'),
 closeBtn: document.getElementById('closeModalBtn'),
-inswarn: document.getElementById('inswarn')
+inswarn: document.getElementById('inswarn'),
+InstaPostType: document.getElementById('InstaPstTyp')
 };
 
 function isVideoFile(url) {
@@ -444,9 +446,6 @@ function populatePlatforms(platforms) {
             avatarHtml = `<div class="${colorClass} w-full h-full flex items-center justify-center text-xs font-bold">${initials}</div>`;
         }
 
-        // --- KEY CHANGES BELOW ---
-        // 1. We add specific classes: 'checkbox-circle' and 'check-icon'
-        // 2. The main container uses `peer-checked:[&_.checkbox-circle]:bg-gray-900` to force the styling down to the child
         div.innerHTML = `
             <input type="checkbox" id="platform-toggle-${platformId}" value="${platformId}" class="peer sr-only">
             
@@ -498,7 +497,7 @@ function populatePlatforms(platforms) {
     });
 }
 
-// Helper to show/hide the Instagram image warning
+
 function checkPlatformWarnings() {
     const checked = Array.from(els.platforms.querySelectorAll('input:checked'));
     const hasInsta = checked.some(cb => {
@@ -529,8 +528,6 @@ async function handleSchedule(taskId) {
         return;
     }
 
-    // Convert local input to ISO string for backend
-    // Assuming backend expects UTC or explicit offset
     const scheduledAt = new Date(scheduledAtStr).toISOString();
 
     const notes = els.notes.value.trim();
@@ -568,6 +565,59 @@ async function handleSchedule(taskId) {
     } finally {
         els.scheduleBtn.innerText = originalBtnText;
         els.scheduleBtn.disabled = false;
+        fetchData()
+    }
+}
+
+async function handlePostNow(taskId) {
+    const platformCheckboxes = document.querySelectorAll('#platformsList input[type="checkbox"]:checked');
+    const platformIds = Array.from(platformCheckboxes).map(cb => cb.value);
+
+    if (platformIds.length === 0) {
+        ShowNoti('info', 'Please select at least one platform');
+        return;
+    }
+
+    const scheduledAtStr = els.scheduledInput.value;
+    if (!scheduledAtStr) {
+        ShowNoti('info', 'Please select a scheduled date and time');
+        return;
+    }
+
+    const scheduledAt = new Date(scheduledAtStr).toISOString();
+
+    const notes = els.notes.value.trim();
+
+    const requestBody = {
+        task_id: taskId,
+        platform_ids: platformIds,
+        scheduled_at: scheduledAt,
+        notes: notes || undefined
+    };
+
+    const originalBtnText = els.postNowBtn.innerText;
+    els.postNowBtn.innerText = 'Posting...';
+    els.postNowBtn.disabled = true;
+
+    try {
+        const res = await fetch('/task/post-now', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || 'Failed to schedule task');
+        }
+        const data = await res.json();
+        closeModal();
+    } catch (e) {
+        console.error(e);
+        alert(`Error: ${e.message}`);
+    } finally {
+        els.postNowBtn.innerText = originalBtnText;
+        els.postNowBtn.disabled = false;
         fetchData()
     }
 }

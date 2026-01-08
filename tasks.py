@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 from typing import Optional
 from dotenv import load_dotenv
+from fastapi import Depends, HTTPException
 import pytz
 from celery import shared_task 
 from sqlalchemy.exc import SQLAlchemyError
@@ -17,6 +18,7 @@ from Database import (
     AttemptStatus,
     ErrorLog,
     SyncSessionLocal,
+    get_sync_db
 )
 from LinkedInPoster import post_to_linkedin
 from PlatformTokenGen import get_platform_credentials_sync
@@ -24,11 +26,12 @@ from XPoster import post_to_x
 from meta_poster import InstagramPoster, ThreadsPoster, FacebookPoster
 from meta_poster.utils import build_caption
 
+
 load_dotenv()
 ist = pytz.timezone("Asia/Kolkata")
 
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)  # Reverted to shared_task
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)  
 def execute_posting(self, task_id: str) -> None:
     session = SyncSessionLocal()
     try:
@@ -38,7 +41,7 @@ def execute_posting(self, task_id: str) -> None:
         ).filter(Task.task_id == task_id).first()
        
         if not task:
-            self.retry(countdown=300)  # Retry in 5 min if task missing (transient)
+            self.retry(countdown=300)  
             return
         task.status = TaskStatus.queued
         session.commit()
@@ -47,18 +50,25 @@ def execute_posting(self, task_id: str) -> None:
         gen_content = task.generated_contents[0] 
         caption = gen_content.caption or ""
         hashtags = gen_content.hashtags or []
-        imgUrl = None
-        if gen_content.media and gen_content.media[0].is_generated:
-            media = gen_content.media[0]
-            imgUrl = media.img_url or media.storage_path  
-            print(imgUrl)
+        media_urls = [
+            media.img_url or media.storage_path
+            for media in gen_content.media
+            if media.is_generated and (media.img_url or media.storage_path)
+        ]
+        
+        print("Media URLs:", media_urls)
+        if len(media_urls) == 0:
+            media_param = None
+        elif len(media_urls) == 1:
+            media_param = media_urls[0]
+        else:
+            media_param = media_urls
         all_success = True
         for sel in task.platform_selections:
             if sel.publish_status != PublishStatus.scheduled:
                 continue
             platform = sel.platform
             if not platform.api_name:
-                # Error: missing api_name
                 _handle_post_failure(session, task, platform, sel, "Missing API name configuration")
                 all_success = False
                 continue
@@ -67,34 +77,46 @@ def execute_posting(self, task_id: str) -> None:
                 task_id=task.task_id,
                 platform_id=platform.platform_id,
                 attempted_at=datetime.now(ist),
-                status=AttemptStatus.transient_failure,  # Default
+                status=AttemptStatus.transient_failure,  
                 latency_ms=0,
             )
             session.add(attempt)
-            session.flush()  # Get attempt_id
+            session.flush()  
             try:
                 if platform.api_name.lower() == "instagram":
-                    InsTkn=get_platform_credentials_sync("instagram")
+                    InsTkn = get_platform_credentials_sync("instagram")
+
                     poster = InstagramPoster(
                         page_id=InsTkn.meta.get("PAGE_ID"),
                         access_token=InsTkn.access_token
                     )
+                    post_type = "post"  
+
+                    if task.notes:
+                        notes_lower = task.notes.lower()
+                        if "reel" in notes_lower:
+                            post_type = "reel"
+                        elif "story" in notes_lower:
+                            post_type = "story"
+
                     poster.post(
                         caption=caption,
-                        media_url=imgUrl,
+                        media_url=media_param,
                         hashtags=hashtags,
+                        post_type=post_type
                     )
+
                 elif platform.api_name.lower() == "threads":
                     ThrTkn=get_platform_credentials_sync("threads")
                     poster = ThreadsPoster(
-                            threads_user_id=ThrTkn.account_id,  # thread user id
-                            access_token=ThrTkn.meta.get("THREADS_LONG_LIVE_TOKEN"),  # long-lived user access token
-                            username=ThrTkn.account_name,  # optional
+                            threads_user_id=ThrTkn.account_id,
+                            access_token=ThrTkn.meta.get("THREADS_LONG_LIVE_TOKEN"),
+                            username=ThrTkn.account_name,
                             )
-                    if imgUrl:
+                    if media_param:
                         poster.post(
                             text=caption,
-                            media_url=imgUrl,
+                            media_url=media_param, 
                             hashtags=hashtags,
                         )
                     else:
@@ -102,16 +124,17 @@ def execute_posting(self, task_id: str) -> None:
                             text=caption,
                             hashtags=hashtags,
                         )
+
                 elif platform.api_name.lower() == "facebook":
                     FbTkn=get_platform_credentials_sync("facebook")
                     poster = FacebookPoster(
                         page_id=FbTkn.account_id,
                         page_access_token=FbTkn.access_token
                     )
-                    if imgUrl:
+                    if media_param:
                         poster.post_media(
                             message=caption,
-                            media=imgUrl,
+                            media=media_param,  
                             hashtags=hashtags,
                         )
                     else:
@@ -120,36 +143,36 @@ def execute_posting(self, task_id: str) -> None:
                             link=None,
                             hashtags=hashtags,
                         )
+
                 elif platform.api_name.lower() == "twitter":
                     final_text = build_caption(caption, hashtags)
-                    if imgUrl:
+                    if media_param:
                         ttt = post_to_x(
-                        text= final_text,
-                        media_url=imgUrl,
+                            text=final_text,
+                            media_url=media_param, 
                         )
                         print(ttt)
-
                     else:
-                        sss=post_to_x(
-                        text=final_text
+                        sss = post_to_x(
+                            text=final_text
                         )
                         print(sss)
+
                 elif platform.api_name.lower() == "linkedin":
                     LnTkn=get_platform_credentials_sync("linkedin")
-                    if imgUrl:
+                    if media_param:
                         ttt = post_to_linkedin(
                             access_token=LnTkn.access_token,
                             person_urn=f"urn:li:person:{LnTkn.account_id}",
-                            text= caption,
-                            media_url=imgUrl,
+                            text=caption,
+                            media_url=media_param, 
                         )
                         print(ttt)
-
                     else:
                         sss = post_to_linkedin(
                             access_token=LnTkn.access_token,
                             person_urn=f"urn:li:person:{LnTkn.account_id}",
-                            text= caption,
+                            text=caption,
                         )
                         print(sss)
                 else:
@@ -215,5 +238,3 @@ def _handle_post_failure(
     session.add(error_log)
     session.flush()
     return error_log
-
-
