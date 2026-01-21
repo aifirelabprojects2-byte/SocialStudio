@@ -42,7 +42,7 @@ def init(app):
     async def create_manual_task(
         title: str = Form(..., description="Task title"),
         caption: str = Form(..., description="Post caption"),
-        hashtags: str = Form(..., description="Comma-separated hashtags"),
+        hashtags: str = Form("", description="Comma-separated hashtags"),
         notes: Optional[str] = Form(None, description="Optional notes for the task"),
         file: Optional[UploadFile] = File(None, description="Single image or video file (backward compatibility)"),
         files: List[UploadFile] = File(default_factory=list, description="Multiple image or video files"),

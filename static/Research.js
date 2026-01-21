@@ -45,7 +45,7 @@ const options = [
       const li = document.createElement('li');
       const button = document.createElement('button');
 
-      let baseClasses = 'w-full flex items-center gap-2 px-2 py-2 rounded-xl text-left transition-all duration-200 group ';
+      let baseClasses = 'w-full flex items-center gap-2 px-2 py-2 rounded-xl text-left  duration-200 group ';
       if (option.value === currentValue) {
         button.className = baseClasses + 'bg-brand/10 text-brand shadow-xs';
       } else {
@@ -189,7 +189,6 @@ async function handleSubmitRes(event, isClarification = false) {
         if (contentType && contentType.includes('application/json')) {
             try {
                 const clarificationData = await responseRes.json();
-                console.log('Clarification data:', clarificationData);
                 
                 if (clarificationData.needs_clarification && clarificationData.question) {
                     loadingIndicatorRes.classList.add('hidden');

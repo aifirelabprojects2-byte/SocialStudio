@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Studio | AI Content Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; } /* Light gray body for contrast with inset view */
+        
+        /* Smooth Fade & Scale Transitions */
+        .fade-in-scale { animation: fadeInScale 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeInScale { 
+            from { opacity: 0; transform: scale(0.98) translateY(10px); } 
+            to { opacity: 1; transform: scale(1) translateY(0); } 
+        }
+
+.inset-view {
+    position: fixed;
+    top: 0;
+    left: 5rem;
+    right: 5rem;
+    bottom: 0;
+    background: #ffffff;
+    border-radius: 0;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.canvas-wrapper {
+    position: relative;
+    width: 100%;
+    padding-bottom: 125%; /* 1080x1350 */
+    background: #f9fafb;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.canvas-inner {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+}
+
+/* Selection State */
+.selected-card .canvas-wrapper {
+    box-shadow: 0 0 0 2px #111827; /* Black outline for professional look */
+    border: 2px solid #111827;
+}
+
+/* Shimmer Animation */
+.skeleton {
+    background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+.inset-view::-webkit-scrollbar { width: 8px; }
+.inset-view::-webkit-scrollbar-track { background: transparent; margin: 10px; }
+.inset-view::-webkit-scrollbar-thumb { background-color: #f5f5f5e5; border-radius: 4px; border: 2px solid #fff; }
+</style>
+</head>
+<body class="text-gray-900 h-screen overflow-hidden flex flex-col items-center justify-center">
+
+    <div id="landingView" class="text-center max-w-lg px-6 fade-in-scale">
+        <h1 class="text-5xl font-bold tracking-tighter mb-4 text-gray-900">Social Studio</h1>
+        <p class="text-gray-500 mb-10 text-lg leading-relaxed">Transform abstract concepts into publish-ready social assets. AI-generated designs and captions in seconds.</p>
+        
+        <button onclick="openPromptModal()" class="group relative inline-flex h-14 items-center justify-center overflow-hidden rounded-full bg-gray-900 px-10 font-medium text-white transition-all duration-300 hover:bg-black hover:scale-105 shadow-xl hover:shadow-2xl">
+            <span class="mr-2 text-lg">Create New Post</span>
+            <svg class="transition-transform group-hover:translate-x-1" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </button>
+    </div>
+
+<div id="promptModal" class="hidden fixed inset-0 z-50 bg-black/20  flex items-center justify-center fade-in-scale">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-4xl mx-4 relative">
+        <button onclick="closePromptModal()" class="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 transition">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        
+        <h3 class="text-2xl font-bold mb-3 tracking-tight">Start New Project</h3>
+        <p class="text-gray-500 mb-6">What would you like to create today? Be descriptive for better results.</p>
+        
+        <textarea id="promptInput" rows="4" placeholder="Ex: A launch announcement for our new eco-friendly sneaker line, minimalist style, green and white color palette..." 
+            class="w-full p-5 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-gray-300 resize-none text-base mb-2 transition-all shadow-inner"></textarea>
+        
+        <div class="w-full  flex justify-end ">
+            <button onclick="startGeneration()" id="generateBtn" class="bg-black text-white px-5 py-3  rounded-full font-medium text-base hover:bg-gray-800 transition shadow-lg flex justify-center items-center gap-2">
+                Generate Assets
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="resultsView" class="hidden inset-view fade-in-scale flex flex-col">
+    
+    <div class="max-w-5xl mx-auto w-full px-8 py-12">
+        <div class="flex items-center justify-between mb-2">
+            <h1 class="text-3xl font-bold tracking-tight text-gray-900">Review Generated Assets</h1>
+        </div>
+        <p class="text-gray-500">We've tailored these designs and copy based on your specific requirements.</p>
+    </div>
+
+    <div class="max-w-5xl mx-auto w-full px-8 grid gap-16 pb-32">
+        
+        <section>
+            <div class="flex justify-between items-end mb-6 border-b border-gray-100 pb-4">
+                <h2 class="text-base font-medium text-gray-900 flex items-center gap-2">
+                    Visual Selection
+                </h2>
+            </div>
+
+            <div id="designsGrid" class="grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-12">
+                </div>
+        </section>
+
+        <section>
+            <div class="flex justify-between items-end mb-6 border-b border-gray-100 pb-4">
+                <h2 class="text-base font-medium text-gray-900 flex items-center gap-2">
+                    Caption Refinement
+                </h2>
+                
+                <button onclick="regenerateCaption()" id="regenCaptionBtn" class="group flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 disabled:opacity-50 transition">
+                    <svg class="group-hover:rotate-180 transition-transform duration-500" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path><path d="M16 16h5v5"></path></svg>
+                    Regenerate
+                </button>
+            </div>
+            
+            <div class="relative group">
+                <textarea id="captionArea" rows="6" class="w-full p-6  border border-gray-200 rounded-3xl text-gray-800 text-sm leading-7 focus:outline-none focus:bg-white focus:ring-2 focus:ring-black/5 transition-all resize-none font-medium"></textarea>
+                
+                <div id="captionShimmer" class="hidden absolute inset-0 bg-white z-10 p-6 space-y-4 rounded-xl border border-gray-100 ">
+                    <div class="h-3 bg-gray-200 rounded w-3/4 skeleton"></div>
+                    <div class="h-3 bg-gray-200 rounded w-full skeleton"></div>
+                    <div class="h-3 bg-gray-200 rounded w-5/6 skeleton"></div>
+                    <div class="h-3 bg-gray-200 rounded w-4/5 skeleton"></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="fixed bottom-0 left-[5rem] right-[5rem] bg-white/50 backdrop-blur-md  p-4 z-50 rounded-b-3xl">
+        <div class="max-w-5xl mx-auto flex justify-between items-center px-4">
+            <button onclick="window.location.reload()" class="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-black transition">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                Discard & Exit
+            </button>
+            
+            <div class="flex gap-3">
+                <button onclick="openSaveModal()" class="px-6 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition">
+                    Save Draft
+                </button>
+                <button class="bg-black text-white px-8 py-2.5 rounded-full text-sm font-medium hover:bg-gray-800 transition shadow-lg flex items-center gap-2">
+                    Use This Design
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="saveModal" class="hidden fixed inset-0 z-[1001] bg-black/60 flex items-center justify-center fade-in-scale">
+    <div class="bg-white rounded-2xl shadow-sm p-6 w-full max-w-4xl mx-4 relative">
+        <button onclick="closeSaveModal()" class="absolute top-6 right-6 p-2 rounded-full hover:bg-gray-100 transition">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+        
+        <h3 class="text-2xl font-bold mb-6 tracking-tight">Save as Template</h3>
+        
+        <div class="space-y-5">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Template Name</label>
+                <input type="text" id="save-name" placeholder="Summer Sale 2025" 
+                    class="w-full p-3 font-light  border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-gray-300 transition-all">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Type</label>
+                    <div class="relative">
+                        <select id="save-type" class="w-full p-3 font-light border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-black/5">
+                            <option value="Instagram">Instagram</option>
+                            <option value="YouTube">YouTube</option>
+                            <option value="TikTok">TikTok</option>
+                            <option value="Facebook">Facebook</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                    <div class="relative">
+                        <select id="save-category" class="w-full p-3 font-light border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-black/5">
+                            <option value="Business">Business</option>
+                            <option value="Charity">Charity</option>
+                            <option value="Fashion">Fashion</option>
+                            <option value="Quote">Quote</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Style</label>
+                <div class="relative">
+                    <select id="save-style" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-black/5">
+                        <option value="Minimal">Minimal</option>
+                        <option value="Modern">Modern</option>
+                        <option value="Bold">Bold</option>
+                        <option value="Retro">Retro</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 flex justify-end gap-3">
+            <button onclick="closeSaveModal()" class="px-5 py-2.5 rounded-full text-sm font-medium text-gray-600 hover:bg-gray-100 transition">Cancel</button>
+            <button onclick="submitSaveTemplate()" id="saveSubmitBtn" class="bg-black text-white px-6 py-2.5 rounded-full text-sm font-medium hover:bg-gray-800 transition shadow-lg flex items-center gap-2">
+                Save Template
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentBatchId = null;
+    let selectedDesignIndex = 0;
+    let userTopic = "";
+    let canvasInstances = [];
+    
+
+    function openPromptModal() {
+        document.getElementById('promptModal').classList.remove('hidden');
+        document.getElementById('promptInput').focus();
+    }
+
+    function closePromptModal() {
+        document.getElementById('promptModal').classList.add('hidden');
+    }
+
+    async function startGeneration() {
+        const prompt = document.getElementById('promptInput').value;
+        if (!prompt) return;
+        userTopic = prompt;
+
+        document.getElementById('resultsView').classList.remove('hidden');
+
+        renderSkeletons();
+
+        try {
+            const response = await fetch('/api/generate/design', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt })
+            });
+            
+            if(!response.ok) throw new Error("API Error");
+            const data = await response.json();
+            
+            currentBatchId = data.batch_id;
+            
+            // Populate Data
+            document.getElementById('captionArea').value = data.caption || "";
+            renderGrid(data.designs);
+
+        } catch (error) {
+            console.error(error);
+            alert("We couldn't generate the designs. Please try again.");
+            window.location.reload();
+        }
+        finally{
+            document.getElementById('promptModal').classList.add('hidden');
+        }
+    }
+
+    // --- RENDER FUNCTIONS ---
+    function renderSkeletons() {
+        const grid = document.getElementById('designsGrid');
+        grid.innerHTML = '';
+        for(let i=0; i<6; i++) {
+            grid.innerHTML += `
+                <div class="space-y-4">
+                    <div class="canvas-wrapper skeleton h-[320px] rounded-xl border-0"></div>
+                    <div class="flex items-center gap-3 px-1">
+                            <div class="w-6 h-6 rounded-full bg-gray-100 skeleton"></div>
+                            <div class="h-2.5 bg-gray-100 rounded w-24 skeleton"></div>
+                    </div>
+                </div>`;
+        }
+    }
+
+    function renderGrid(designs) {
+        const grid = document.getElementById('designsGrid');
+        grid.innerHTML = '';
+
+        designs.forEach((item, index) => {
+            const designId = item.id;
+            
+            // 1. Card Container
+            const card = document.createElement('div');
+            card.className = `group cursor-pointer relative ${index === 0 ? 'selected-card' : ''}`;
+            
+            // Selection Logic
+            card.onclick = (e) => {
+                if(e.target.closest('.edit-btn')) return;
+                selectCard(card, index);
+            };
+
+            // 2. Canvas Wrapper
+            const wrapper = document.createElement('div');
+            wrapper.className = 'canvas-wrapper relative shadow-sm hover:shadow-md transition-shadow duration-300';
+            
+            const inner = document.createElement('div');
+            inner.className = 'canvas-inner';
+            
+            const canvasId = `c-${index}`;
+            const canvasEl = document.createElement('canvas');
+            canvasEl.id = canvasId;
+            inner.appendChild(canvasEl);
+            
+            // === HOVER EDIT BUTTON ===
+            const editOverlay = document.createElement('div');
+            editOverlay.className = 'absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center z-10 pointer-events-none rounded-xl';
+            
+            const editBtn = document.createElement('a');
+            editBtn.href = `/canvas?template_id=${designId}`;
+            editBtn.target = "_blank";
+            editBtn.className = 'edit-btn pointer-events-auto bg-white/90 backdrop-blur text-gray-900 px-5 py-2 rounded-full text-xs font-bold shadow-lg hover:scale-105 transition transform flex items-center gap-2';
+            editBtn.innerHTML = `
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                Edit Design
+            `;
+            
+            editOverlay.appendChild(editBtn);
+            wrapper.appendChild(inner);
+            wrapper.appendChild(editOverlay);
+            card.appendChild(wrapper);
+
+            // 3. Meta Info
+            const meta = document.createElement('div');
+            meta.className = 'flex items-center gap-2 mt-3 px-1';
+            meta.innerHTML = `
+                <div class="w-5 h-5 rounded-full bg-gradient-to-tr from-gray-200 to-gray-300 flex items-center justify-center text-[9px] font-bold text-gray-600">AI</div>
+                <span class="text-xs font-medium text-gray-500 group-hover:text-black transition-colors">Variation ${index + 1}</span>
+            `;
+            card.appendChild(meta);
+
+            grid.appendChild(card);
+
+            // Initialize Fabric Canvas
+            setTimeout(() => initCanvas(canvasId, item.design, wrapper), 50);
+        });
+    }
+
+    function initCanvas(id, json, wrapper) {
+        const canvas = new fabric.StaticCanvas(id);
+        
+        // EXTRACT INDEX FROM ID (e.g., "c-0" -> 0)
+        const index = parseInt(id.split('-')[1]); 
+        canvasInstances[index] = canvas; // <--- STORE INSTANCE
+
+        canvas.loadFromJSON(json, function() {
+            const targetW = 1080;
+            const targetH = 1350;
+            const containerW = wrapper.clientWidth;
+            const scale = containerW / targetW;
+            
+            canvas.setDimensions({
+                width: containerW,
+                height: containerW * (targetH / targetW)
+            });
+            
+            canvas.setZoom(scale);
+            canvas.renderAll();
+        });
+    }
+
+    function selectCard(element, index) {
+        document.querySelectorAll('.selected-card').forEach(el => el.classList.remove('selected-card'));
+        element.classList.add('selected-card');
+        selectedDesignIndex = index;
+    }
+
+    // --- CAPTION REGENERATION ---
+    async function regenerateCaption() {
+        if (!currentBatchId) return;
+
+        const btn = document.getElementById('regenCaptionBtn');
+        const shimmer = document.getElementById('captionShimmer');
+        
+        btn.disabled = true;
+        shimmer.classList.remove('hidden');
+
+        try {
+            const response = await fetch('/api/regenerate/caption', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    batch_id: currentBatchId,
+                    topic: userTopic
+                })
+            });
+
+            const data = await response.json();
+            document.getElementById('captionArea').value = data.caption;
+
+        } catch (error) {
+            console.error(error);
+            alert("Failed to regenerate caption.");
+        } finally {
+            btn.disabled = false;
+            shimmer.classList.add('hidden');
+        }
+    }
+
+    function openSaveModal() {
+        // Ensure a canvas is actually generated/selected
+        if (!canvasInstances[selectedDesignIndex]) {
+            alert("Please generate designs first.");
+            return;
+        }
+        document.getElementById('saveModal').classList.remove('hidden');
+        document.getElementById('save-name').focus();
+    }
+
+    function closeSaveModal() {
+        document.getElementById('saveModal').classList.add('hidden');
+    }
+
+    async function submitSaveTemplate() {
+        const nameInput = document.getElementById('save-name');
+        const name = nameInput.value;
+        
+        if (!name) {
+            alert("Please enter a template name");
+            nameInput.focus();
+            return;
+        }
+
+        const btn = document.getElementById('saveSubmitBtn');
+        const originalBtnText = btn.innerHTML;
+        btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...`;
+        btn.disabled = true;
+
+        try {
+            const canvas = canvasInstances[selectedDesignIndex];
+            const baseUrl = window.location.origin;
+            const projectData = canvas.toJSON([
+                'asset_type', 'server_id', 'selectable', 'evented', 
+                'isFrame', 'frameOffsetX', 'frameOffsetY', 'clipPath', 
+                'id', 'lockMovementX', 'lockMovementY',
+                'isBgRemoved', 'originalSrc'
+            ]);
+
+            // 3. Fix Blob URLs dynamically
+            projectData.objects.forEach(obj => {
+                const isMedia = obj.type === 'image' || obj.asset_type === 'image' || obj.asset_type === 'video';
+                if (isMedia && obj.server_id && obj.src && obj.src.startsWith('blob:')) {
+                    obj.src = `${baseUrl}/uploads/${obj.server_id}`;
+                }
+            });
+
+            const json = JSON.stringify(projectData);
+
+            const currentWidth = canvas.getWidth();
+            const multiplier = 540 / currentWidth; // Target ~540px preview width
+            const dataURL = canvas.toDataURL({ format: 'png', multiplier: multiplier });
+            const blob = await (await fetch(dataURL)).blob();
+
+            // 5. Send to Backend
+            const fd = new FormData();
+            fd.append('name', name);
+            fd.append('type', document.getElementById('save-type').value);
+            fd.append('category', document.getElementById('save-category').value);
+            fd.append('style', document.getElementById('save-style').value);
+            // Assuming Standard dimensions for the saved template metadata
+            fd.append('width', 1080); 
+            fd.append('height', 1350);
+            fd.append('json_data', json);
+            fd.append('preview', blob, 'preview.png');
+
+            const res = await fetch('/save-template', { method: 'POST', body: fd });
+            const data = await res.json();
+
+            if (data.status === 'success') {
+                closeSaveModal();
+                // Optional: Show a toast notification here instead of alert
+                alert("Template Saved Successfully!");
+            } else {
+                throw new Error(data.message || "Unknown error");
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert("Error saving: " + err.message);
+        } finally {
+            btn.innerHTML = originalBtnText;
+            btn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>

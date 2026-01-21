@@ -56,3 +56,9 @@ moviepy
 numpy>=2.1.0
 passlib[argon2]
 apify-client
+rembg
+onnxruntime
+opencv-python-headless
+pymatting
+pooch
+playwright

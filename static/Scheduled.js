@@ -33,7 +33,7 @@ function renderHashtags(hashtags) {
 
 function renderTaskRowShd(task, index) {
     const row = document.createElement('tr');
-    row.className = 'hover:bg-neutral-50 transition-all duration-200 group';
+    row.className = 'hover:bg-neutral-50  duration-200 group';
     
     const badgeClass = getStatusBadgeClass(task.status);
 
@@ -59,7 +59,7 @@ function renderTaskRowShd(task, index) {
             </div>
         </td>
         <td class="sched-task-actions-${index}Shd px-6 py-5 whitespace-nowrap text-right text-sm font-semibold">
-            <button class="sched-task-view-btn-${index}Shd text-gray-600 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl border  border-gray-200 transition-all duration-200 inline-flex items-center  hover:shadow-medium" onclick="viewTaskShd('${task.task_id}')">
+            <button class="sched-task-view-btn-${index}Shd text-gray-600 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-4 py-2 rounded-xl border  border-gray-200  duration-200 inline-flex items-center  hover:shadow-medium" onclick="viewTaskShd('${task.task_id}')">
                 <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -286,7 +286,7 @@ async function viewTaskShd(taskId) {
             document.querySelector('#attemptsTableBodyShd').parentElement.classList.remove('hidden');
             data.post_attempts.forEach(pa => {
                 const row = document.createElement('tr');
-                row.className = 'hover:bg-neutral-50 transition-all duration-200';
+                row.className = 'hover:bg-neutral-50  duration-200';
                 const aBadge = getStatusBadgeClass(pa.status);
                 const platformName = pa.platform ? pa.platform.api_name : (pa.platform_id || 'Unknown');
                 row.innerHTML = `
@@ -310,7 +310,7 @@ async function viewTaskShd(taskId) {
             document.querySelector('#errorsTableBodyShd').parentElement.classList.remove('hidden');
             data.error_logs.forEach((el, index) => {
                 const row = document.createElement('tr');
-                row.className = 'hover:bg-neutral-50 transition-all duration-200';
+                row.className = 'hover:bg-neutral-50  duration-200';
                 const traceback = el.details ? el.details.traceback || '' : '';
                 const hasTraceback = traceback.trim().length > 0;
                 row.innerHTML = `
@@ -319,7 +319,7 @@ async function viewTaskShd(taskId) {
                             <div class="flex justify-between"><span class="font-semibold text-red-500 block">${el.error_type || 'Error'}</span><span class="text-gray-700" >${formatDate(el.created_at)}</span></div>
                             <span class="block text-neutral-600" title="${el.message}">${el.message || 'No message'}</span>
                             ${el.error_code ? `<span class="block text-neutral-500 text-xs font-mono" title="${el.error_code}">Code: ${el.error_code}</span>` : ''}
-                            ${hasTraceback ? `<button style="margin-top:12px" onclick="toggleTraceback(${index})" class="text-gray-600 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-2 py-1 rounded-xl border  border-gray-200 transition-all duration-200 inline-flex items-center  hover:shadow-medium">
+                            ${hasTraceback ? `<button style="margin-top:12px" onclick="toggleTraceback(${index})" class="text-gray-600 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-2 py-1 rounded-xl border  border-gray-200  duration-200 inline-flex items-center  hover:shadow-medium">
                                 <span id="traceback-toggle-${index}">View Traceback</span>
                                 <svg id="traceback-icon-${index}" class="h-3 w-3 ml-1 transform transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />

@@ -25,11 +25,14 @@ load_dotenv()
 templates = Jinja2Templates(directory="templates")
 
 GRAPH_VERSION = "v19.0"
-REDIRECT_URI_FB = "https://aisocialstudio.onrender.com/auth/facebook/callback"
-REDIRECT_URI_IG = "https://aisocialstudio.onrender.com/auth/instagram/callback"
-REDIRECT_URI_THREADS = "https://aisocialstudio.onrender.com/auth/threads/callback"
-REDIRECT_URI_TWITTER = "https://aisocialstudio.onrender.com/auth/twitter/callback"
-REDIRECT_URI_LINKEDIN = "https://aisocialstudio.onrender.com/auth/linkedin/callback"
+BASE_URL = "https://social-studio.aifirelab.com"
+REDIRECT_URI_FB = f"{BASE_URL}/auth/facebook/callback"
+REDIRECT_URI_IG = f"{BASE_URL}/auth/instagram/callback"
+REDIRECT_URI_THREADS = f"{BASE_URL}/auth/threads/callback"
+REDIRECT_URI_TWITTER = f"{BASE_URL}/auth/twitter/callback"
+REDIRECT_URI_LINKEDIN = f"{BASE_URL}/auth/linkedin/callback"
+REDIRECT_URI_TIKTOK = f"{BASE_URL}/auth/tiktok/callback"
+REDIRECT_URI_SNAPCHAT = f"{BASE_URL}/auth/snapchat/callback"
 
 SUPPORTED_PLATFORMS = [
     {
@@ -57,13 +60,24 @@ SUPPORTED_PLATFORMS = [
         "svg": "M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"
     },
     {
-        "id": "threads", 
-        "name": "Threads", 
+        "id": "threads",
+        "name": "Threads",
         "auth_url": "/auth/threads/start",
         "svg": "M9.4815 9.024c-.405-.27-1.749-1.203-1.749-1.203 1.134-1.6215 2.6295-2.253 4.698-2.253 1.4625 0 2.7045.4905 3.591 1.422.8865.9315 1.392 2.2635 1.5075 3.966q.738.3105 1.3575.726c1.6635 1.1175 2.5785 2.79 2.5785 4.7055 0 4.074-3.339 7.6125-9.384 7.6125C6.891 24 1.5 20.9805 1.5 11.991 1.5 3.051 6.723 0 12.066 0c2.469 0 8.259.3645 10.434 7.554l-2.04.5295C18.774 2.961 15.2445 2.145 12.009 2.145c-5.3475 0-8.373 3.2565-8.373 10.185 0 6.2145 3.381 9.5145 8.445 9.5145 4.1655 0 7.2705-2.1645 7.2705-5.334 0-2.157-1.812-3.1905-1.905-3.1905-.354 1.851-1.302 4.965-5.466 4.965-2.427 0-4.5195-1.677-4.5195-3.873 0-3.135 2.976-4.2705 5.325-4.2705.879 0 1.941.06 2.4945.171 0-.9555-.81-2.592-2.85-2.592-1.875 0-2.349.6075-2.9505 1.302ZM13.074 12.285c-3.06 0-3.456 1.305-3.456 2.124 0 1.317 1.5645 1.752 2.4 1.752 1.53 0 3.1005-.423 3.348-3.6345a9.3 9.3 0 0 0-2.292-.2415"
     },
+    {
+        "id": "tiktok",
+        "name": "TikTok",
+        "auth_url": "/auth/tiktok/start",
+        "svg": "M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"
+    },
+    {
+        "id": "snapchat",
+        "name": "Snapchat",
+        "auth_url": "/auth/snapchat/start",
+        "svg": "M5.829 4.533c-.6 1.344-.363 3.752-.267 5.436c-.648.359-1.48-.271-1.951-.271c-.49 0-1.075.322-1.167.802c-.066.346.089.85 1.201 1.289c.43.17 1.453.37 1.69.928c.333.784-1.71 4.403-4.918 4.931a.5.5 0 0 0-.416.519c.056.975 2.242 1.357 3.211 1.507c.099.134.179.7.306 1.131c.057.193.204.424.582.424c.493 0 1.312-.38 2.738-.144c1.398.233 2.712 2.215 5.235 2.215c2.345 0 3.744-1.991 5.09-2.215c.779-.129 1.448-.088 2.196.058c.515.101.977.157 1.124-.349c.129-.437.208-.992.305-1.123c.96-.149 3.156-.53 3.211-1.505a.5.5 0 0 0-.416-.519c-3.154-.52-5.259-4.128-4.918-4.931c.236-.557 1.252-.755 1.69-.928c.814-.321 1.222-.716 1.213-1.173c-.011-.585-.715-.934-1.233-.934c-.527 0-1.284.624-1.897.286c.096-1.698.332-4.095-.267-5.438C17.036 1.986 14.511.7 11.987.7C9.479.7 6.973 1.968 5.829 4.533"
+    },
 ]
-
 
 
 pending_auth: dict[str, str] = {}
@@ -79,6 +93,10 @@ def get_client_creds(platform: str):
         return os.getenv("TWITTER_CLIENT_ID"), os.getenv("TWITTER_CLIENT_SECRET")
     if platform == "linkedin":
         return os.getenv("LINKEDIN_CLIENT_ID"), os.getenv("LINKEDIN_CLIENT_SECRET")
+    if platform == "tiktok":
+        return os.getenv("TIKTOK_CLIENT_KEY"), os.getenv("TIKTOK_CLIENT_SECRET")
+    if platform == "snapchat":
+        return os.getenv("SNAPCHAT_CLIENT_ID"), os.getenv("SNAPCHAT_CLIENT_SECRET")
     raise ValueError("Unknown platform")
 
 def build_authorize_url(platform: str, redirect_uri: str, scopes: str):
@@ -93,7 +111,13 @@ def build_authorize_url(platform: str, redirect_uri: str, scopes: str):
         scope = scopes.replace(" ", ",")
     elif platform == "linkedin":
         base = "https://www.linkedin.com/oauth/v2/authorization"
-        scope = scopes  
+        scope = scopes
+    elif platform == "tiktok":
+        base = "https://www.tiktok.com/v2/auth/authorize"
+        scope = scopes.replace(" ", ",")
+    elif platform == "snapchat":
+        base = "https://accounts.snapchat.com/login/oauth2/authorize"
+        scope = scopes.replace(" ", "%20")
     else:
         raise ValueError("Unknown platform")
 
@@ -128,6 +152,30 @@ async def exchange_code(code: str, redirect_uri: str, platform: str):
                     "redirect_uri": redirect_uri,
                     "client_id": client_id,
                     "client_secret": client_secret,
+                },
+            )
+        elif platform == "tiktok":
+            r = await c.post(
+                "https://open.tiktokapis.com/v2/oauth/token/",
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                data={
+                    "client_key": client_id,
+                    "client_secret": client_secret,
+                    "code": code,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": redirect_uri,
+                },
+            )
+        elif platform == "snapchat":
+            r = await c.post(
+                "https://accounts.snapchat.com/login/oauth2/access_token",
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                data={
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "code": code,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": redirect_uri,
                 },
             )
         else:
@@ -387,6 +435,71 @@ async def handle_callback(req: Request, db: AsyncSession, platform: str, redirec
             )
             db.add(conn)
             await db.commit()
+        elif platform == "tiktok":
+            token = await exchange_code(code, redirect_uri, platform)
+
+            access_token = token["access_token"]
+            refresh_token = token.get("refresh_token")
+            expires_in = token.get("expires_in", 86400)  # Default 24 hours
+            open_id = token.get("open_id")
+
+            async with httpx.AsyncClient(timeout=15) as client:
+                me = await client.get(
+                    "https://open.tiktokapis.com/v2/user/info/",
+                    params={"fields": "open_id,union_id,avatar_url,display_name"},
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                me.raise_for_status()
+                user_data = me.json().get("data", {}).get("user", {})
+
+            conn = Platform(
+                api_name="tiktok",
+                account_id=open_id or user_data.get("open_id"),
+                account_name=user_data.get("display_name", "TikTok User"),
+                access_token=access_token,
+                expires_at=datetime.now(timezone.utc) + timedelta(seconds=expires_in),
+                meta={
+                    "REFRESH_TOKEN": refresh_token,
+                    "OPEN_ID": open_id or user_data.get("open_id"),
+                    "UNION_ID": user_data.get("union_id"),
+                    "PROFILE_PHOTO_URL": user_data.get("avatar_url"),
+                },
+            )
+            db.add(conn)
+            await db.commit()
+        elif platform == "snapchat":
+            token = await exchange_code(code, redirect_uri, platform)
+
+            access_token = token["access_token"]
+            refresh_token = token.get("refresh_token")
+            expires_in = token.get("expires_in", 3600)  # Default 1 hour
+
+            async with httpx.AsyncClient(timeout=15) as client:
+                me = await client.get(
+                    "https://adsapi.snapchat.com/v1/me",
+                    headers={"Authorization": f"Bearer {access_token}"},
+                )
+                me.raise_for_status()
+                user_data = me.json()
+
+                # Get organization/account info
+                org_data = user_data.get("me", {})
+
+            conn = Platform(
+                api_name="snapchat",
+                account_id=org_data.get("id"),
+                account_name=org_data.get("display_name", org_data.get("email", "Snapchat User")),
+                access_token=access_token,
+                expires_at=datetime.now(timezone.utc) + timedelta(seconds=expires_in),
+                meta={
+                    "REFRESH_TOKEN": refresh_token,
+                    "EMAIL": org_data.get("email"),
+                    "ORGANIZATION_ID": org_data.get("organization_id"),
+                    "PROFILE_PHOTO_URL": org_data.get("bitmoji_avatar_url"),
+                },
+            )
+            db.add(conn)
+            await db.commit()
         else:
             raise ValueError("Unknown platform")
     return RedirectResponse("/", status_code=303)
@@ -429,8 +542,10 @@ def init(app):
         html += '<a href="/auth/threads/start"><button>Threads</button></a><br><br>'
         html += '<a href="/auth/linkedin/start"><button>LinkedIn</button></a><br><br>'
         html += '<a href="/auth/twitter-oauth1/start"><button>Twitter (Media Upload)</button></a><br><br>'
+        html += '<a href="/auth/tiktok/start"><button>TikTok</button></a><br><br>'
+        html += '<a href="/auth/snapchat/start"><button>Snapchat</button></a><br><br>'
 
-        
+
         html += "<h2>Connected Accounts</h2><ul>"
 
         for c in items:
@@ -469,7 +584,7 @@ def init(app):
             build_authorize_url(
                 "facebook",
                 REDIRECT_URI_FB,
-                "pages_show_list pages_read_engagement pages_manage_posts",
+                "email,public_profile,pages_show_list,pages_read_engagement,pages_manage_posts",
             )
         )
 
@@ -479,7 +594,7 @@ def init(app):
             build_authorize_url(
                 "instagram",
                 REDIRECT_URI_IG,
-                "instagram_basic instagram_content_publish pages_show_list",
+                "instagram_basic,instagram_content_publish,pages_show_list",
             )
         )
 
@@ -589,13 +704,41 @@ def init(app):
             build_authorize_url(
                 "linkedin",
                 REDIRECT_URI_LINKEDIN,
-                "openid profile email w_member_social", 
+                "openid profile email w_member_social",
             )
         )
 
     @app.get("/auth/linkedin/callback")
     async def cb_linkedin(req: Request, db: AsyncSession = Depends(get_db)):
         return await handle_callback(req, db, "linkedin", REDIRECT_URI_LINKEDIN)
+
+    @app.get("/auth/tiktok/start")
+    async def start_tiktok():
+        return RedirectResponse(
+            build_authorize_url(
+                "tiktok",
+                REDIRECT_URI_TIKTOK,
+                "user.info.basic,video.list,video.upload",
+            )
+        )
+
+    @app.get("/auth/tiktok/callback")
+    async def cb_tiktok(req: Request, db: AsyncSession = Depends(get_db)):
+        return await handle_callback(req, db, "tiktok", REDIRECT_URI_TIKTOK)
+
+    @app.get("/auth/snapchat/start")
+    async def start_snapchat():
+        return RedirectResponse(
+            build_authorize_url(
+                "snapchat",
+                REDIRECT_URI_SNAPCHAT,
+                "snapchat-marketing-api snapchat-profile-api",
+            )
+        )
+
+    @app.get("/auth/snapchat/callback")
+    async def cb_snapchat(req: Request, db: AsyncSession = Depends(get_db)):
+        return await handle_callback(req, db, "snapchat", REDIRECT_URI_SNAPCHAT)
 
     
     @app.get("/", response_class=HTMLResponse)
@@ -689,7 +832,7 @@ def init(app):
                 "status": t.status.value,
                 "created_at": t.created_at.strftime("%b %d, %I:%M %p") if t.created_at else "",
                 "caption": content.caption if content else None,
-                "image_url": media_item.img_url if media_item else None
+                "image_url": media_item.storage_path if media_item else None
             })
 
         stats = {

@@ -11,7 +11,12 @@ LINKEDIN_IMAGES_INIT_URL = "https://api.linkedin.com/rest/images?action=initiali
 LINKEDIN_VIDEOS_INIT_URL = "https://api.linkedin.com/rest/videos?action=initializeUpload"
 LINKEDIN_IMAGE_CHECK_URL = "https://api.linkedin.com/rest/images/{image_id}"  
 LINKEDIN_VIDEO_CHECK_URL = "https://api.linkedin.com/rest/videos/{video_id}" 
-DEFAULT_LINKEDIN_VERSION = "202501"
+def _get_linkedin_version() -> str:
+    from datetime import datetime, timedelta
+    target_date = datetime.now() - timedelta(days=60)
+    return target_date.strftime("%Y%m")
+
+DEFAULT_LINKEDIN_VERSION = _get_linkedin_version()
 
 
 MAX_CONCURRENT_UPLOADS = 5
@@ -19,7 +24,6 @@ ASSET_POLL_INTERVAL = 2.0
 ASSET_POLL_TIMEOUT = 120.0 
 
 
-# --- helpers (content detection & download) ---------------------------------
 def _get_content_type_and_length(client: httpx.Client, url: str) -> Tuple[Optional[str], Optional[int]]:
     """Try HEAD to get content-type/length; fallback to small-range GET if HEAD is rejected."""
     try:

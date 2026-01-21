@@ -19,5 +19,4 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,  # Conservative for DB
 )
 
-# Import tasks module to register tasks with this app (uses current app context for @shared_task)
 import tasks

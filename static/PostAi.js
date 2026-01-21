@@ -42,7 +42,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...') {
   function getImageHtmlWithLoader(url, alt, imgClasses = 'h-full w-full object-cover') {
     if (!url) {
         return `
-            <div class="flex items-center justify-center h-full w-full text-slate-300 dark:text-slate-600 bg-slate-100 dark:bg-slate-900">
+            <div class="flex items-center justify-center h-full w-full text-slate-300 dark:text-slate-600 bg-slate-100 dark:bg-zinc-900">
                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                   <circle cx="8.5" cy="8.5" r="1.5"></circle>
@@ -56,7 +56,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...') {
     const imgId = 'lazyimg-' + Math.random().toString(36).substr(2, 9);
 
     return `
-        <div class="relative w-full h-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center overflow-hidden">
+        <div class="relative w-full h-full bg-slate-100 dark:bg-zinc-900 flex items-center justify-center overflow-hidden">
             <!-- Spinner -->
             <div class="absolute inset-0 flex items-center justify-center img-loader z-20">
                 <svg class="animate-spin h-6 w-6 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -96,22 +96,21 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...') {
   
   async function loadDrafts(offset = 0) {
        const grid = document.getElementById('draftsGrid');
-       // Responsive grid for better mobile
+       noDrafts.classList.add('hidden');
        grid.className = `grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`; 
        grid.innerHTML = "";
-       // Show 4 loading skeletons for consistency
        const loadingCard = (i) => `
-                            <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 animate-pulse">
-                                <div class="relative h-48 sm:h-56 lg:h-64 w-full bg-gray-200 dark:bg-slate-700 skeletonPlatform-loader"></div>
+                            <div class="group relative flex flex-col bg-white dark:bg-zinc-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-lg transition-shadow duration-300 animate-pulse">
+                                <div class="relative h-48 sm:h-56 lg:h-64 w-full bg-gray-200 dark:bg-zinc-700 skeletonPlatform-loader"></div>
                                 <div class="flex flex-1 flex-col justify-between p-4 sm:p-5 lg:p-6">
                                     <div>
-                                        <div class="h-4 sm:h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-11/12 mb-2 sm:mb-3 skeletonPlatform-loader"></div>
-                                        <div class="h-4 sm:h-5 bg-gray-200 dark:bg-slate-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
+                                        <div class="h-4 sm:h-5 bg-gray-200 dark:bg-zinc-700 rounded-md w-11/12 mb-2 sm:mb-3 skeletonPlatform-loader"></div>
+                                        <div class="h-4 sm:h-5 bg-gray-200 dark:bg-zinc-700 rounded-md w-4/6 skeletonPlatform-loader"></div>
                                     </div>
                                     <div class="flex items-center justify-between mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-100 dark:border-slate-700">
-                                        <div class="h-3 sm:h-4 bg-gray-200 dark:bg-slate-700 rounded w-16 sm:w-20 skeletonPlatform-loader"></div>
+                                        <div class="h-3 sm:h-4 bg-gray-200 dark:bg-zinc-700 rounded w-16 sm:w-20 skeletonPlatform-loader"></div>
                                         <div class="flex items-center gap-1.5">
-                                            <div class="h-8 sm:h-9 w-16 sm:w-20 bg-gray-200 dark:bg-slate-700 rounded-xl skeletonPlatform-loader"></div>
+                                            <div class="h-8 sm:h-9 w-16 sm:w-20 bg-gray-200 dark:bg-zinc-700 rounded-xl skeletonPlatform-loader"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -135,7 +134,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...') {
           const prevButton = document.getElementById('prevDrafts');
           const nextButton = document.getElementById('nextDrafts');
   
-          countSpan.textContent = totalCount;
+          countSpan.textContent = `${totalCount} Drafts`;
           if (totalCount === 0) {
               noDrafts.classList.remove('hidden');
               grid.innerHTML = '';
@@ -149,10 +148,10 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...') {
           grid.className = `grid gap-3 sm:gap-4 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`; 
 
           grid.innerHTML = tasks.map(task => `
-            <div class="group relative flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 transition-all duration-300 cursor-pointer overflow-hidden shadow-sm hover:shadow-xl"
+            <div class="group relative flex flex-col bg-white dark:bg-zinc-800 rounded-2xl border border-slate-200 dark:border-slate-700  duration-300 cursor-pointer overflow-hidden shadow-sm hover:shadow-xl"
                  onclick="openPostUiModalGfr('${task.task_id}')">
                 
-                <div class="relative h-48 sm:h-56 lg:h-64 w-full overflow-hidden bg-slate-100 dark:bg-slate-700">
+                <div class="relative h-48 sm:h-56 lg:h-64 w-full overflow-hidden bg-slate-100 dark:bg-zinc-700">
                     ${getImageHtmlWithLoader(task.media_url, 'Post Preview', 'h-full w-full object-cover transition-transform duration-500 group-hover:scale-105')}
                 </div>
                 
@@ -168,7 +167,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...') {
                             ${new Date(task.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                         <button id="editBtnDrf-${task.task_id}" 
-                                class="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 transition-all duration-200 inline-flex items-center gap-2 hover:shadow-md">
+                                class="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-zinc-700 hover:bg-slate-200 dark:hover:bg-slate-600 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-slate-300 dark:border-slate-600  duration-200 inline-flex items-center gap-2 hover:shadow-md">
                                 Edit
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-line-icon lucide-pencil-line"><path d="M13 21h8"/><path d="m15 5 4 4"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
                         </button>
@@ -289,13 +288,12 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...') {
         genBtnSpan.innerText = originalBtnText; 
         genBtnBtn.disabled = false;
         genBtnBtn.style.cursor = 'pointer'; 
-        updateCarouselDrf();
     }
 });
 
   function renderPreview(data) {
     document.getElementById('preview').innerHTML = `
-      <div class="bg-gray-50 dark:bg-slate-700/50 p-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+      <div class="bg-gray-50 dark:bg-zinc-700/50 p-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
           <h3 class="text-lg font-bold text-gray-700 dark:text-gray-300">Draft Preview</h3>
           <button onclick="document.getElementById('preview').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       </div>
@@ -309,7 +307,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...') {
               ).join('')}
           </div>
           ${data.result.image_prompt ? `
-            <div class="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
+            <div class="bg-slate-50 dark:bg-zinc-900 p-4 rounded-lg border border-slate-200 dark:border-slate-700">
               <span class="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-1">Image Prompt</span>
               <code class="text-xs sm:text-sm font-mono text-slate-700 dark:text-slate-300 block">${data.result.image_prompt}</code>
             </div>` : ''}
@@ -324,7 +322,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...') {
   function renderMultiplePreviews(data) {
     const num = data.drafts.length;
     const previews = data.drafts.slice(0, 4).map(d => `
-      <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+      <div class="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
         <div class="prose prose-sm prose-slate dark:prose-invert max-w-none mb-3">
           <p class="line-clamp-3">${d.result.caption}</p>
         </div>
@@ -340,7 +338,7 @@ function toggleLoading(btnId, isLoading, loadingText = 'Processing...') {
     `).join('');
 
     document.getElementById('preview').innerHTML = `
-      <div class="bg-gray-50 dark:bg-slate-700/50 p-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+      <div class="bg-gray-50 dark:bg-zinc-900/50 p-3 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
           <h3 class="text-lg font-bold text-gray-700 dark:text-gray-300">Generated ${num} Drafts</h3>
           <button onclick="document.getElementById('preview').classList.add('hidden')" class="text-slate-400 hover:text-slate-600"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
       </div>
@@ -452,14 +450,19 @@ function closePostUiModalGfr() {
 }
 
 
-  async function approveDraft(taskId) {
+async function approveDraft(taskId) {
     const approveBtn = document.getElementById(`btnApproveGfr`);
     const statusEl = document.getElementById(`taskStatusGfr`);
 
     if (!approveBtn) return;
 
-    const confirmed = window.confirm("Approve this draft and mark it ready to schedule?");
+    const confirmed = await askUser(
+        "Approve Draft?", 
+        "This will mark the content as ready and move it to your approved queue for scheduling."
+    );
+
     if (!confirmed) return;
+
 
 
     approveBtn.disabled = true;
@@ -620,22 +623,33 @@ function closePostUiModalGfr() {
   }
 
   async function deleteDraft(taskId) {
-    if (confirm('Delete this draft permanently?')) {
+    // 1. Call the global confirmation instead of the native alert
+    const confirmed = await askUser(
+        'Delete this draft?', 
+        'This will permanently remove the content. This action cannot be undone.'
+    );
+
+    // 2. Proceed only if user confirmed (true)
+    if (confirmed) {
         toggleLoading(`btnDeleteGfr`, true, 'Deleting...');
+        
         try {
-            await fetch(`/tasks/${taskId}`, { method: 'DELETE' });
+            const response = await fetch(`/tasks/${taskId}`, { method: 'DELETE' });
+            
+            if (!response.ok) throw new Error('Delete failed');
+
             closePostUiModal();
             loadDrafts();
+            ShowNoti('success', 'Draft deleted successfully');
+            
         } catch (e) {
+            console.error(e);
+            ShowNoti('error', 'Failed to delete the draft');
+        } finally {
             toggleLoading(`btnDeleteGfr`, false);
-            alert('Failed to delete.');
-        }
-        finally{
-            toggleLoading(`btnDeleteGfr`, false);
-            ShowNoti('success', 'Draft deleted');
         }
     }
-  }
+}
 
 
 const imgToggle = document.getElementById('imgToggle');

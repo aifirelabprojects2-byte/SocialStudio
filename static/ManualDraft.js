@@ -1,6 +1,25 @@
 document.addEventListener('DOMContentLoaded', () => {
+    window.loadAiDesignToModal = async (file, captionText) => {
+        resetForm();
+        elements.caption.value = captionText;
+        state.rawFiles = [file];
+        
+        const src = await readFileAsDataURL(file);
+        state.mediaItems = [{ type: 'image', src: src }];
+        elements.inputMediaImg.src = src;
+        elements.inputMediaImg.classList.remove('hidden');
+        elements.inputMediaVideo.classList.add('hidden');
+        elements.inputMediaPreview.classList.remove('hidden');
+        
+        const charCount = document.getElementById('charCountMnl');
+        if(charCount) charCount.textContent = `${captionText.length}/2200`;
+        if (state.platforms.length > 0 && !state.currentPlatform) {
+             selectPlatform(state.platforms[0]);
+        }
+        openCreateModal(); 
+        updatePreview();  
+    };
     
-    // --- Helper: Insert Text at Cursor Position ---
     function insertTextAtCursor(text) {
         const textarea = elements.caption;
         const start = textarea.selectionStart;
@@ -77,20 +96,28 @@ document.addEventListener('DOMContentLoaded', () => {
         inputMediaImg: document.getElementById('inputMediaImg'),
         inputMediaVideo: document.getElementById('inputMediaVideo'),
         mediaCountOverlay: document.getElementById('mediaCountOverlay'),
-        removeMediaBtn: document.getElementById('removeMediaBtn')
+        removeMediaBtn: document.getElementById('removeMediaBtn'),
+        skeletonLoader: document.getElementById('skeletonLoaderMnl'),
+        contentArea: document.getElementById('modalContentAreaMnl')
     };
 
     // --- State ---
     let state = {
         currentPlatform: null,
         currentPostType: 'Post',
-        mediaItems: [], // Array of objects: { type: 'image'|'video', src: 'data:...' }
-        rawFiles: [],   // Keep track of actual File objects for FormData
+        mediaItems: [],
+        rawFiles: [],   
         platforms: []
     };
 
 
     async function loadPlatforms() {
+        const skeletonEl = document.getElementById('skeletonLoaderMnl');
+        const contentEl = document.getElementById('modalContentAreaMnl');
+        
+        if (skeletonEl) skeletonEl.classList.remove('hidden');
+        if (contentEl) contentEl.classList.add('hidden');
+        
         try {
             const response = await fetch('/api/active/platforms');
             state.platforms = await response.json();
@@ -107,11 +134,38 @@ document.addEventListener('DOMContentLoaded', () => {
             ];
             renderPlatformSelector();
             selectPlatform(state.platforms[0]);
+        } finally {
+            // Hide skeleton, show content
+            if (skeletonEl) skeletonEl.classList.add('hidden');
+            if (contentEl) contentEl.classList.remove('hidden');
         }
     }
 
     function renderPlatformSelector() {
         elements.platformSelector.innerHTML = '';
+        
+        // Handle case when no platforms are connected
+        if (!state.platforms || state.platforms.length === 0) {
+            elements.platformSelector.innerHTML = `
+                <div class="flex flex-col items-center justify-center w-full py-4 px-3 bg-gradient-to-br from-gray-50 to-slate-50 border border-dashed border-gray-200 rounded-2xl text-center">
+                    <div class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mb-2">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                        </svg>
+                    </div>
+                    <p class="text-sm font-medium text-gray-600 mb-1">No Platforms Connected</p>
+                    <p class="text-xs text-gray-400 mb-3">Connect a social account to start posting</p>
+                    <a href="#" onclick="switchView('home', null); window.closeModal(); return false;" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-full hover:bg-black transition-colors shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        Connect Account
+                    </a>
+                </div>
+            `;
+            return;
+        }
+        
         state.platforms.forEach(p => {
             const apiName = p.api_name.toLowerCase();
             const iconData = PLATFORM_ICONS[apiName] || { color: 'text-gray-500', path: '' };
@@ -119,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const btn = document.createElement('button');
             const isActive = state.currentPlatform && state.currentPlatform.platform_id === p.platform_id;
             
-            btn.className = `flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+            btn.className = `flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border  ${
                 isActive 
                 ? 'bg-gray-800 text-white border-gray-800 shadow-sm' 
                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
@@ -156,7 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.postTypeSelector.appendChild(label);
         });
 
-        // Update active icon
         const iconData = PLATFORM_ICONS[apiName];
         if(iconData) {
             elements.activePlatformIcon.innerHTML = `<svg class="w-3 h-3 ${iconData.color}" fill="currentColor" viewBox="0 0 24 24"><path d="${iconData.path}"/></svg>`;
@@ -166,7 +219,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updatePreview();
     }
 
-    // --- Media Rendering Logic ---
     function renderMediaForPreview(items, layoutType = 'feed') {
         if (!items || items.length === 0) {
             return `<div class="w-full h-full bg-gray-100 flex flex-col items-center justify-center text-gray-400 border border-gray-100 min-h-[300px]"><svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><span class="text-xs">No media</span></div>`;
@@ -183,9 +235,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const css = layoutType === 'vertical' ? 'absolute inset-0 w-full h-full object-cover z-0' : 'w-full h-auto object-cover block';
             return `<img src="${items[0].src}" class="${css}">`;
         } else {
-            // Multiple Images (Carousel)
-            // Note: Vertical layout for carousel usually just shows first image dimmed or simple slideshow. 
-            // For Feed, we make a scrollable area.
             if (layoutType === 'vertical') {
                 return `<img src="${items[0].src}" class="absolute inset-0 w-full h-full object-cover z-0">`; // Story/Reel usually doesn't do carousel easily in preview
             }
@@ -213,7 +262,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function getPreviewHtml(platformName, p, caption, mediaItems, postType) {
         const name = p.account_name;
         const avatar = p.profile_photo_url || 'https://www.gravatar.com/avatar/0?d=mp';
-        document.getElementById("UserDpLg").innerHTML=`<img src="${avatar}" class="w-full h-full rounded-full border-2 border-white object-cover" alt="User">`;
+        const fallback = 'https://www.gravatar.com/avatar/0?d=mp';
+
+        document.getElementById("UserDpLg").innerHTML = `
+        <img 
+            src="${avatar}"
+            alt="User"
+            class="w-full h-full rounded-full border-2 border-white object-cover"
+            onerror="this.onerror=null; this.src='${fallback}'"
+        >
+        `;
 
         // Generate Media HTML based on context
         const feedMedia = renderMediaForPreview(mediaItems, 'feed');
@@ -232,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
-                                <img src="${avatar}" class="w-8 h-8 rounded-full border border-gray-300">
+                                <img src="${avatar}" onerror="this.onerror=null; this.src='${fallback}'" class="w-8 h-8 rounded-full border border-gray-300">
                                 <span class="text-sm font-semibold text-white shadow-black drop-shadow-md">${name}</span>
                                 <span class="text-xs text-gray-300">12h</span>
                             </div>
@@ -274,7 +332,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     <div class="absolute bottom-0 left-0 right-12 p-4 pb-6 z-10 bg-gradient-to-t from-black/80 to-transparent">
                         <div class="flex items-center gap-2 mb-2">
-                            <img src="${avatar}" class="w-8 h-8 rounded-full border border-white">
+                            <img src="${avatar}" onerror="this.onerror=null; this.src='${fallback}'" class="w-8 h-8 rounded-full border border-white">
                             <span class="font-semibold text-sm shadow-black drop-shadow-md">${name}</span>
                             <span class="px-2 py-0.5 border border-white/50 rounded text-[10px] font-medium">Follow</span>
                         </div>
@@ -293,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="flex items-center justify-between px-3 py-3">
             <div class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 to-pink-600 p-[1px]">
-                    <img src="${avatar}" class="w-full h-full rounded-full border border-white object-cover shadow-sm">
+                    <img src="${avatar}" onerror="this.onerror=null; this.src='${fallback}'" class="w-full h-full rounded-full border border-white object-cover shadow-sm">
                 </div>
                 <div class="flex items-center gap-1">
                     <span class="font-bold text-gray-900">${name}</span>
@@ -350,7 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="p-3 flex items-start justify-between">
                     <div class="flex gap-2">
                         <div class="relative">
-                            <img src="${avatar}" class="w-10 h-10 rounded-full border border-gray-100 object-cover">
+                            <img src="${avatar}" onerror="this.onerror=null; this.src='${fallback}'" class="w-10 h-10 rounded-full border border-gray-100 object-cover">
                             <div class="absolute inset-0 rounded-full border border-black/5"></div>
                         </div>
                         <div>
@@ -386,7 +444,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="px-4 py-2 flex items-center justify-between text-[14px] text-gray-500">
                     <div class="flex items-center gap-1.5 cursor-pointer hover:underline">
                         <div class="w-[18px] h-[18px] rounded-full bg-blue-600 flex items-center justify-center">
-                             <svg viewBox="0 0 16 16" width="10" height="10" fill="white"><path d="M7.3014 3.8662a.6974.6974 0 0 1 .6974-.6977c.6742 0 1.2207.5465 1.2207 1.2206v1.7464a.101.101 0 0 0 .101.101h1.7953c.992 0 1.7232.9273 1.4917 1.892l-.4572 1.9047a2.301 2.301 0 0 1-2.2374 1.764H6.9185a.5752.5752 0 0 1-.5752-.5752V7.7384c0-.4168.097-.8278.2834-1.2005l.2856-.5712a3.6878 3.6878 0 0 0 .3893-1.6509l-.0002-.4496ZM4.367 7a.767.767 0 0 0-.7669.767v3.2598a.767.767 0 0 0 .767.767h.767a.3835.3835 0 0 0 .3835-.3835V7.3835A.3835.3835 0 0 0 5.134 7h-.767Z"></path></svg>
+                             <svg viewBox="0 0 16 16" width="15" height="15" fill="white"><path d="M7.3014 3.8662a.6974.6974 0 0 1 .6974-.6977c.6742 0 1.2207.5465 1.2207 1.2206v1.7464a.101.101 0 0 0 .101.101h1.7953c.992 0 1.7232.9273 1.4917 1.892l-.4572 1.9047a2.301 2.301 0 0 1-2.2374 1.764H6.9185a.5752.5752 0 0 1-.5752-.5752V7.7384c0-.4168.097-.8278.2834-1.2005l.2856-.5712a3.6878 3.6878 0 0 0 .3893-1.6509l-.0002-.4496ZM4.367 7a.767.767 0 0 0-.7669.767v3.2598a.767.767 0 0 0 .767.767h.767a.3835.3835 0 0 0 .3835-.3835V7.3835A.3835.3835 0 0 0 5.134 7h-.767Z"></path></svg>
                         </div>
                         <span class="hover:text-gray-900">32K</span>
                     </div>
@@ -418,7 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return `
             <div class="bg-white border border-gray-100 rounded-lg w-full font-sans p-3 shadow-sm">
                 <div class="flex gap-3">
-                    <img src="${avatar}" class="w-10 h-10 rounded-full">
+                    <img src="${avatar}" onerror="this.onerror=null; this.src='${fallback}'" class="w-10 h-10 rounded-full">
                     <div class="flex-1">
                         <div class="flex items-center gap-1 text-sm">
                             <span class="font-bold text-gray-900">${name}</span>
@@ -451,7 +509,7 @@ if (platformName === 'linkedin') {
 
         <div class="p-3 flex items-start justify-between">
             <div class="flex gap-2">
-                <img src="${avatar}" class="w-12 h-12 rounded-full object-cover">
+                <img src="${avatar}" onerror="this.onerror=null; this.src='${fallback}'" class="w-12 h-12 rounded-full object-cover">
                 <div class="flex flex-col">
                     <div class="flex items-center gap-1">
                         <span class="font-bold text-sm text-gray-900 hover:underline cursor-pointer">${name}</span>
@@ -518,7 +576,7 @@ if (platformName === 'linkedin') {
             <div class="bg-white w-full font-sans p-4 border border-gray-200 shadow-sm rounded-xl max-w-[420px] mx-auto">
                 <div class="flex gap-3">
                     <div class="flex flex-col items-center shrink-0">
-                        <img src="${avatar}" class="w-9 h-9 rounded-full border border-gray-100 object-cover">
+                        <img src="${avatar}" onerror="this.onerror=null; this.src='${fallback}'" class="w-9 h-9 rounded-full border border-gray-100 object-cover">
                         <div class="w-0.5 flex-1 bg-gray-100 mt-2 rounded-full mb-2"></div> 
                     </div>
                     
@@ -562,6 +620,32 @@ if (platformName === 'linkedin') {
     }
 
     function updatePreview() {
+        // Handle case when no platforms are connected at all
+        if (!state.platforms || state.platforms.length === 0) {
+            elements.previewTitle.innerHTML = `
+                <span class="text-gray-500">Preview</span>
+                <svg class="w-4 h-4 text-gray-300 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            `;
+            elements.preview.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-16 px-6 bg-gradient-to-br from-gray-50 to-slate-50 border border-dashed border-gray-200 rounded-2xl text-center min-h-[400px]">
+                    <div class="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-base font-semibold text-gray-700 mb-1">No Preview Available</h3>
+                    <p class="text-sm text-gray-400 max-w-xs leading-relaxed">Connect a social media platform to see how your post will look</p>
+                    <div class="flex gap-4 mt-6 opacity-30">
+                        <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"></path></svg>
+                        <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.202 24 24 23.227 24 22.271V1.729C24 .774 23.202 0 22.222 0h.003z"></path></svg>
+                        <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"></path></svg>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
         if (!state.currentPlatform) {
             elements.preview.innerHTML = '<div class="text-center text-gray-400 mt-10">Select a platform to preview</div>';
             return;
@@ -692,6 +776,9 @@ if (platformName === 'linkedin') {
         }, 300);
     }
     
+    // Expose closeModal to window for onclick handlers in dynamically created elements
+    window.closeModal = closeModal;
+    
     elements.closeBtn.addEventListener('click', closeModal);
     elements.modal.addEventListener('click', (e) => {
         if (e.target === elements.modal) closeModal();
@@ -725,7 +812,10 @@ const loadingMessages = [
 
 // 1. Reusable helper to handle the task submission
 const handleTaskSubmission = (isDraft = false) => {
-    if (!state.currentPlatform) return alert('Select a platform');
+    if (!state.currentPlatform)  {
+        ShowNoti('info','Select A Platform First');
+        return
+    }
     if (!elements.caption.value || elements.caption.value.trim() === '') {
         ShowNoti('info', 'Please Fill The Caption');
         return;
@@ -748,7 +838,6 @@ const handleTaskSubmission = (isDraft = false) => {
     formData.append('caption', elements.caption.value);
     formData.append('hashtags', document.getElementById('hashtagsMnl').value);
     formData.append('notes', document.getElementById('notesMnl').value);
-    formData.append('status', isDraft ? 'draft' : 'published'); // Pass status to backend
 
     if (state.rawFiles.length > 0) {
         state.rawFiles.forEach(file => formData.append('files', file));

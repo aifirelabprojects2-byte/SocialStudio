@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en" class="h-full antialiased scroll-smooth">
+<head>
+    <meta charset="utf-8" />
+    <title>Company Profile Manager</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'media', // Respects system dark mode preference
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        gray: {
+                            50: '#f9fafb',
+                            100: '#f3f4f6',
+                            200: '#e5e7eb',
+                            300: '#d1d5db',
+                            400: '#9ca3af',
+                            500: '#6b7280',
+                            600: '#4b5563',
+                            700: '#374151',
+                            800: '#1f2937',
+                            900: '#111827',
+                            950: '#030712',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        textarea::-webkit-scrollbar, body::-webkit-scrollbar { width: 8px; }
+        textarea::-webkit-scrollbar-track, body::-webkit-scrollbar-track { background: transparent; }
+        textarea::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        @media (prefers-color-scheme: dark) {
+            textarea::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb { background-color: #4b5563; }
+        }
+
+        .spinner-cft {
+            border: 3px solid rgba(99, 102, 241, 0.1);
+            border-left-color: #6366f1;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spinCft 1s linear infinite;
+        }
+        @keyframes spinCft { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .fade-enter-cft {
+            animation: fadeInCft 0.3s ease-out forwards;
+        }
+        @keyframes fadeInCft { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="h-full bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 transition-colors duration-300">
+
+    <div class="max-w-4xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
+        
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
+            <div>
+                <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">Profile Manager</h1>
+                <p class="mt-2 text-lg text-gray-500 dark:text-gray-400">Manage and extract single-tenant company data.</p>
+            </div>
+            <!-- Fetch New Button -->
+            <button id="openFetchBtnCft" class="hidden inline-flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600 px-5 py-2.5 rounded-xl font-medium shadow-sm text-sm transition-all duration-200 group">
+                <i data-lucide="refresh-cw" class="w-4 h-4 text-gray-400 group-hover:text-gray-500 transition-colors"></i> 
+                <span>Fetch New</span>
+            </button>
+        </div>
+
+        <!-- Global Status -->
+        <div id="globalStatusCft" class="hidden mb-8 rounded-2xl p-4 text-sm font-medium border border-transparent shadow-sm flex items-start gap-3 fade-enter-cft"></div>
+
+        <!-- Main Content Card -->
+        <div id="mainCardCft" class="hidden dark:shadow-2xl dark:shadow-gray-900/50 rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-800 transition-all">
+            
+            <!-- Tabs Header -->
+            <div class="flex justify-center file:px-6 pt-6 pb-2">
+                <nav class="flex p-1 space-x-1 bg-gray-100 dark:bg-gray-800 rounded-2xl" aria-label="Tabs">
+                    <button id="tabViewCft" class="flex items-center justify-center gap-2 rounded-xl py-2 px-4 text-sm font-semibold shadow bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-200">
+                        <i data-lucide="eye" class="w-4 h-4"></i>
+                        <span>Overview</span>
+                    </button>
+                    <button id="tabEditCft" class="flex items-center justify-center gap-2 rounded-xl py-2 px-4text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-200/50 dark:hover:bg-gray-700/50 transition-all duration-200">
+                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                        <span>Edit Details</span>
+                    </button>
+                </nav>
+            </div>
+
+            <div class="p-6 sm:p-8 min-h-[400px]">
+                
+                <!-- Loading State -->
+                <div id="cardSpinnerCft" class="hidden flex flex-col items-center justify-center h-80 text-gray-500 dark:text-gray-400">
+                    <div class="spinner-cft mb-6"></div>
+                    <p class="animate-pulse font-medium">AI Agent is analyzing website...</p>
+                </div>
+
+                <!-- VIEW MODE -->
+                <div id="viewModeCft" class="fade-enter-cft">
+                    <div class="flex flex-col sm:flex-row justify-between items-start gap-5 border-b border-gray-100 dark:border-gray-800 pb-8 mb-8">
+                        <div class="space-y-2">
+                            <h2 id="vNameCft" class="text-3xl font-medium text-gray-900 dark:text-white tracking-tight">Loading...</h2>
+                            <a id="vUrlCft" href="#" target="_blank" class="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-sm font-medium transition-colors">
+                                <i data-lucide="link" class="w-3.5 h-3.5"></i>
+                                <span class="underline decoration-gray-200 dark:decoration-gray-800 underline-offset-2"></span>
+                            </a>
+                        </div>
+                        <div class="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 pl-3 pr-4 py-1.5 rounded-full border border-gray-200 dark:border-gray-700">
+                            <i data-lucide="map-pin" class="w-4 h-4 text-gray-400 dark:text-gray-500"></i>
+                            <span id="vLocCft" class="text-sm font-medium text-gray-700 dark:text-gray-300"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-10">
+                        <div class="flex items-center gap-2 mb-4">
+                            <i data-lucide="info" class="w-4 h-4 text-gray-400"></i>
+                            <h3 class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-widest">About</h3>
+                        </div>
+                        <p id="vDetailsCft" class="text-gray-600 dark:text-gray-300 leading-relaxed text-base bg-gray-50 dark:bg-gray-800/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-800/50"></p>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center gap-2 mb-5">
+                            <i data-lucide="package" class="w-4 h-4 text-gray-400"></i>
+                            <h3 class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-widest">Products & Services</h3>
+                        </div>
+                        <div id="vProductsCft" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                    </div>
+                </div>
+
+                <!-- EDIT MODE -->
+                <div id="editModeCft" class="hidden space-y-8 fade-enter-cft">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Company Name</label>
+                            <input type="text" id="eNameCft" class="block w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white sm:text-sm px-4 py-3 transition-colors">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Location</label>
+                            <div class="relative rounded-xl shadow-sm">
+                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                    <i data-lucide="map-pin" class="w-4 h-4 text-gray-400"></i>
+                                </div>
+                                <input type="text" id="eLocCft" class="block w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white pl-10  sm:text-sm px-4 py-3 transition-colors">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                            <textarea id="eDescCft" rows="6" class="block w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white sm:text-sm px-4 py-3 transition-colors"></textarea>
+                        </div>
+
+                        <!-- Read-only Notice -->
+                        <div class="rounded-2xl bg-gray-50 dark:bg-gray-900/20 p-5 border border-gray-200 dark:border-gray-800/50">
+                            <div class="flex gap-3">
+                                <div class="flex-shrink-0">
+                                    <i data-lucide="alert-circle" class="w-5 h-5 text-gray-500 dark:text-gray-400"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-300">Product List is Auto-Generated</h3>
+                                    <div class="mt-1 text-sm text-gray-700 dark:text-gray-400/80">
+                                        <p>Products are extracted by the AI agent and cannot be edited manually here. Fetch the profile again to update this list.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 border-t border-gray-100 dark:border-gray-800 pt-6">
+                        <button id="eRevertCft" class="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus:ring-2 focus:ring-gray-200">Revert Changes</button>
+                        <button id="eSaveCft" class="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-gray-900 dark:bg-zinc-600 rounded-full hover:bg-zinc-700 dark:hover:bg-zinc-500 dark:shadow-none transition-all">
+                            Save Changes
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div id="popupModalCft" class="relative z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-gray-900/60 dark:bg-black/80 backdrop-blur-sm transition-opacity"></div>
+
+        <div class="fixed inset-0 z-10 w-screen overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                
+                <div class="relative transform overflow-hidden rounded-3xl bg-white dark:bg-gray-900 text-left shadow-2xl transition-all sm:my-8 sm:w-full sm:max-w-xl border border-gray-100 dark:border-gray-800">
+                    
+                    <div class="bg-white dark:bg-gray-900 px-6 py-4">
+                        <div class="flex flex-col items-center text-center">
+                            <h3 class="text-xl font-medium leading-6 text-gray-900 dark:text-white">Fetch Company Profile</h3>
+                            <div class="mt-2 max-w-sm">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">
+                                    Enter a website URL. Our AI will analyze the site and generate a structured profile for you.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mt-8">
+                            <div class="relative">
+                                <input id="modalInputCft" type="url" class="block w-full rounded-xl border-0 py-3 px-4 pl-12 text-gray-900 dark:text-white ring-1 ring-inset ring-gray-200 dark:ring-gray-700 placeholder:text-gray-400 focus:ring-1 focus:ring-inset focus:ring-gray-600 sm:text-sm sm:leading-6 transition-all" placeholder="https://example.com">
+                                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
+                                    <i data-lucide="globe" class="w-5 h-5 text-gray-400"></i>
+                                </div>
+                            </div>
+                            <div id="modalErrCft" class="mt-2 text-sm text-red-600 dark:text-red-400 h-5 text-center font-medium"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 dark:bg-gray-800/50 px-6 py-4 sm:flex sm:flex-row-reverse sm:px-8 gap-3 border-t border-gray-100 dark:border-gray-800">
+                        <button id="modalFetchBtnCft" type="button" class="inline-flex w-full justify-center items-center gap-2 rounded-full bg-gray-900 px-5 py-3 text-sm font-medium text-white shadow-lg shadow-gray-200 dark:shadow-none hover:bg-gray-500 sm:w-auto transition-all">
+                            Fetch Profile
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                        
+                        <div id="dismissBtnsCft" class="flex flex-col sm:flex-row w-full sm:w-auto gap-3 sm:mr-auto mt-3 sm:mt-0 opacity-100 transition-opacity duration-300">
+                            <button id="askLaterBtnCft" type="button" class="inline-flex w-full justify-center rounded-full bg-white dark:bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 sm:w-auto">
+                                Later
+                            </button>
+                            <button id="dontAskBtnCft" type="button" class="inline-flex w-full justify-center rounded-full bg-white dark:bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 sm:w-auto">
+                                Never
+                            </button>
+                        </div>
+
+                        <button id="closeModalBtnCft" type="button" class="hidden mt-3 inline-flex w-full justify-center rounded-full bg-white dark:bg-gray-800 px-4 py-3 text-sm font-semibold text-gray-900 dark:text-gray-200 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 sm:mt-0 sm:w-auto">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+<script src="/static/BrandAsset.js"></script>
+</body>
+</html>

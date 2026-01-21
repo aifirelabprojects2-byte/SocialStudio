@@ -20,15 +20,12 @@ from apify_client import ApifyClient
 import Accounts
 from Configs import PROXY_URL
 
-# --- Load Environment Variables ---
 load_dotenv()
 APIFY_KEY = os.getenv("APIFY_KEY")
 
-# --- Directory Setup ---
-DOWNLOADS_DIR = Path("./downloads")
+DOWNLOADS_DIR = Path("./static/downloads")
 DOWNLOADS_DIR.mkdir(exist_ok=True)
 
-# --- Configuration & Globals ---
 FFMPEG_AVAILABLE = False
 CONCURRENT_DOWNLOADS = 10
 download_sem = asyncio.Semaphore(CONCURRENT_DOWNLOADS)
@@ -43,8 +40,6 @@ class DownloadRequest(BaseModel):
     url: str
     quality: Optional[str] = "best"
     audio_only: Optional[bool] = False
-
-# --- Utilities ---
 
 HEADERS_CYCLE = itertools.cycle([
     {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36", "Accept": "*/*"},
@@ -90,13 +85,7 @@ def slugify_filename(text: str, max_length: int = 100) -> str:
         text = "media"
     return text[:max_length]
 
-# --- APIFY Functions (User Provided) ---
-
 def get_insta_data_sync(post_url):
-    """
-    Synchronous function to fetch Instagram data via Apify.
-    Uses: shu8hvrXbJbY3Eb9W (Instagram Scraper)
-    """
     if not APIFY_KEY:
         raise ValueError("APIFY_KEY not set in environment variables.")
         
@@ -129,10 +118,6 @@ def get_insta_data_sync(post_url):
     return {"status": "No Data Found", "media_url": None}
 
 def get_x_media_v2_sync(tweet_url: str):
-    """
-    Synchronous function to fetch X/Twitter data via Apify.
-    Uses: kaitoeasyapi/twitter-x-data-tweet-scraper-pay-per-result-cheapest
-    """
     if not APIFY_KEY:
         raise ValueError("APIFY_KEY not set in environment variables.")
 
@@ -205,12 +190,7 @@ def get_x_media_v2_sync(tweet_url: str):
         "status": "Success" if media_url else ("Text Only" if caption != "No text found" else "No Data Found")
     }
 
-# --- Generic File Downloader ---
-
 async def download_media_from_url(url: str, filename_base: str, forced_ext: str = None) -> str:
-    """
-    Downloads media (video or image) from a direct URL to the downloads folder.
-    """
     timeout = aiohttp.ClientTimeout(total=300) # 5 min timeout for large videos
     
     # Determine extension
@@ -380,6 +360,63 @@ async def download_video(url: str, quality: str, audio_only: bool) -> Tuple[str,
 # --- Main Initialization ---
 
 def init(app):
+    @app.get("/api/downloads/list")
+    async def list_downloads(_=Depends(Accounts.get_current_user)):
+        files = []
+        try:
+            for file_path in DOWNLOADS_DIR.iterdir():
+                if file_path.is_file():
+                    stat = file_path.stat()
+                    # Determine file type based on extension
+                    ext = file_path.suffix.lower()
+                    if ext in ['.mp4', '.webm', '.mkv', '.avi', '.mov']:
+                        file_type = 'video'
+                    elif ext in ['.mp3', '.m4a', '.wav', '.flac', '.aac']:
+                        file_type = 'audio'
+                    elif ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+                        file_type = 'image'
+                    else:
+                        file_type = 'file'
+                    
+                    files.append({
+                        "name": file_path.name,
+                        "size": stat.st_size,
+                        "size_formatted": _format_size(stat.st_size),
+                        "extension": ext[1:] if ext else "",
+                        "type": file_type,
+                        "modified": stat.st_mtime,
+                        "download_url": f"/downloads/{file_path.name}"
+                    })
+            
+            # Sort by modified time, newest first - O(n log n)
+            files.sort(key=lambda x: x["modified"], reverse=True)
+            
+            return {"status": "success", "files": files, "count": len(files)}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error listing downloads: {str(e)}")
+
+    def _format_size(size_bytes: int) -> str:
+        """Format bytes to human readable size - O(1)"""
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size_bytes < 1024:
+                return f"{size_bytes:.1f} {unit}"
+            size_bytes /= 1024
+        return f"{size_bytes:.1f} TB"
+
+    @app.delete("/api/downloads/{filename}")
+    async def delete_download(filename: str, _=Depends(Accounts.get_current_user)):
+        """Delete a file from downloads folder - O(1)"""
+        file_path = DOWNLOADS_DIR / filename
+        if not file_path.exists():
+            raise HTTPException(status_code=404, detail="File not found")
+        if not file_path.is_file():
+            raise HTTPException(status_code=400, detail="Not a file")
+        try:
+            file_path.unlink()
+            return {"status": "success", "message": f"Deleted {filename}"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error deleting file: {str(e)}")
+
     @app.post("/download", response_model=dict)
     async def download_endpoint(request: DownloadRequest = Body(...), _=Depends(Accounts.get_current_user)):
         loop = asyncio.get_event_loop()
@@ -397,27 +434,43 @@ def init(app):
                 if not media_url:
                     raise HTTPException(status_code=404, detail="No media found in tweet")
 
-                # 2. Download the actual file
-                # Use tweet ID or caption start as filename
+                # 2. Try to download the actual file, fallback to direct URL on failure
                 safe_name = slugify_filename(apify_data.get("caption", "twitter_media"), max_length=50)
-                file_path_str = await download_media_from_url(media_url, f"x_{safe_name}")
                 
-                file_name = Path(file_path_str).name
-                download_urls = [f"/downloads/{file_name}"]
-                
-                return {
-                    "status": "success",
-                    "platform": "Twitter/X ",
-                    "download_method": "Apify+Aiohttp",
-                    "download_url": download_urls,
-                    "file_paths": [file_path_str],
-                    "files": [file_name],
-                    "file_count": 1,
-                    "message": f"Downloaded: {apify_data.get('caption')[:30]}..."
-                }
+                try:
+                    file_path_str = await download_media_from_url(media_url, f"x_{safe_name}")
+                    file_name = Path(file_path_str).name
+                    download_urls = [f"/downloads/{file_name}"]
+                    
+                    return {
+                        "status": "success",
+                        "platform": "Twitter/X",
+                        "download_method": "Apify+Aiohttp",
+                        "download_url": download_urls,
+                        "file_paths": [file_path_str],
+                        "files": [file_name],
+                        "file_count": 1,
+                        "message": f"Downloaded: {apify_data.get('caption')[:30]}..."
+                    }
+                except Exception as download_err:
+                    # Server-side download failed, return direct media URL to user
+                    print(f"Server-side X download failed, returning direct URL: {download_err}")
+                    return {
+                        "status": "success",
+                        "platform": "Twitter/X",
+                        "download_method": "DirectURL",
+                        "download_url": [media_url],
+                        "direct_url": media_url,
+                        "media_type": apify_data.get("type", "media"),
+                        "file_count": 1,
+                        "is_external": True,
+                        "message": f"Direct link: {apify_data.get('caption', '')[:30]}..."
+                    }
 
+            except HTTPException:
+                raise
             except Exception as e:
-                # Fallback or error report
+                # Metadata fetch failed completely
                 raise HTTPException(status_code=500, detail=f"X Download Failed: {str(e)}")
 
 
@@ -429,25 +482,42 @@ def init(app):
                     raise HTTPException(status_code=404, detail=f"Apify Error: {apify_data.get('status', 'Unknown error')}")
 
                 media_url = apify_data.get("media_url")
-
                 safe_name = slugify_filename(apify_data.get("caption", "insta_media"), max_length=50)
-                file_path_str = await download_media_from_url(media_url, f"insta_{safe_name}")
 
-                file_name = Path(file_path_str).name
-                download_urls = [f"/downloads/{file_name}"]
+                try:
+                    file_path_str = await download_media_from_url(media_url, f"insta_{safe_name}")
+                    file_name = Path(file_path_str).name
+                    download_urls = [f"/downloads/{file_name}"]
 
-                return {
-                    "status": "success",
-                    "platform": "Instagram",
-                    "download_method": "Apify+Aiohttp",
-                    "download_url": download_urls,
-                    "file_paths": [file_path_str],
-                    "files": [file_name],
-                    "file_count": 1,
-                    "message": f"Downloaded {apify_data.get('type')}: {apify_data.get('caption')[:30]}..."
-                }
+                    return {
+                        "status": "success",
+                        "platform": "Instagram",
+                        "download_method": "Apify+Aiohttp",
+                        "download_url": download_urls,
+                        "file_paths": [file_path_str],
+                        "files": [file_name],
+                        "file_count": 1,
+                        "message": f"Downloaded {apify_data.get('type')}: {apify_data.get('caption')[:30]}..."
+                    }
+                except Exception as download_err:
+                    # Server-side download failed, return direct media URL to user
+                    print(f"Server-side Instagram download failed, returning direct URL: {download_err}")
+                    return {
+                        "status": "success",
+                        "platform": "Instagram",
+                        "download_method": "DirectURL",
+                        "download_url": [media_url],
+                        "direct_url": media_url,
+                        "media_type": apify_data.get("type", "media"),
+                        "file_count": 1,
+                        "is_external": True,
+                        "message": f"Direct link ({apify_data.get('type')}): {apify_data.get('caption', '')[:30]}..."
+                    }
 
+            except HTTPException:
+                raise
             except Exception as e:
+                # Metadata fetch failed completely
                 raise HTTPException(status_code=500, detail=f"Instagram Download Failed: {str(e)}")
 
 

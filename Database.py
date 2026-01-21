@@ -24,8 +24,10 @@ from sqlalchemy import (
 )
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncAttrs, AsyncSession
 from sqlalchemy.orm import DeclarativeBase, sessionmaker,relationship
+from sqlalchemy.types import TypeDecorator
 from sqlalchemy.exc import SQLAlchemyError
 import pytz
+import json
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(
@@ -96,15 +98,24 @@ class AttemptStatus(enum.Enum):
 def gen_uuid_str() -> str:
     return str(uuid.uuid4())
 
-class DesignTemplate(Base, SyncBase):
-    __tablename__ = "design_template"
-    template_id = Column(String(36), primary_key=True, default=gen_uuid_str)
-    name = Column(String(255), nullable=False, index=True)
-    canvas_json = Column(JSON, nullable=False)  
-    canvas_width = Column(Integer, nullable=True) 
-    canvas_height = Column(Integer, nullable=True)
-    thumbnail_url = Column(String(500), nullable=True) 
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), default=ist_now)
+class TemplateDB(Base):
+    __tablename__ = "templates"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    type = Column(String)     
+    category = Column(String)  
+    style = Column(String)     
+    width = Column(Integer)
+    height = Column(Integer)
+    preview_url = Column(String) 
+    json_data = Column(Text)     
+
+class DesignRecord(Base):
+    __tablename__ = "generated_designs"
+    id = Column(String, primary_key=True, index=True) 
+    batch_id = Column(String, index=True) 
+    json_data = Column(JSON)
+    caption = Column(Text)
 
     
 class Platform(Base):
@@ -257,6 +268,27 @@ class User(Base, SyncBase):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), default=ist_now)
 
+class JSONText(TypeDecorator):
+    impl = Text
+    def process_bind_param(self, value, dialect):
+        if value is None: return None
+        return json.dumps(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None: return None
+        return json.loads(value)
+
+
+class Company(Base, SyncBase):
+    __tablename__ = "companies"
+    id = Column(Integer, primary_key=True, index=True)
+    website_url = Column(String, nullable=False) 
+    company_name = Column(String, nullable=True)
+    company_details = Column(Text, nullable=True)
+    company_location = Column(String, nullable=True)
+    company_products = Column(JSONText, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class LoginSession(Base, SyncBase):
     __tablename__ = "login_session"
@@ -288,7 +320,6 @@ SyncSessionLocal = sessionmaker(
     expire_on_commit=False,
     future=True,
 )
-
 
 
 def hash_password(password: str) -> str:

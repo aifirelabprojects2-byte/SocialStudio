@@ -3,6 +3,8 @@ __pycache__/
 
 # Database files - don't overwrite on deployment
 *.db
+app.db-shm
+app.db-wal
 app.db
 celerymq.db
 celery_results.db
@@ -21,3 +23,7 @@ xfetch.py
 imgdwn.py
 ytD.py
 logoadder.py
+unsplashfetcher.py
+studiologo.html
+thumbnailTest.py
+companyext.py

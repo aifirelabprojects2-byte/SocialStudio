@@ -108,7 +108,6 @@
      `;
      return;
    }
-   console.log(logs);
 
    tbody.innerHTML = logs.map(log => {
      const formattedDate = formatDateErr(log.created_at);

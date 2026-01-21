@@ -82,7 +82,6 @@ async function openDetail(taskId) {
         const mediaUrl = d.preview_image || d.media_url; // Handle potential naming differences
 
         if (mediaUrl) {
-            console.log(mediaUrl);
             els.noImg.classList.add('hidden');
             els.noImg.style.display = 'none'; 
             els.imageDownloadBtn.classList.remove('hidden');
@@ -135,15 +134,12 @@ async function openDetail(taskId) {
 
         els.copyCaptionBtn.onclick = async (e) => {
             e.stopPropagation();
-            console.log('Copy caption button clicked');
             try {
                 const text = getFullCaptionText();
-                console.log('Text to copy:', text);
                 await navigator.clipboard.writeText(text);
                 const originalText = els.copyCaptionBtn.innerHTML;
                 els.copyCaptionBtn.innerHTML = '<svg class="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.89163 13.2687L9.16582 17.5427L18.7085 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
                 setTimeout(() => { els.copyCaptionBtn.innerHTML = originalText; }, 2000);
-                console.log('Copy successful');
             } catch (err) {
                 console.error('Failed to copy: ', err);
                 // Fallback for older browsers or non-secure contexts
@@ -157,7 +153,6 @@ async function openDetail(taskId) {
                         const originalText = els.copyCaptionBtn.innerHTML;
                         els.copyCaptionBtn.innerHTML = '<svg class="w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4.89163 13.2687L9.16582 17.5427L18.7085 8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
                         setTimeout(() => { els.copyCaptionBtn.innerHTML = originalText; }, 2000);
-                        console.log('Fallback copy successful');
                     } catch (fallbackErr) {
                         console.error('Fallback copy failed: ', fallbackErr);
                         alert('Failed to copy to clipboard. Please select and copy manually.');
@@ -169,9 +164,7 @@ async function openDetail(taskId) {
 
         els.downloadCaptionBtn.onclick = (e) => {
             e.stopPropagation();
-            console.log('Download caption button clicked');
             const fullText = getFullCaptionText();
-            console.log('Text to download:', fullText);
             const blob = new Blob([fullText], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -181,12 +174,8 @@ async function openDetail(taskId) {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            console.log('Caption download initiated');
         };
 
-        console.log('Event listeners attached for buttons');
-
-        // Fetch available platforms
         const platformsRes = await fetch('/api/active/platforms');
         if (!platformsRes.ok) {
             console.error('Failed to fetch platforms');
@@ -197,7 +186,6 @@ async function openDetail(taskId) {
             ]);
         } else {
             const platformsData = await platformsRes.json();
-            console.log(platformsData);
             populatePlatforms(platformsData || []);
         }
         
@@ -293,6 +281,7 @@ function populatePlatforms(platforms) {
         const apiName = p.api_name || 'unknown';
         const accName = p.account_name || 'Connected Account';
         const photoUrl = p.profile_photo_url;
+        const fallback = 'https://www.gravatar.com/avatar/0?d=mp';
         
         const iconData = PLATFORM_ICONS[apiName.toLowerCase()] || { path: '', color: 'text-gray-400' };
         const initials = accName.substring(0, 2).toUpperCase();
@@ -302,7 +291,7 @@ function populatePlatforms(platforms) {
         
         let avatarHtml = '';
         if (photoUrl) {
-            avatarHtml = `<img src="${photoUrl}" alt="${accName}" class="h-full w-full object-cover">`;
+            avatarHtml = `<img src="${photoUrl}" onerror="this.onerror=null; this.src='${fallback}'" alt="${accName}" class="h-full w-full object-cover">`;
         } else {
             const colors = {
                 'instagram': 'bg-pink-100 text-pink-700',
@@ -318,7 +307,7 @@ function populatePlatforms(platforms) {
         div.innerHTML = `
             <input type="checkbox" id="platform-toggle-${platformId}" value="${platformId}" class="peer sr-only">
             
-            <div class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-white transition-all cursor-pointer
+            <div class="flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-white  cursor-pointer
                         hover:border-gray-300 hover:shadow-sm
                         peer-checked:border-gray-900 peer-checked:bg-gray-50 peer-checked:ring-1 peer-checked:ring-gray-900
                         peer-checked:[&_.checkbox-circle]:bg-gray-900 peer-checked:[&_.checkbox-circle]:border-gray-900
@@ -346,8 +335,8 @@ function populatePlatforms(platforms) {
                     </p>
                 </div>
 
-                <div class="checkbox-circle h-5 w-5 shrink-0 rounded-full border border-gray-300 bg-white flex items-center justify-center transition-all duration-200">
-                    <svg class="check-icon w-3 h-3 text-white opacity-0 transform scale-50 transition-all duration-200" 
+                <div class="checkbox-circle h-5 w-5 shrink-0 rounded-full border border-gray-300 bg-white flex items-center justify-center  duration-200">
+                    <svg class="check-icon w-3 h-3 text-white opacity-0 transform scale-50  duration-200" 
                          fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                     </svg>
@@ -443,7 +432,6 @@ async function handleSchedule(taskId) {
 }
 
 async function handlePostNow(taskId) {
-    console.log(`handle post triggered ${taskId}`)
     const platformCheckboxes = document.querySelectorAll('#platformsList input[type="checkbox"]:checked');
     const platformIds = Array.from(platformCheckboxes).map(cb => cb.value);
 
