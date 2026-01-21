@@ -13,7 +13,6 @@ from fastapi.templating import Jinja2Templates
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 from PIL import ImageFont, Image, ImageDraw
-from rembg import remove
 from fastapi.responses import JSONResponse
 from google import genai
 from dotenv import load_dotenv
