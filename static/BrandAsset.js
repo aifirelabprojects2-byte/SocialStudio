@@ -263,42 +263,8 @@ const initCft = async () => {
 };
 
 const handleFetchActionCft = async (urlInput) => {
-    const url = urlInput.value.trim();
-    if(!url) {
-        showStatusCft('Please enter a valid URL.', 'error');
-        return;
-    }
-
-    // This is the critical line that hides the Empty State and shows the Spinner
-    toggleMainViewCft('loading'); 
-    
-    // Also close the modal if it was open
     elsCft.modal.classList.add('hidden');
-
-    try {
-        const res = await fetch('/api/company/fetch', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({url})
-        });
-        
-        const data = await res.json();
-        if(!res.ok) throw new Error(data.detail || 'Fetch failed');
-
-        currentCompanyCft = data.company;
-        renderViewCft(currentCompanyCft);
-        populateEditCft(currentCompanyCft);
-        
-        // Switch to data view
-        toggleMainViewCft('data');
-        setTabCft('view');
-        showStatusCft('Company profile updated successfully.', 'success');
-        
-    } catch(e) {
-        showStatusCft('Error: ' + e.message, 'error');
-        // If we have no data, go back to empty. If we had data before, show data.
-        toggleMainViewCft(currentCompanyCft ? 'data' : 'empty');
-    }
+    ShowNoti("info","This action is disabled in demo mode");
 };
 
 elsCft.modalFetchBtn.onclick = () => handleFetchActionCft(elsCft.modalInput);
@@ -308,42 +274,7 @@ elsCft.emptyFetchBtn.onclick = () => handleFetchActionCft(elsCft.emptyInput);
 
 elsCft.eSave.onclick = async () => {
     if(!currentCompanyCft) return;
-    try {
-        const payload = {
-            company_name: elsCft.eName.value,
-            company_location: elsCft.eLoc.value,
-            company_details: elsCft.eDesc.value,
-        };
-        
-        const originalText = elsCft.eSave.innerHTML;
-        elsCft.eSave.innerHTML = `<div class="spinner-cft w-4 h-4 border-2"></div> Saving...`;
-        elsCft.eSave.disabled = true;
-
-        const res = await fetch(`/api/company/${currentCompanyCft.id}`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-        });
-        if(!res.ok) throw new Error('Save failed');
-        const data = await res.json();
-        currentCompanyCft = data.company;
-        renderViewCft(currentCompanyCft);
-        
-        elsCft.eSave.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Saved!`;
-        refreshIconsCft();
-        
-        setTimeout(() => {
-            elsCft.eSave.innerHTML = `Save Changes`;
-            elsCft.eSave.disabled = false;
-            refreshIconsCft();
-        }, 1500);
-
-    } catch(e) {
-        showStatusCft(e.message, 'error');
-        elsCft.eSave.innerHTML = `Save Changes`;
-        elsCft.eSave.disabled = false;
-        refreshIconsCft();
-    }
+    ShowNoti("info","This action is disabled in demo mode");
 };
 
 elsCft.eRevert.onclick = () => populateEditCft(currentCompanyCft);

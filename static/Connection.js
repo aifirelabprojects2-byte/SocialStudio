@@ -221,7 +221,7 @@ const confirmed = await askUser(
 );
 
 if (confirmed) {
-    ShowNoti("info","This action is disabled in demo mode")
+    ShowNoti("info","This action is disabled in demo mode");
 }
 };
 

@@ -342,7 +342,7 @@ async function postNowScheduled(taskId) {
         ShowNoti('success', 'Content published successfully!');
         if (typeof fetchPostsBlz === 'function') fetchPostsBlz(); 
     } catch (err) {
-        ShowNoti('error', err.message || "Something went wrong while posting");
+        ShowNoti('error', "Something went wrong while posting");
     } finally {
         toggleLoading(`postBtnSpr-${taskId}`, false);
     }

@@ -7,7 +7,6 @@ from typing import Optional, List
 from fastapi import Body, Depends, FastAPI, UploadFile, File, HTTPException,Form
 from pydantic import BaseModel, Field
 from PIL import ImageFont, Image
-from rembg import remove,new_session
 from fastapi.responses import JSONResponse
 from google import genai
 from google.genai import types
@@ -16,10 +15,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import  Session
 from sqlalchemy.ext.asyncio import AsyncSession 
-
-
-# Use "u2netp" (portable) instead of "u2net" for 4GB VMs—it's much lighter.
-SESSION = new_session("u2netp")
 
 STYLE_PRESETS = {
     "Bold": "Make a bold, high-contrast YouTube-style thumbnail. Use vibrant, saturated colors, big readable text area, dramatic lighting and deep shadows. Prioritize legibility at small sizes and place the subject in the foreground with strong rim light.",
@@ -157,35 +152,20 @@ def init(app):
 
     @app.post("/remove-bg")
     async def remove_background(file: UploadFile = File(...)):
-        try:
-            contents = await file.read()
-            input_img = Image.open(io.BytesIO(contents))
+        contents = await file.read()
+        filename = f"bg_removed_{uuid.uuid4()}.png"
+        filepath = os.path.join(UPLOAD_DIR, filename)
 
-            # 2. Pass the pre-loaded SESSION here
-            output_img = remove(
-                input_img,
-                session=SESSION,  # CRITICAL: Reuses the model already in RAM
-                alpha_matting=True,
-                alpha_matting_foreground_threshold=240,
-                alpha_matting_background_threshold=10,
-                alpha_matting_erode_size=10
-            )
+        with open(filepath, "wb") as f:
+            f.write(contents)
 
-            filename = f"bg_removed_{uuid.uuid4()}.png"
-            filepath = os.path.join(UPLOAD_DIR, filename)
-            output_img.save(filepath, format="PNG")
+        return JSONResponse({
+            "status": "demo",
+            "message": "Background removal is disabled in demo mode",
+            "file_id": filename,
+            "url": f"/uploads/{filename}"
+        })
 
-            return JSONResponse({
-                "status": "success",
-                "file_id": filename, 
-                "url": f"/uploads/{filename}" 
-            })
-
-        except Exception as e:
-            # If it's a library error (like missing libglib), it will show up here
-            print(f"CRITICAL ERROR: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
-        
 
     @app.post("/generate-image")
     async def generate_image_endpoint(
